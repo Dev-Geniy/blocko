@@ -21,7 +21,6 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
-    
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .loading-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
@@ -63,6 +62,11 @@
     </div>
     
     <div class="flex items-center gap-5">
+      <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
+        <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
+        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск досок..." class="bg-transparent outline-none text-sm w-48 dark:text-white placeholder-gray-400" />
+      </div>
+
       <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400">
         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
         <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
@@ -103,6 +107,7 @@ if (localStorage.getItem('theme') === 'light') document.documentElement.classLis
 lucide.createIcons();
 
 let currentUser = null;
+let allBoards = []; // Глобальный массив для локального поиска
 
 // ==========================================
 // АВТОРИЗАЦИЯ
@@ -115,20 +120,17 @@ auth.onAuthStateChanged((user) => {
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
     
-    // Прячем логин, показываем дашборд
     authScreen.classList.add('opacity-0', 'pointer-events-none');
     setTimeout(() => authScreen.classList.add('hidden'), 500);
     
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
     
-    // Заполняем профиль
     document.getElementById('dashAvatar').src = currentUser.avatar;
     document.getElementById('dashUserName').innerText = currentUser.name;
     
     loadBoards();
   } else {
-    // Показываем логин
     authScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
     dashScreen.classList.add('hidden');
     document.getElementById('loginBtn').classList.remove('hidden');
@@ -140,104 +142,133 @@ function loginWithGoogle() {
   document.getElementById('loginBtn').classList.add('hidden');
   document.getElementById('authLoading').classList.remove('hidden');
   auth.signInWithPopup(googleProvider).catch(error => {
-    console.error("Ошибка входа:", error);
     alert("Ошибка авторизации. Попробуйте еще раз.");
     document.getElementById('loginBtn').classList.remove('hidden');
     document.getElementById('authLoading').classList.add('hidden');
   });
 }
-
 function logout() { auth.signOut(); }
 
 // ==========================================
-// ЗАГРУЗКА ДОСОК ИЗ БАЗЫ (С ИСПРАВЛЕННОЙ СОРТИРОВКОЙ)
+// ЗАГРУЗКА ДОСОК ИЗ БАЗЫ
 // ==========================================
 function loadBoards() {
-  // Убрали orderBy() из запроса, чтобы Firestore не требовал сложных индексов. 
-  // Сортировку будем делать прямо здесь в коде.
   db.collection("boards")
     .where("members", "array-contains", currentUser.id)
     .onSnapshot(snapshot => {
-      const grid = document.getElementById('boardsGrid');
-      grid.innerHTML = '';
-      
-      // Пустое состояние
-      if (snapshot.empty) { 
-        grid.innerHTML = `
-          <div class="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] bg-gray-50/50 dark:bg-gray-900/30">
-            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mb-4">
-              <i data-lucide="folder-open" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">У вас пока нет проектов</h3>
-            <p class="text-sm text-gray-500 mb-6">Создайте первую доску или попросите коллег прислать ссылку-приглашение.</p>
-            <button onclick="createNewBoard()" class="text-blue-500 font-bold hover:underline">Создать сейчас →</button>
-          </div>
-        `;
-        lucide.createIcons();
-        return; 
-      }
-      
-      // Собираем данные в массив для сортировки
-      let boardsArray = [];
+      allBoards = []; // Очищаем перед обновлением
       snapshot.forEach(doc => {
-        boardsArray.push({ id: doc.id, ...doc.data() });
+        allBoards.push({ id: doc.id, ...doc.data() });
       });
       
       // Локальная сортировка (От новых к старым)
-      boardsArray.sort((a, b) => {
+      allBoards.sort((a, b) => {
         const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
         const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
         return timeB - timeA;
       });
       
-      // Рендерим отсортированные карточки досок
-      boardsArray.forEach(data => {
-        const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
-        const isOwner = data.owner === currentUser.id;
-        
-        grid.innerHTML += `
-          <a href="board.html?b=${data.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden">
-            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
-            <div class="flex justify-between items-start mb-4">
-              <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
-                <i data-lucide="kanban-square" class="w-6 h-6"></i>
-              </div>
-              <div class="flex items-center gap-2">
-                ${isOwner ? '<span class="text-[10px] font-bold px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 rounded-lg">Owner</span>' : ''}
-                ${isOwner ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-              </div>
-            </div>
-            
-            <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">${data.title || 'Без названия'}</h3>
-            <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-6">Создано: ${date}</div>
-            
-            <div class="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="text-xs font-bold text-gray-500">Участники</div>
-              <div class="flex -space-x-2">
-                ${data.members.slice(0, 4).map(() => `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs text-gray-500 shadow-sm"><i data-lucide="user" class="w-4 h-4"></i></div>`).join('')}
-                ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400 shadow-sm">+${data.members.length - 4}</div>` : ''}
-              </div>
-            </div>
-          </a>
-        `;
-      });
-      lucide.createIcons();
+      renderBoardsGrid();
     });
 }
 
-// Удаление доски
+// ==========================================
+// РЕНДЕР И ПОИСК ДОСОК
+// ==========================================
+function renderBoardsGrid() {
+  const grid = document.getElementById('boardsGrid');
+  const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+  grid.innerHTML = '';
+  
+  // Фильтруем доски по поиску
+  const filteredBoards = allBoards.filter(board => {
+    const title = board.title ? board.title.toLowerCase() : '';
+    return title.includes(searchQuery);
+  });
+
+  if (allBoards.length === 0) { 
+    grid.innerHTML = `
+      <div class="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] bg-gray-50/50 dark:bg-gray-900/30">
+        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mb-4"><i data-lucide="folder-open" class="w-8 h-8"></i></div>
+        <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">У вас пока нет проектов</h3>
+        <button onclick="createNewBoard()" class="text-blue-500 font-bold hover:underline mt-2">Создать сейчас →</button>
+      </div>`;
+    lucide.createIcons(); return; 
+  }
+
+  if (filteredBoards.length === 0) {
+    grid.innerHTML = `<div class="col-span-full py-10 text-center text-gray-400">По запросу "${searchQuery}" ничего не найдено.</div>`;
+    return;
+  }
+  
+  filteredBoards.forEach(data => {
+    const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
+    const isOwner = data.owner === currentUser.id;
+    
+    grid.innerHTML += `
+      <a href="board.html?b=${data.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        
+        <div class="flex justify-between items-start mb-4">
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
+            <i data-lucide="kanban-square" class="w-6 h-6"></i>
+          </div>
+          <div class="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 dark:border-gray-700">
+            <button onclick="copyBoardLink(event, this, '${data.id}')" class="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" title="Скопировать ссылку-приглашение">
+              <i data-lucide="share-2" class="w-4 h-4"></i>
+            </button>
+            ${isOwner ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Удалить доску"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+          </div>
+        </div>
+        
+        <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">${data.title || 'Без названия'}</h3>
+        <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-6">Создано: ${date}</div>
+        
+        <div class="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-700/50">
+          <div class="text-xs font-bold text-gray-500">Участники</div>
+          <div class="flex -space-x-2">
+            ${data.members.slice(0, 4).map(() => `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs text-gray-500 shadow-sm"><i data-lucide="user" class="w-4 h-4"></i></div>`).join('')}
+            ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400 shadow-sm">+${data.members.length - 4}</div>` : ''}
+          </div>
+        </div>
+      </a>
+    `;
+  });
+  lucide.createIcons();
+}
+
+// ==========================================
+// ЭКШЕНЫ КАРТОЧКИ ДОСКИ
+// ==========================================
+function copyBoardLink(event, btnElement, boardId) {
+  event.preventDefault(); 
+  event.stopPropagation();
+  
+  // Формируем правильную ссылку
+  const baseUrl = window.location.href.split('index.html')[0];
+  const url = `${baseUrl}board.html?b=${boardId}`;
+  
+  navigator.clipboard.writeText(url);
+  
+  // Визуальный фидбэк (меняем иконку на галочку)
+  const icon = btnElement.querySelector('i');
+  icon.setAttribute('data-lucide', 'check');
+  icon.classList.replace('text-gray-400', 'text-green-500');
+  lucide.createIcons();
+  
+  setTimeout(() => {
+    icon.setAttribute('data-lucide', 'share-2');
+    icon.classList.replace('text-green-500', 'text-gray-400');
+    lucide.createIcons();
+  }, 2000);
+}
+
 function deleteBoard(event, boardId) {
   event.preventDefault(); 
-  event.stopPropagation(); // <--- ДОБАВИТЬ ЭТО (останавливает клик по ссылке)
+  event.stopPropagation(); 
   
   if(confirm("Вы уверены, что хотите навсегда удалить этот проект и все его карточки?")) {
-    db.collection("boards").doc(boardId).delete().then(() => {
-      console.log("Доска удалена");
-    }).catch(error => {
-      console.error("Ошибка удаления:", error);
-      alert("Ошибка удаления. Возможно, у вас нет прав.");
-    });
+    db.collection("boards").doc(boardId).delete();
   }
 }
 
@@ -246,7 +277,6 @@ function deleteBoard(event, boardId) {
 // ==========================================
 async function createNewBoard() {
   const title = prompt("Введите название нового проекта:") || "Новый проект";
-  
   const newBoard = {
     title: title,
     owner: currentUser.id,
@@ -261,26 +291,18 @@ async function createNewBoard() {
   
   try {
     const docRef = await db.collection("boards").add(newBoard);
-    
-    // Системное сообщение в чат
     await db.collection("boards").doc(docRef.id).collection("chat").add({ 
       text: `🚀 Проект "${title}" успешно создан! Пригласите команду, отправив им ссылку.`, 
       user: { id: 'system', name: 'FlowBot', avatar: 'https://ui-avatars.com/api/?name=B&background=10b981&color=fff' }, 
       timestamp: firebase.firestore.FieldValue.serverTimestamp() 
     });
-
     window.location.href = `board.html?b=${docRef.id}`;
   } catch(e) {
-    console.error(e);
-    alert("Ошибка при создании доски. Проверьте подключение к базе.");
+    alert("Ошибка при создании доски.");
   }
 }
 
-// Переключение темы
-function toggleTheme() { 
-  document.documentElement.classList.toggle('dark'); 
-  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
-}
+function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
 </script>
 
 </body>
