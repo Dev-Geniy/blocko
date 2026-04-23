@@ -22,7 +22,6 @@
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
     
-    /* Анимация загрузки */
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .loading-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
@@ -113,7 +112,8 @@ auth.onAuthStateChanged((user) => {
   const dashScreen = document.getElementById('dashboardScreen');
   
   if (user) {
-    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL };
+    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
+    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
     
     // Прячем логин, показываем дашборд
     authScreen.classList.add('opacity-0', 'pointer-events-none');
@@ -150,18 +150,18 @@ function loginWithGoogle() {
 function logout() { auth.signOut(); }
 
 // ==========================================
-// ЗАГРУЗКА ДОСОК ИЗ БАЗЫ
+// ЗАГРУЗКА ДОСОК ИЗ БАЗЫ (С ИСПРАВЛЕННОЙ СОРТИРОВКОЙ)
 // ==========================================
 function loadBoards() {
-  // Ищем все доски, где в массиве members есть ID текущего юзера
+  // Убрали orderBy() из запроса, чтобы Firestore не требовал сложных индексов. 
+  // Сортировку будем делать прямо здесь в коде.
   db.collection("boards")
     .where("members", "array-contains", currentUser.id)
-    .orderBy("createdAt", "desc") // Сортируем от новых к старым
     .onSnapshot(snapshot => {
       const grid = document.getElementById('boardsGrid');
       grid.innerHTML = '';
       
-      // Если досок нет
+      // Пустое состояние
       if (snapshot.empty) { 
         grid.innerHTML = `
           <div class="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] bg-gray-50/50 dark:bg-gray-900/30">
@@ -177,21 +177,36 @@ function loadBoards() {
         return; 
       }
       
-      // Рендерим карточки досок
+      // Собираем данные в массив для сортировки
+      let boardsArray = [];
       snapshot.forEach(doc => {
-        const data = doc.data();
-        const date = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
+        boardsArray.push({ id: doc.id, ...doc.data() });
+      });
+      
+      // Локальная сортировка (От новых к старым)
+      boardsArray.sort((a, b) => {
+        const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+      
+      // Рендерим отсортированные карточки досок
+      boardsArray.forEach(data => {
+        const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
         const isOwner = data.owner === currentUser.id;
         
         grid.innerHTML += `
-          <a href="board.html?b=${doc.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden">
+          <a href="board.html?b=${data.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden">
             <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
             
             <div class="flex justify-between items-start mb-4">
               <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
                 <i data-lucide="kanban-square" class="w-6 h-6"></i>
               </div>
-              ${isOwner ? '<span class="text-[10px] font-bold px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 rounded-lg">Owner</span>' : ''}
+              <div class="flex items-center gap-2">
+                ${isOwner ? '<span class="text-[10px] font-bold px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 rounded-lg">Owner</span>' : ''}
+                ${isOwner ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+              </div>
             </div>
             
             <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">${data.title || 'Без названия'}</h3>
@@ -211,6 +226,19 @@ function loadBoards() {
     });
 }
 
+// Удаление доски
+function deleteBoard(event, boardId) {
+  event.preventDefault(); // Запрещаем браузеру переходить по ссылке `href="board.html?..."`
+  if(confirm("Вы уверены, что хотите навсегда удалить этот проект и все его карточки?")) {
+    db.collection("boards").doc(boardId).delete().then(() => {
+      console.log("Доска удалена");
+    }).catch(error => {
+      console.error("Ошибка удаления:", error);
+      alert("Ошибка удаления. Возможно, у вас нет прав.");
+    });
+  }
+}
+
 // ==========================================
 // СОЗДАНИЕ НОВОЙ ДОСКИ
 // ==========================================
@@ -220,7 +248,7 @@ async function createNewBoard() {
   const newBoard = {
     title: title,
     owner: currentUser.id,
-    members: [currentUser.id], // Создатель автоматически становится участником
+    members: [currentUser.id],
     columns: [
       { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
       { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
@@ -230,21 +258,19 @@ async function createNewBoard() {
   };
   
   try {
-    // 1. Создаем доску в базе
     const docRef = await db.collection("boards").add(newBoard);
     
-    // 2. Отправляем системное сообщение в чат новой доски
+    // Системное сообщение в чат
     await db.collection("boards").doc(docRef.id).collection("chat").add({ 
       text: `🚀 Проект "${title}" успешно создан! Пригласите команду, отправив им ссылку.`, 
-      user: { id: 'system', name: 'FlowBoard Bot', avatar: 'https://ui-avatars.com/api/?name=B&background=10b981&color=fff' }, 
+      user: { id: 'system', name: 'FlowBot', avatar: 'https://ui-avatars.com/api/?name=B&background=10b981&color=fff' }, 
       timestamp: firebase.firestore.FieldValue.serverTimestamp() 
     });
 
-    // 3. Редиректим юзера в рабочую область
     window.location.href = `board.html?b=${docRef.id}`;
   } catch(e) {
     console.error(e);
-    alert("Ошибка при создании доски. Проверьте правила Firebase.");
+    alert("Ошибка при создании доски. Проверьте подключение к базе.");
   }
 }
 
