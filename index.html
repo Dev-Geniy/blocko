@@ -228,7 +228,9 @@ function loadBoards() {
 
 // Удаление доски
 function deleteBoard(event, boardId) {
-  event.preventDefault(); // Запрещаем браузеру переходить по ссылке `href="board.html?..."`
+  event.preventDefault(); 
+  event.stopPropagation(); // <--- ДОБАВИТЬ ЭТО (останавливает клик по ссылке)
+  
   if(confirm("Вы уверены, что хотите навсегда удалить этот проект и все его карточки?")) {
     db.collection("boards").doc(boardId).delete().then(() => {
       console.log("Доска удалена");
