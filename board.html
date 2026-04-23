@@ -201,16 +201,7 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
-// Переменные (Их мы используем из config.js, который подключен в шапке)
-// IMGBB_KEY, AVAILABLE_TAGS, COL_COLORS - предполагается, что они в config.js
-// Если их нет в config.js, раскомментируй их ниже:
-const IMGBB_KEY = "22de10db6eb1f3ec3fca012dcc566961";
-const AVAILABLE_TAGS = [
-  { id: 'bug', name: 'Bug', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
-  { id: 'feature', name: 'Feature', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
-  { id: 'urgent', name: 'Urgent', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
-  { id: 'design', name: 'Design', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' }
-];
+// МЫ УДАЛИЛИ ОТСЮДА IMGBB_KEY И AVAILABLE_TAGS, ТАК КАК ОНИ УЖЕ ЕСТЬ В CONFIG.JS
 
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
@@ -223,8 +214,12 @@ let selectedColColor = 'default', activeTags = [], pendingImageFile = null;
 // ==========================================
 auth.onAuthStateChanged((user) => {
   if (user) {
-    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL };
+    // На случай, если у Google-аккаунта нет аватарки (чтобы не было пустой картинки)
+    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
+    
+    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
     document.getElementById('commentMyAvatar').src = currentUser.avatar;
+    
     if (!BOARD_ID) window.location.href = 'index.html'; 
     else loadBoard();
   } else {
@@ -233,6 +228,7 @@ auth.onAuthStateChanged((user) => {
 });
 
 function loadBoard() {
+// ... дальше идет твой старый код без изменений ...
   document.getElementById('shareUrlText').innerText = window.location.href;
   const docRef = db.collection("boards").doc(BOARD_ID);
   
