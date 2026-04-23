@@ -228,22 +228,27 @@ auth.onAuthStateChanged((user) => {
 });
 
 function loadBoard() {
-// ... дальше идет твой старый код без изменений ...
   document.getElementById('shareUrlText').innerText = window.location.href;
   const docRef = db.collection("boards").doc(BOARD_ID);
   
   docRef.get().then(doc => {
     if (doc.exists) {
       document.getElementById('boardTitleHeader').innerText = doc.data().title;
-      // Добавляем юзера в участники доски, если он перешел по ссылке
       if (!doc.data().members.includes(currentUser.id)) docRef.update({ members: firebase.firestore.FieldValue.arrayUnion(currentUser.id) });
     } else {
       alert("Доска не найдена или удалена!"); window.location.href = 'index.html';
     }
   });
 
-  // Подписка на доску (Real-time)
-  docRef.onSnapshot((doc) => { if (doc.exists) { columns = doc.data().columns || []; render(); } });
+  docRef.onSnapshot((doc) => { 
+    if (doc.exists) { 
+      document.getElementById('boardTitleHeader').innerText = doc.data().title; // Обновляем заголовок онлайн
+      columns = doc.data().columns || []; 
+      render(); 
+    } else {
+      window.location.href = 'index.html'; // Если удалили доску - выкидываем юзеров на главную
+    }
+  });
 
   // Подписка на чат (Real-time)
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
@@ -266,6 +271,15 @@ function loadBoard() {
   });
 }
 
+// ФУНКЦИЯ ПЕРЕИМЕНОВАНИЯ
+function renameBoard() {
+  const currentTitle = document.getElementById('boardTitleHeader').innerText;
+  const newTitle = prompt("Новое название проекта:", currentTitle);
+  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
+    db.collection("boards").doc(BOARD_ID).update({ title: newTitle.trim() });
+  }
+}
+  
 function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); }
 
 // ==========================================
