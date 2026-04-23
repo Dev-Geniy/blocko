@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowBoard - Мои проекты</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script> <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+  </style>
+  <script>tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }</script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+<div id="authScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-300">
+  <div class="bg-white dark:bg-gray-900 p-10 rounded-3xl w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800">
+    <div class="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 text-white"><i data-lucide="layers" class="w-10 h-10"></i></div>
+    <h1 class="text-3xl font-bold mb-2">FlowBoard <span class="text-blue-500">Pro</span></h1>
+    <p class="text-gray-500 mb-8">Управляйте проектами вместе в реальном времени</p>
+    <button onclick="auth.signInWithPopup(googleProvider)" class="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all hover:bg-gray-50 dark:hover:bg-gray-750 active:scale-95">
+      Войти через Google
+    </button>
+  </div>
+</div>
+
+<div id="dashboardScreen" class="hidden flex-col h-screen w-full overflow-y-auto">
+  <header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md flex justify-between items-center sticky top-0 z-10">
+    <div class="flex items-center gap-3"><div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white"><i data-lucide="layout-dashboard" class="w-6 h-6"></i></div><h1 class="text-2xl font-bold">Мои доски</h1></div>
+    <div class="flex items-center gap-4">
+      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"><i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i><i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i></button>
+      <div class="flex items-center gap-3 pl-4 border-l border-gray-300 dark:border-gray-700">
+        <img id="dashAvatar" src="" class="w-10 h-10 rounded-full border border-gray-300 dark:border-gray-700" />
+        <button onclick="auth.signOut()" class="text-sm font-medium text-red-500 hover:underline">Выйти</button>
+      </div>
+    </div>
+  </header>
+  <main class="p-8 max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center mb-8">
+      <h2 class="text-xl font-bold">Недавние проекты</h2>
+      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg active:scale-95"><i data-lucide="plus" class="w-4 h-4"></i> Создать доску</button>
+    </div>
+    <div id="boardsGrid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+  </main>
+</div>
+
+<script>
+if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+lucide.createIcons();
+
+let currentUser = null;
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL };
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('dashboardScreen').classList.remove('hidden');
+    document.getElementById('dashboardScreen').classList.add('flex');
+    document.getElementById('dashAvatar').src = currentUser.avatar;
+    loadBoards();
+  } else {
+    document.getElementById('authScreen').classList.remove('hidden');
+    document.getElementById('dashboardScreen').classList.add('hidden');
+  }
+});
+
+function loadBoards() {
+  db.collection("boards").where("members", "array-contains", currentUser.id).onSnapshot(snapshot => {
+    const grid = document.getElementById('boardsGrid');
+    grid.innerHTML = '';
+    if (snapshot.empty) { grid.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">У вас пока нет досок. Создайте первую!</div>'; return; }
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      // ИЗМЕНЕНИЕ: Ссылка теперь ведет на board.html
+      grid.innerHTML += `
+        <a href="board.html?b=${doc.id}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-500 transition-all shadow-sm hover:shadow-lg group">
+          <h3 class="text-lg font-bold mb-2 group-hover:text-blue-500">${data.title || 'Проект без названия'}</h3>
+          <div class="text-xs text-gray-500 mb-4">Участников: ${data.members.length}</div>
+        </a>
+      `;
+    });
+  });
+}
+
+async function createNewBoard() {
+  const newBoard = {
+    title: prompt("Введите название проекта:") || "Новый проект",
+    owner: currentUser.id,
+    members: [currentUser.id],
+    columns: [
+      { id: Date.now(), name: "Задачи", color: 'default', cards: [] },
+      { id: Date.now()+1, name: "В работе", color: 'default', cards: [] }
+    ],
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  const docRef = await db.collection("boards").add(newBoard);
+  // ИЗМЕНЕНИЕ: Редирект на board.html
+  window.location.href = `board.html?b=${docRef.id}`;
+}
+
+function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark')?'dark':'light'); }
+</script>
+</body>
+</html>
