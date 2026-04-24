@@ -48,8 +48,13 @@
     .md-content a { color: #3b82f6; text-decoration: underline; }
     .md-content input[type="checkbox"] { margin-right: 0.5rem; accent-color: #3b82f6; }
     /* Невидимый скролл для колонок */
-    .hide-scroll::-webkit-scrollbar { display: none; }
-    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    .hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Анимация появления сообщений */
+    .chat-message { animation: fadeInUp 0.25s ease forwards; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* Плавное увеличение карточки при наведении */
+    .card-item { transition: transform 0.2s ease, box-shadow 0.2s ease !important;}
+    .card-item:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
   </style>
 
   <script>
@@ -111,7 +116,7 @@
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
   <!-- панель чата -->
-  <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-30 shadow-2xl">
+  <aside id="chatSidebar" class="fixed top-0 right-0 w-80 h-full bg-white dark:bg-gray-900 shadow-2xl z-30 transform translate-x-full opacity-0 transition-all duration-300 ease-in-out border-l border-gray-200 dark:border-gray-800 flex flex-col">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
       <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
@@ -291,6 +296,9 @@
   </div>
 </div>
 
+<!-- затемнение фона при открытии чата -->
+<div id="chatOverlay" onclick="toggleChat()" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none transition-opacity duration-300 z-20 backdrop-blur-sm"></div>
+  
 <script>
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ И STATE
@@ -434,7 +442,26 @@ function updateTagFilterDropdown() {
 // ==========================================
 // ЛОГИКА БОКОВЫХ ПАНЕЛЕЙ И РОЛЕЙ (Чат, Настройки, права доступа)
 // ==========================================
-function toggleChat() { closeOtherSidebars('chatSidebar'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
+function toggleChat() {
+  const el = document.getElementById('chatSidebar');
+  const overlay = document.getElementById('chatOverlay');
+  const isOpen = !el.classList.contains('translate-x-full');
+
+  if (isOpen) {
+    // Закрываем
+    el.classList.add('translate-x-full', 'opacity-0');
+    overlay.classList.add('opacity-0');
+    overlay.classList.remove('pointer-events-auto');
+  } else {
+    // Открываем
+    el.classList.remove('translate-x-full', 'opacity-0');
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('pointer-events-auto');
+    // Автофокус на поле ввода
+    setTimeout(() => document.getElementById('chatInput')?.focus(), 300);
+  }
+}
+  
 function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 
