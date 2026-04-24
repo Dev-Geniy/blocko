@@ -133,10 +133,14 @@
         <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон на стандартный</button>
       </div>
 
-      <div class="opacity-50 pointer-events-none">
-        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">Роли и права <span class="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px]">В разработке</span></h4>
-        <div class="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 text-center text-sm font-medium text-gray-500">
-          Скоро здесь появится управление командой
+<div>
+        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Теги доски</h4>
+        <div id="settingsTagsList" class="space-y-2 mb-4 max-h-48 overflow-y-auto hide-scroll"></div>
+        
+        <div id="newTagForm" class="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800 hidden">
+          <input id="newTagName" placeholder="Название тега..." class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg outline-none text-sm dark:text-white mb-3 focus:ring-2 focus:ring-blue-500 transition-shadow" />
+          <div class="flex items-center gap-2 mb-3 overflow-x-auto hide-scroll pb-1" id="newTagColorPicker"></div>
+          <button onclick="addNewCustomTag()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Создать тег</button>
         </div>
       </div>
 
@@ -348,7 +352,8 @@ function loadBoard() {
 
       columns = boardData.columns || []; 
       render(); 
-      renderMembersSidebar(); // Рисуем команду
+      renderMembersSidebar();
+      renderSettingsTags();
     } else {
       window.location.href = 'index.html';
     }
@@ -477,8 +482,7 @@ function openViewModal(colId, cardId) {
   const author = viewingCard.author || { name: 'Аноним', avatar: '' };
   document.getElementById('viewAuthorName').innerText = author.name; document.getElementById('viewAuthorAvatar').src = author.avatar;
   
-  document.getElementById('viewTags').innerHTML = (viewingCard.tags || []).map(tId => { const t = AVAILABLE_TAGS.find(tag => tag.id === tId); return t ? `<span class="px-3 py-1 rounded border text-xs font-bold ${t.color}">${t.name}</span>` : ''; }).join('');
-  
+  document.getElementById('viewTags').innerHTML = (viewingCard.tags || []).map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-3 py-1 rounded border text-xs font-bold ${t.color}">${t.name}</span>` : ''; }).join('');
   const imgEl = document.getElementById('viewImage'); 
   if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
   
@@ -570,7 +574,7 @@ function handleImageSelection(file) {
   }
 }
 
-function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = AVAILABLE_TAGS.map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400'}">${t.name}</button>`).join(''); }
+function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:border-gray-400'}">${t.name}</button>`).join(''); }
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
 async function saveCard() {
@@ -742,7 +746,7 @@ function render() {
         dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
 
-      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = AVAILABLE_TAGS.find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
+      const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
       const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
       const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
@@ -867,6 +871,95 @@ mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item'
 mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
+
+// ==========================================
+// ЛОГИКА ТЕГОВ (КАСТОМИЗАЦИЯ И РУССКИЙ ЯЗЫК)
+// ==========================================
+const DEFAULT_BOARD_TAGS = [
+  { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
+  { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+  { id: 'tag_urg', name: 'Срочно', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+  { id: 'tag_des', name: 'Дизайн', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+  { id: 'tag_back', name: 'Бэкенд', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+  { id: 'tag_test', name: 'Тестирование', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+];
+
+const TAG_PALETTE = [
+  'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800',
+  'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+  'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+  'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400 border-pink-200 dark:border-pink-800',
+  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+];
+
+let newTagSelectedColor = TAG_PALETTE[0];
+
+function getBoardTags() {
+  return boardData.tags && boardData.tags.length > 0 ? boardData.tags : DEFAULT_BOARD_TAGS;
+}
+
+function renderSettingsTags() {
+  const list = document.getElementById('settingsTagsList');
+  const form = document.getElementById('newTagForm');
+  const currentTags = getBoardTags();
+  
+  // Читатели не могут управлять тегами
+  const isOwnerOrEditor = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role !== 'viewer' : true;
+
+  form.style.display = isOwnerOrEditor ? 'block' : 'none';
+
+  list.innerHTML = currentTags.map(t => `
+    <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+      <span class="px-3 py-1 rounded-lg text-xs font-bold border ${t.color}">${t.name}</span>
+      ${isOwnerOrEditor ? `<button onclick="deleteCustomTag('${t.id}')" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+    </div>
+  `).join('');
+  
+  const picker = document.getElementById('newTagColorPicker');
+  picker.innerHTML = TAG_PALETTE.map(c => `
+    <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent hover:scale-110'} ${c.split(' ')[0]}"></button>
+  `).join('');
+  
+  lucide.createIcons();
+}
+
+function addNewCustomTag() {
+  const name = document.getElementById('newTagName').value.trim();
+  if (!name) return;
+  
+  const currentTags = getBoardTags();
+  const newTag = { id: 'tag_' + Date.now(), name, color: newTagSelectedColor };
+  const updatedTags = [...currentTags, newTag];
+  
+  db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags });
+  document.getElementById('newTagName').value = '';
+}
+
+function deleteCustomTag(tagId) {
+  if (!confirm("Удалить этот тег? Он также пропадет со всех карточек.")) return;
+  
+  const updatedTags = getBoardTags().filter(t => t.id !== tagId);
+  db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags });
+  
+  // Очищаем удаленный тег из всех существующих карточек
+  let boardUpdated = false;
+  columns = columns.map(col => {
+    let colUpdated = false;
+    let newCards = col.cards.map(card => {
+      if (card.tags && card.tags.includes(tagId)) {
+        colUpdated = true;
+        return { ...card, tags: card.tags.filter(id => id !== tagId) };
+      }
+      return card;
+    });
+    if (colUpdated) boardUpdated = true;
+    return { ...col, cards: newCards };
+  });
+  
+  if (boardUpdated) persist();
+}
 </script>
 </body>
 </html>
