@@ -48,13 +48,8 @@
     .md-content a { color: #3b82f6; text-decoration: underline; }
     .md-content input[type="checkbox"] { margin-right: 0.5rem; accent-color: #3b82f6; }
     /* Невидимый скролл для колонок */
-    .hide-scroll::-webkit-scrollbar { display: none; } .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-    /* Анимация появления сообщений */
-    .chat-message { animation: fadeInUp 0.25s ease forwards; }
-    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    /* Плавное увеличение карточки при наведении */
-    .card-item { transition: transform 0.2s ease, box-shadow 0.2s ease !important;}
-    .card-item:hover { transform: translateY(-2px) scale(1.01); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 
   <script>
@@ -116,7 +111,7 @@
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
   <!-- панель чата -->
-  <aside id="chatSidebar" class="fixed top-0 right-0 w-80 h-full bg-white dark:bg-gray-900 shadow-2xl z-30 transform translate-x-full opacity-0 transition-all duration-300 ease-in-out border-l border-gray-200 dark:border-gray-800 flex flex-col">
+  <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-30 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
       <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
@@ -296,23 +291,6 @@
   </div>
 </div>
 
-<!-- быстрые карточки -->
-<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center opacity-0 transition-all duration-300">
-  <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-md"></div>
-  
-  <div class="relative w-full max-w-lg p-6 transform scale-95 transition-transform duration-300">
-    <h3 class="text-white text-2xl font-bold mb-4 text-center">Введите название задачи</h3>
-    <input id="quickAddInput" type="text" 
-           class="w-full bg-white/10 border-2 border-white/20 rounded-2xl px-6 py-4 text-white text-xl outline-none focus:border-blue-500 focus:bg-white/20 transition-all shadow-2xl placeholder-white/30"
-           placeholder="Например: Подготовить отчет..."
-           onkeydown="confirmQuickAdd(event)" />
-    <p class="text-white/50 text-sm mt-4 text-center">Нажмите <span class="px-2 py-1 bg-white/10 rounded">Enter</span> для создания</p>
-  </div>
-</div>
-  
-<!-- затемнение фона при открытии чата -->
-<div id="chatOverlay" onclick="toggleChat()" class="fixed inset-0 bg-black/40 opacity-0 pointer-events-none transition-opacity duration-300 z-20 backdrop-blur-sm"></div>
-  
 <script>
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ И STATE
@@ -456,26 +434,7 @@ function updateTagFilterDropdown() {
 // ==========================================
 // ЛОГИКА БОКОВЫХ ПАНЕЛЕЙ И РОЛЕЙ (Чат, Настройки, права доступа)
 // ==========================================
-function toggleChat() {
-  const el = document.getElementById('chatSidebar');
-  const overlay = document.getElementById('chatOverlay');
-  const isOpen = !el.classList.contains('translate-x-full');
-
-  if (isOpen) {
-    // Закрываем
-    el.classList.add('translate-x-full', 'opacity-0');
-    overlay.classList.add('opacity-0');
-    overlay.classList.remove('pointer-events-auto');
-  } else {
-    // Открываем
-    el.classList.remove('translate-x-full', 'opacity-0');
-    overlay.classList.remove('opacity-0');
-    overlay.classList.add('pointer-events-auto');
-    // Автофокус на поле ввода
-    setTimeout(() => document.getElementById('chatInput')?.focus(), 300);
-  }
-}
-  
+function toggleChat() { closeOtherSidebars('chatSidebar'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
 function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 
@@ -900,57 +859,22 @@ function render() {
 // ==========================================
 // БЫСТРОЕ ДОБАВЛЕНИЕ (Double Click)
 // ==========================================
-let currentQuickAddColId = null;
-
 function quickAddCard(colId) {
-  currentQuickAddColId = colId;
-  const modal = document.getElementById('quickAddModal');
-  const input = document.getElementById('quickAddInput');
-
-  // Показываем модалку
-  modal.classList.remove('hidden');
-  setTimeout(() => {
-    modal.classList.remove('opacity-0');
-    modal.querySelector('div.relative').classList.remove('scale-95');
-    input.focus();
-  }, 10);
-}
-
-function closeQuickAdd() {
-  const modal = document.getElementById('quickAddModal');
-  modal.classList.add('opacity-0');
-  modal.querySelector('div.relative').classList.add('scale-95');
-  setTimeout(() => modal.classList.add('hidden'), 300);
-  document.getElementById('quickAddInput').value = '';
-}
-
-// Функция подтверждения
-function confirmQuickAdd(e) {
-  if (e.key === 'Escape') closeQuickAdd();
+  const title = prompt("📝 Название быстрой задачи:");
+  if (!title || title.trim() === "") return;
   
-  if (e.key === 'Enter') {
-    const title = e.target.value.trim();
-    if (!title) return;
-
-    // Находим колонку
-    const col = columns.find(c => c.id === currentQuickAddColId);
-    if (!col) return;
-
-    // Создаем карточку с тегом "Срочно"
-    const newCard = {
-      id: Date.now(),
-      title: title,
-      description: "",
-      tags: ['tag_urg'], // ID тега "Срочно" из твоего DEFAULT_BOARD_TAGS
-      comments: [],
-      author: currentUser,
-      dueDate: ""
-    };
-
-    col.cards.push(newCard);
-    persist(); // Сохраняем в базу
-    closeQuickAdd(); // Закрываем окно
-  }
+  const newCard = { 
+    id: Date.now(), 
+    title: title.trim(), 
+    description: "", 
+    tags: [], 
+    comments: [], 
+    author: currentUser,
+    dueDate: ""
+  };
+  
+  columns.find(c => c.id === colId).cards.push(newCard);
+  persist();
 }
 
 // ==========================================
@@ -1085,13 +1009,6 @@ function deleteCustomTag(tagId) {
   
   if (boardUpdated) persist();
 }
-
-// Закрытие при клике на замутненный фон
-document.getElementById('quickAddModal').addEventListener('click', (e) => {
-  if (e.target.id === 'quickAddModal' || e.target.classList.contains('bg-gray-900/60')) {
-    closeQuickAdd();
-  }
-});
 </script>
 </body>
 </html>
