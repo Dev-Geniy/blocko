@@ -2,13 +2,13 @@
 // 1. КЛЮЧИ И НАСТРОЙКИ FIREBASE
 // ==========================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAUfLY36bB1oWhBxNYXIzFIrAe61iCoZFM",
-  authDomain: "flowboard-3d053.firebaseapp.com",
-  projectId: "flowboard-3d053",
-  storageBucket: "flowboard-3d053.firebasestorage.app",
-  messagingSenderId: "59601989968",
-  appId: "1:59601989968:web:f8143594d0d712340dbc55",
-  measurementId: "G-WM851HTC0E"
+  apiKey: "AIzaSyD9qC7dTYFeuy7JwKAiCDwq1jFdVwSSzPY",
+  authDomain: "blocko-pro.firebaseapp.com",
+  projectId: "blocko-pro",
+  storageBucket: "blocko-pro.firebasestorage.app",
+  messagingSenderId: "624610548711",
+  appId: "1:624610548711:web:338aa1cb69a887447b7b42",
+  measurementId: "G-YQTHGKRLJJ"
 };
 
 // ==========================================
