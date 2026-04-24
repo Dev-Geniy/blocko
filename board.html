@@ -255,26 +255,18 @@
       </div>
 
 <!-- AI Планировщик описания -->
-<div>
-  <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Описание (Поддерживает Markdown)</span>
-  <textarea id="editDescription" ...></textarea>
-</div>
-
-<div>
+<div class="mt-4">
   <div class="flex justify-between items-center mb-3">
     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Описание (Markdown)</span>
     <button onclick="generateAIDescription()" id="aiGenBtn" class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5 hover:scale-105 transition-all active:scale-95 border border-indigo-200 dark:border-indigo-800">
       <i data-lucide="sparkles" class="w-3 h-3"></i> AI SMART ПЛАН
     </button>
   </div>
-  <textarea id="editDescription" placeholder="- [ ] Чеклист... \n**Жирный текст**" rows="5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-shadow resize-y"></textarea>
+  <textarea id="editDescription" 
+            placeholder="- [ ] Пункт плана... \n**Важный текст**" 
+            rows="6" 
+            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-shadow resize-y"></textarea>
 </div>
-      
-      <div>
-        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Описание (Поддерживает Markdown)</span>
-        <textarea id="editDescription" placeholder="- [ ] Чеклист 1&#10;- [x] Чеклист 2&#10;**Жирный текст** и *курсив*" rows="5" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-shadow resize-y"></textarea>
-      </div>
-    </div>
     
     <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
       <div class="flex gap-2">
