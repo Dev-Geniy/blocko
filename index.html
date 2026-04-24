@@ -175,6 +175,15 @@ auth.onAuthStateChanged((user) => {
   const dashScreen = document.getElementById('dashboardScreen');
   
   if (user) {
+    // === ФИКС 3: ВОЗВРАТ ПО ИНВАЙТ-ССЫЛКЕ ===
+    const pendingInviteUrl = localStorage.getItem('blocko_invite_link');
+    if (pendingInviteUrl) {
+        localStorage.removeItem('blocko_invite_link'); // Очищаем память
+        window.location.href = pendingInviteUrl;       // Возвращаем на доску!
+        return; // Останавливаем загрузку дашборда
+    }
+    // ==========================================
+
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
     
@@ -193,7 +202,7 @@ auth.onAuthStateChanged((user) => {
     dashScreen.classList.add('hidden');
   }
 });
-
+  
 function loginWithGoogle() {
   auth.signInWithPopup(googleProvider).catch(error => alert("Ошибка авторизации."));
 }
