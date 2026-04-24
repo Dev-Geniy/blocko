@@ -376,6 +376,7 @@ function loadBoard() {
   document.getElementById('shareUrlText').innerText = window.location.href;
   const docRef = db.collection("boards").doc(BOARD_ID);
   
+  // 1. БЕЗОПАСНОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ (С защитой от старых баз)
   docRef.get().then(doc => {
     if (doc.exists) {
       let data = doc.data();
@@ -384,38 +385,49 @@ function loadBoard() {
       
       if (!users[currentUser.id]) {
          users[currentUser.id] = {
-           name: currentUser.name,
+           name: currentUser.name || "User", // Защита от пустого имени
            avatar: currentUser.avatar,
            role: data.owner === currentUser.id ? 'owner' : 'editor'
          };
          updates.users = users;
       }
-      if (!data.members.includes(currentUser.id)) updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-      if (Object.keys(updates).length > 0) docRef.update(updates);
+      
+      // ФИКС: Если массива members еще нет на старой доске - создаем его
+      const members = data.members || []; 
+      if (!members.includes(currentUser.id)) {
+          updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
+      }
+      
+      if (Object.keys(updates).length > 0) {
+          docRef.update(updates).catch(e => console.warn("Режим чтения:", e));
+      }
     } else {
       alert("Доска не найдена или удалена!"); window.location.href = 'index.html';
     }
-  });
+  }).catch(e => console.error("Ошибка доступа:", e));
 
+  // 2. ЗАЩИЩЕННЫЙ РЕНДЕР И АВТО-ТЕГ
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
       
-      // АВТО-ТЕГ: Проверяем наличие персонального тега
-      const userTagName = currentUser.name;
-      const currentTags = getBoardTags();
-      if (!currentTags.some(t => t.name === userTagName)) {
-          const newTag = { 
-              id: 'tag_user_' + currentUser.id, // Уникальный ID на основе профиля
-              name: userTagName, 
-              color: 'bg-indigo-500 text-white border-indigo-600' // Выделяющийся цвет
-          };
-          db.collection("boards").doc(BOARD_ID).update({ 
-              tags: firebase.firestore.FieldValue.arrayUnion(newTag) 
-          });
-      }
+      // ФИКС: Оборачиваем авто-тег в try-catch, чтобы он никогда не ломал рендер доски
+      try {
+          const userTagName = currentUser.name || "User";
+          const currentTags = getBoardTags();
+          if (!currentTags.some(t => t.name === userTagName)) {
+              const newTag = { 
+                  id: 'tag_user_' + currentUser.id, 
+                  name: userTagName, 
+                  color: 'bg-indigo-500 text-white border-indigo-600' 
+              };
+              db.collection("boards").doc(BOARD_ID).update({ 
+                  tags: firebase.firestore.FieldValue.arrayUnion(newTag) 
+              }).catch(e => console.warn("Не удалось добавить тег:", e));
+          }
+      } catch (err) { console.error("Ошибка авто-тега:", err); }
       
-      document.getElementById('boardTitleHeader').innerText = boardData.title;
+      document.getElementById('boardTitleHeader').innerText = boardData.title || "Без названия";
       
       if (boardData.background) {
         document.body.style.backgroundImage = `url('${boardData.background}')`;
@@ -434,6 +446,7 @@ function loadBoard() {
     }
   });
 
+  // Загрузка чата
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
@@ -444,7 +457,7 @@ function loadBoard() {
         <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
           <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800 flex-shrink-0" />
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
-            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : (msg.user.name || 'User')} • ${time}</span>
             <div class="${isMe ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-100 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
           </div>
         </div>
