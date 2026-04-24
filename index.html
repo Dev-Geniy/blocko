@@ -175,14 +175,13 @@ auth.onAuthStateChanged((user) => {
   const dashScreen = document.getElementById('dashboardScreen');
   
   if (user) {
-    // === ФИКС 3: ВОЗВРАТ ПО ИНВАЙТ-ССЫЛКЕ ===
-    const pendingInviteUrl = localStorage.getItem('blocko_invite_link');
-    if (pendingInviteUrl) {
-        localStorage.removeItem('blocko_invite_link'); // Очищаем память
-        window.location.href = pendingInviteUrl;       // Возвращаем на доску!
-        return; // Останавливаем загрузку дашборда
+    // ПРОВЕРКА ИНВАЙТА: Если была ссылка - летим туда
+    const pendingInvite = localStorage.getItem('blocko_invite_link');
+    if (pendingInvite) {
+        localStorage.removeItem('blocko_invite_link');
+        window.location.href = pendingInvite;
+        return; 
     }
-    // ==========================================
 
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
     currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
@@ -194,7 +193,7 @@ auth.onAuthStateChanged((user) => {
     dashScreen.classList.add('flex');
     
     document.getElementById('dashAvatar').src = currentUser.avatar;
-    document.getElementById('dashUserName').innerText = currentUser.name;
+    document.getElementById('dashUserName').innerText = currentUser.name || "User";
     
     loadBoards();
   } else {
