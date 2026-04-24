@@ -291,15 +291,37 @@
   </div>
 </div>
 
-<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md opacity-0 transition-opacity duration-300">
-  <div class="w-full max-w-lg p-6 animate-in fade-in zoom-in duration-300">
-    <h3 class="text-white text-2xl font-bold mb-4 text-center">Введите название быстрой задачи</h3>
-    <input id="quickAddInput" 
-           type="text" 
-           placeholder="Что нужно сделать?" 
-           class="w-full px-6 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl text-xl outline-none border-2 border-transparent focus:border-blue-500 dark:text-white transition-all"
-           onkeydown="if(event.key==='Enter') confirmQuickAdd()" />
-    <p class="text-gray-400 text-center mt-4 text-sm">Нажмите <span class="font-bold text-gray-200">Enter</span> чтобы сохранить или <span class="font-bold text-gray-200">Esc</span> для отмены</p>
+<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4">
+  <div class="w-full max-w-lg p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl relative animate-in fade-in zoom-in duration-300 border border-gray-200 dark:border-gray-700">
+    
+    <button onclick="closeQuickAdd()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
+
+    <h3 class="text-gray-900 dark:text-white text-xl font-bold mb-6 pr-8">Новая быстрая задача</h3>
+    
+    <div class="space-y-4">
+      <div>
+        <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1 block">Заголовок</span>
+        <input id="quickAddInput" 
+               type="text" 
+               placeholder="Что нужно сделать?" 
+               class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
+      </div>
+
+      <div>
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Описание (необязательно)</span>
+        <textarea id="quickAddDesc" 
+                  placeholder="Добавьте подробности..." 
+                  rows="3"
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-sm outline-none border border-transparent focus:border-blue-500/50 dark:text-gray-300 transition-all resize-none"></textarea>
+      </div>
+    </div>
+
+    <div class="mt-8 flex gap-3">
+      <button onclick="closeQuickAdd()" class="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
+      <button onclick="confirmQuickAdd()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-blue-500/25 transition-all active:scale-95">Создать</button>
+    </div>
   </div>
 </div>
 
@@ -869,9 +891,6 @@ function render() {
 }
 
 // ==========================================
-// БЫСТРОЕ ДОБАВЛЕНИЕ (Double Click)
-// ==========================================
-// ==========================================
 // БЫСТРОЕ ДОБАВЛЕНИЕ (UI Style)
 // ==========================================
 let quickAddTargetColId = null;
@@ -882,43 +901,41 @@ function quickAddCard(colId) {
   const input = document.getElementById('quickAddInput');
   
   modal.classList.remove('hidden');
+  lucide.createIcons(); // Рисуем крестик
+  
   setTimeout(() => {
     modal.classList.remove('opacity-0');
     input.focus();
   }, 10);
-
-  // Закрытие на Esc
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      closeQuickAdd();
-      document.removeEventListener('keydown', escHandler);
-    }
-  };
-  document.addEventListener('keydown', escHandler);
 }
 
 function closeQuickAdd() {
   const modal = document.getElementById('quickAddModal');
   const input = document.getElementById('quickAddInput');
+  const desc = document.getElementById('quickAddDesc');
+  
   modal.classList.add('opacity-0');
   setTimeout(() => {
     modal.classList.add('hidden');
     input.value = '';
+    desc.value = ''; // Очищаем и описание
     quickAddTargetColId = null;
   }, 300);
 }
 
 function confirmQuickAdd() {
   const input = document.getElementById('quickAddInput');
+  const desc = document.getElementById('quickAddDesc');
   const title = input.value.trim();
+  const description = desc.value.trim();
   
   if (!title || !quickAddTargetColId) return;
 
   const newCard = { 
     id: Date.now(), 
     title: title, 
-    description: "", 
-    tags: ['tag_urg'], // Автоматически присваиваем ID тега "Срочно"
+    description: description, // Сохраняем текст задачи
+    tags: ['tag_urg'], 
     comments: [], 
     author: currentUser,
     dueDate: ""
