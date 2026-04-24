@@ -343,16 +343,11 @@
 </div>
 
 <script>
+// 1. Инициализация темы и иконок
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
-function highlightText(text, query) {
-  if (!query) return text;
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-500/50 dark:text-black rounded-sm">$1</mark>');
-}
-
-// === ФИКС 1: ПЕРЕНОСИМ ТЕГИ В САМЫЙ ВЕРХ, ЧТОБЫ НЕ БЫЛО ОШИБОК ПРИ ЗАГРУЗКЕ ===
+// 2. ГЛОБАЛЬНЫЕ КОНСТАНТЫ И НАСТРОЙКИ (Должны быть в самом верху!)
 const DEFAULT_BOARD_TAGS = [
   { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
   { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
@@ -372,25 +367,28 @@ const TAG_PALETTE = [
   'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700'
 ];
 
-let newTagSelectedColor = TAG_PALETTE[0];
-
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
 let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
 let boardData = {};
+let newTagSelectedColor = TAG_PALETTE[0];
 
+// Функция получения тегов
 function getBoardTags() {
   return boardData.tags && boardData.tags.length > 0 ? boardData.tags : DEFAULT_BOARD_TAGS;
 }
-// ==============================================================================
 
+// 3. АВТОРИЗАЦИЯ И ЗАПУСК (С фиксом реф-ссылок)
 auth.onAuthStateChanged((user) => {
   if (user) {
-    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
-    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
-    document.getElementById('commentMyAvatar').src = currentUser.avatar;
+    const safeName = user.displayName || "Пользователь";
+    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=3b82f6&color=fff`;
+    currentUser = { id: user.uid, name: safeName, avatar: safeAvatar };
+    
+    const avatarEl = document.getElementById('commentMyAvatar');
+    if (avatarEl) avatarEl.src = currentUser.avatar;
     
     if (!BOARD_ID) {
         window.location.href = 'index.html'; 
@@ -398,19 +396,20 @@ auth.onAuthStateChanged((user) => {
         loadBoard();
     }
   } else {
-    // === ФИКС 2: ЗАПОМИНАЕМ ССЫЛКУ-ИНВАЙТ ПЕРЕД ЛОГИНОМ ===
-    if (BOARD_ID) {
-        localStorage.setItem('blocko_invite_link', window.location.href);
-    }
+    // Сохраняем ссылку, чтобы вернуться после логина
+    if (BOARD_ID) localStorage.setItem('blocko_invite_link', window.location.href);
     window.location.href = 'index.html'; 
   }
 });
 
+// 4. ГЛАВНАЯ ФУНКЦИЯ ЗАГРУЗКИ ДОСКИ
 function loadBoard() {
-  document.getElementById('shareUrlText').innerText = window.location.href;
+  const shareEl = document.getElementById('shareUrlText');
+  if (shareEl) shareEl.innerText = window.location.href;
+  
   const docRef = db.collection("boards").doc(BOARD_ID);
   
-  // 1. БЕЗОПАСНОЕ ДОБАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯ (С защитой от старых баз)
+  // Добавление участника
   docRef.get().then(doc => {
     if (doc.exists) {
       let data = doc.data();
@@ -419,71 +418,66 @@ function loadBoard() {
       
       if (!users[currentUser.id]) {
          users[currentUser.id] = {
-           name: currentUser.name || "User", // Защита от пустого имени
+           name: currentUser.name,
            avatar: currentUser.avatar,
            role: data.owner === currentUser.id ? 'owner' : 'editor'
          };
          updates.users = users;
       }
       
-      // ФИКС: Если массива members еще нет на старой доске - создаем его
-      const members = data.members || []; 
-      if (!members.includes(currentUser.id)) {
+      const currentMembers = data.members || [];
+      if (!currentMembers.includes(currentUser.id)) {
           updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
       }
       
-      if (Object.keys(updates).length > 0) {
-          docRef.update(updates).catch(e => console.warn("Режим чтения:", e));
-      }
+      if (Object.keys(updates).length > 0) docRef.update(updates);
     } else {
-      alert("Доска не найдена или удалена!"); window.location.href = 'index.html';
+      alert("Доска не найдена!"); window.location.href = 'index.html';
     }
-  }).catch(e => console.error("Ошибка доступа:", e));
+  });
 
-  // 2. ЗАЩИЩЕННЫЙ РЕНДЕР И АВТО-ТЕГ
+  // Слушатель обновлений (Realtime)
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
       
-      // ФИКС: Оборачиваем авто-тег в try-catch, чтобы он никогда не ломал рендер доски
+      // Авто-тег пользователя
       try {
-          const userTagName = currentUser.name || "User";
           const currentTags = getBoardTags();
-          if (!currentTags.some(t => t.name === userTagName)) {
+          if (!currentTags.some(t => t.name === currentUser.name)) {
               const newTag = { 
                   id: 'tag_user_' + currentUser.id, 
-                  name: userTagName, 
+                  name: currentUser.name, 
                   color: 'bg-indigo-500 text-white border-indigo-600' 
               };
-              db.collection("boards").doc(BOARD_ID).update({ 
-                  tags: firebase.firestore.FieldValue.arrayUnion(newTag) 
-              }).catch(e => console.warn("Не удалось добавить тег:", e));
+              docRef.update({ tags: firebase.firestore.FieldValue.arrayUnion(newTag) });
           }
-      } catch (err) { console.error("Ошибка авто-тега:", err); }
-      
-      document.getElementById('boardTitleHeader').innerText = boardData.title || "Без названия";
+      } catch(e) { console.warn("Тег не создан:", e); }
+
+      document.getElementById('boardTitleHeader').innerText = boardData.title || "Проект";
       
       if (boardData.background) {
         document.body.style.backgroundImage = `url('${boardData.background}')`;
         document.body.style.backgroundSize = 'cover';
         document.body.style.backgroundPosition = 'center';
         document.body.style.backgroundAttachment = 'fixed';
-      } else { document.body.style.backgroundImage = 'none'; }
+      } else { 
+        document.body.style.backgroundImage = 'none'; 
+      }
 
       columns = boardData.columns || []; 
       updateTagFilterDropdown();
       render(); 
       renderMembersSidebar();
       renderSettingsTags();
-    } else {
-      window.location.href = 'index.html';
     }
   });
 
-  // Загрузка чата
+  // Чат
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
-    chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
+    if (!chatBox) return;
+    chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
     snapshot.forEach(doc => {
       const msg = doc.data(), isMe = msg.user.id === currentUser.id;
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
@@ -491,42 +485,40 @@ function loadBoard() {
         <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
           <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800 flex-shrink-0" />
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
-            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : (msg.user.name || 'User')} • ${time}</span>
-            <div class="${isMe ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-100 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+            <div class="${isMe ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-800 dark:text-gray-200'} px-4 py-2.5 rounded-2xl text-sm break-words w-full">${msg.text}</div>
           </div>
         </div>
       `;
     });
-    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+    chatBox.scrollTop = chatBox.scrollHeight;
   });
+}
+
+// 5. ВСЕ ОСТАЛЬНЫЕ ФУНКЦИИ (Сохраняем как были)
+function highlightText(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-500/50 dark:text-black rounded-sm">$1</mark>');
 }
 
 function renameBoard() {
   const currentTitle = document.getElementById('boardTitleHeader').innerText;
-  const newTitle = prompt("Новое название проекта:", currentTitle);
-  if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
-    db.collection("boards").doc(BOARD_ID).update({ title: newTitle.trim() });
-  }
+  const newTitle = prompt("Новое название:", currentTitle);
+  if (newTitle && newTitle.trim() !== "") db.collection("boards").doc(BOARD_ID).update({ title: newTitle.trim() });
 }
   
 function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); }
-
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
-
 function handleSearchAndFilter() { render(); }
 
 function updateTagFilterDropdown() {
   const select = document.getElementById('tagFilter');
   if (!select) return;
   const currentTags = getBoardTags();
-  const savedValue = select.value;
-  
   let options = '<option value="all">Все теги</option>';
-  currentTags.forEach(t => {
-    options += `<option value="${t.id}">${t.name}</option>`;
-  });
+  currentTags.forEach(t => { options += `<option value="${t.id}">${t.name}</option>`; });
   select.innerHTML = options;
-  if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
 function toggleChat() { closeOtherSidebars('chatSidebar'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
@@ -535,7 +527,8 @@ function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getEle
 
 function closeOtherSidebars(excludeId) {
   ['chatSidebar', 'settingsSidebar', 'membersSidebar'].forEach(id => {
-    if (id !== excludeId) document.getElementById(id).classList.add('translate-x-full');
+    const el = document.getElementById(id);
+    if (id !== excludeId && el) el.classList.add('translate-x-full');
   });
 }
 
