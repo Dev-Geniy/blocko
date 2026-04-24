@@ -89,19 +89,15 @@
 </div>
 
 <div class="flex gap-2 items-center">
-    <!-- управление правами -->
     <button onclick="toggleMembers()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Команда проекта">
       <i data-lucide="users" class="w-4 h-4"></i>
     </button>
-    <!-- настройки -->
     <button onclick="toggleSettings()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Настройки доски">
       <i data-lucide="settings" class="w-4 h-4"></i>
     </button>
-    <!-- чат -->
     <button onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative" title="Чат">
       <i data-lucide="message-square" class="w-4 h-4"></i>
     </button>
-    <!-- добавить колонку -->
     <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
       <i data-lucide="plus" class="w-4 h-4"></i> Колонку
     </button>
@@ -112,7 +108,6 @@
   <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full">
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
-  <!-- панель чата -->
   <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-30 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
@@ -123,7 +118,6 @@
       <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
     </div>
   </aside>
-  <!-- панель настроек -->
   <aside id="settingsSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="settings" class="w-4 h-4 text-blue-500"></i> Настройки доски</h3>
@@ -159,7 +153,6 @@
 
     </div>
   </aside>
-  <!-- панель управления правами -->
   <aside id="membersSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="users" class="w-4 h-4 text-blue-500"></i> Команда проекта</h3>
@@ -206,7 +199,7 @@
   </div>
 </div>
 
-<div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
+<div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
       <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
@@ -254,26 +247,23 @@
         </div>
       </div>
 
-<!-- AI Планировщик описания -->
-<div class="mt-4">
-  <div class="flex justify-between items-center mb-3">
-    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Описание (Markdown)</span>
-    <button onclick="generateAIDescription()" id="aiGenBtn" class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5 hover:scale-105 transition-all active:scale-95 border border-indigo-200 dark:border-indigo-800">
-      <i data-lucide="sparkles" class="w-3 h-3"></i> AI SMART ПЛАН
-    </button>
-  </div>
-  <textarea id="editDescription" 
-            placeholder="- [ ] Пункт плана... \n**Важный текст**" 
-            rows="6" 
-            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-shadow resize-y"></textarea>
-</div>
-    
-    <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
+      <div class="mt-4">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Описание (Markdown)</span>
+          <button onclick="generateAIDescription()" id="aiGenBtn" class="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 px-2 py-1.5 rounded-lg font-bold flex items-center gap-1.5 hover:scale-105 transition-all active:scale-95 border border-indigo-200 dark:border-indigo-800">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> AI SMART ПЛАН
+          </button>
+        </div>
+        <textarea id="editDescription" 
+                  placeholder="- [ ] Пункт плана... \n**Важный текст**" 
+                  rows="6" 
+                  class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 focus:ring-2 focus:ring-blue-500 transition-shadow resize-y"></textarea>
+      </div>
+    </div> <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
       <div class="flex gap-2">
         <button onclick="deleteCard()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="Удалить навсегда">
           <i data-lucide="trash-2" class="w-4 h-4"></i>
         </button>
-    
         <button onclick="archiveCard()" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors">
           <i data-lucide="archive" class="w-4 h-4"></i> В архив
         </button>
@@ -287,9 +277,7 @@
       </div>
     </div>
   </div>
-</div>
-
-<div id="colModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">
+</div> <div id="colModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">
   <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5">
       <h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2>
@@ -395,7 +383,6 @@ function loadBoard() {
       let updates = {};
       let users = data.users || {};
       
-      // Регистрируем юзера, если его нет в словаре пользователей
       if (!users[currentUser.id]) {
          users[currentUser.id] = {
            name: currentUser.name,
@@ -411,7 +398,6 @@ function loadBoard() {
     }
   });
 
-  // ПОДПИСКА НА ИЗМЕНЕНИЯ ДОСКИ
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
@@ -434,7 +420,6 @@ function loadBoard() {
     }
   });
 
-  // Чат оставляем как есть
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
@@ -465,14 +450,9 @@ function renameBoard() {
   
 function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); }
 
-// ==========================================
-// UI ЭКШЕНЫ
-// ==========================================
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
 
-function handleSearchAndFilter() {
-  render(); // Просто перерисовываем всё с учетом новых условий
-}
+function handleSearchAndFilter() { render(); }
 
 function updateTagFilterDropdown() {
   const select = document.getElementById('tagFilter');
@@ -487,9 +467,7 @@ function updateTagFilterDropdown() {
   select.innerHTML = options;
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
-// ==========================================
-// ЛОГИКА БОКОВЫХ ПАНЕЛЕЙ И РОЛЕЙ (Чат, Настройки, права доступа)
-// ==========================================
+
 function toggleChat() { closeOtherSidebars('chatSidebar'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
 function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
@@ -500,7 +478,6 @@ function closeOtherSidebars(excludeId) {
   });
 }
 
-// Изменение роли (сохраняем в базу)
 function changeUserRole(uid, newRole) {
   if (boardData.owner !== currentUser.id) return alert("Только владелец может менять роли!");
   if (uid === boardData.owner) return alert("Нельзя изменить роль владельца!");
@@ -510,7 +487,6 @@ function changeUserRole(uid, newRole) {
   db.collection("boards").doc(BOARD_ID).update({ users: updatedUsers });
 }
 
-// Отрисовка списка участников
 function renderMembersSidebar() {
   const container = document.getElementById('membersList');
   if (!boardData.users) return;
@@ -562,9 +538,6 @@ function toggleModal(modalId, show) {
   else { el.classList.add('opacity-0'); setTimeout(() => el.classList.add('hidden'), 200); }
 }
 
-// ==========================================
-// ПРОСМОТР КАРТОЧКИ (VIEW)
-// ==========================================
 function openViewModal(colId, cardId) {
   const col = columns.find(c => c.id === colId); viewingCard = col.cards.find(c => c.id === cardId); currentColumn = colId;
   document.getElementById('viewTitle').innerText = viewingCard.title;
@@ -577,7 +550,7 @@ function openViewModal(colId, cardId) {
   const imgEl = document.getElementById('viewImage'); 
   if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
   
-  renderChecklistView(); // <--- ДОБАВИТЬ ЭТО
+  renderChecklistView(); 
   renderCommentsView();
   toggleModal('viewCardModal', true);
 }
@@ -605,9 +578,6 @@ function addCommentFromView() {
   persist(); renderCommentsView();
 }
 
-// ==========================================
-// РЕДАКТОР КОЛОНОК
-// ==========================================
 function addColumn(){ columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); persist(); }
 function openColModal(id){ editingColId = id; const col = columns.find(c => c.id === id); selectedColColor = col.color || 'default'; document.getElementById('colNameInput').value = col.name; renderColorPicker(); toggleModal('colModal', true); }
 function closeColModal(){ toggleModal('colModal', false); }
@@ -615,24 +585,17 @@ function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c
 function deleteColumn() { columns = columns.filter(c => c.id !== editingColId); persist(); closeColModal(); }
 function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(COL_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
 
-// ==========================================
-// РЕДАКТОР КАРТОЧКИ (EDIT) И DRAG-N-DROP КАРТИНКИ
-// ==========================================
 function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
   editingCard = cardId ? columns.find(c => c.id === colId).cards.find(c => c.id === cardId) : null;
   activeTags = editingCard ? [...(editingCard.tags || [])] : []; 
   pendingImageFile = null;
   
-  // ЗАГРУЖАЕМ ЧЕК-ЛИСТ
   activeChecklist = editingCard && editingCard.checklist ? [...editingCard.checklist] : [];
   
   document.getElementById('editTitle').value = editingCard?.title || ''; 
   document.getElementById('editDescription').value = editingCard?.description || '';
-  
-  // Загружаем дату в календарь
   document.getElementById('editDueDate').value = editingCard?.dueDate || '';
-  
   document.getElementById('uploadStatus').innerText = ''; 
   const preview = document.getElementById('editImagePreview');
 
@@ -703,11 +666,8 @@ function deleteCard() { columns = columns.map(col => { if(col.id === currentColu
 function archiveCard() {
   if(!confirm("Перенести задачу в архив?")) return;
   
-  // Проходим по всем колонкам
   columns = columns.map(col => {
-    // Находим ту, в которой сейчас находимся
     if(col.id === currentColumn) {
-      // Ищем нужную карточку и ставим ей метку archived: true
       col.cards = col.cards.map(c => 
         c.id === editingCard.id ? {...c, archived: true} : c
       );
@@ -715,13 +675,10 @@ function archiveCard() {
     return col;
   });
   
-  persist(); // Сохраняем изменения в Firebase
-  closeEditModal(); // Закрываем окно
+  persist(); 
+  closeEditModal(); 
 }
-// ==========================================
-// ЛОГИКА ЧЕК-ЛИСТОВ
-// ==========================================
-// 1. Рендер в Редакторе (Создание/Удаление)
+
 function renderChecklistEdit() {
   const container = document.getElementById('editChecklistContainer');
   const progressText = document.getElementById('checklistProgressText');
@@ -764,7 +721,6 @@ function addChecklistItem() {
 function toggleChecklistItemEdit(index) { activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; renderChecklistEdit(); }
 function removeChecklistItem(index) { activeChecklist.splice(index, 1); renderChecklistEdit(); }
 
-// 2. Рендер в Просмотре (Интерактивные галочки)
 function renderChecklistView() {
   const container = document.getElementById('viewChecklistContainer');
   if (!viewingCard.checklist || viewingCard.checklist.length === 0) {
@@ -800,29 +756,32 @@ function renderChecklistView() {
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
   columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
-  persist(); // Сохраняем в базу (доска обновится автоматически)
-  renderChecklistView(); // Перерисовываем галочки в модалке
+  persist(); 
+  renderChecklistView(); 
 }
-  
-// ==========================================
-// РЕНДЕР И SORTABLEJS (С ЗАЩИТОЙ ПРАВ)
-// ==========================================
+
+const COL_COLORS = {
+  'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
+  'blue': { hex: '#3b82f6', border: 'border-blue-200 dark:border-blue-800' },
+  'green': { hex: '#10b981', border: 'border-emerald-200 dark:border-emerald-800' },
+  'red': { hex: '#ef4444', border: 'border-red-200 dark:border-red-800' },
+  'amber': { hex: '#f59e0b', border: 'border-amber-200 dark:border-amber-800' },
+  'purple': { hex: '#8b5cf6', border: 'border-purple-200 dark:border-purple-800' }
+};
+
 function render() {
   const board = document.getElementById('board'); 
   board.innerHTML = '';
   sortableInstances.forEach(inst => inst.destroy()); 
   sortableInstances = [];
 
-  // Читаем параметры поиска и фильтрации
   const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
   const filterTag = document.getElementById('tagFilter')?.value || "all";
-  const todayStr = new Date().toISOString().split('T')[0]; // Сегодняшняя дата
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  // Проверка прав пользователя
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer';
 
-  // Управление видимостью кнопки добавления колонки
   const addColBtn = document.getElementById('addColumnBtn');
   if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
   
@@ -832,23 +791,18 @@ function render() {
     wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
-    // 1. Фильтруем карточки: Поиск + Тег + Проверка на архив
     const filteredCards = col.cards.filter(card => {
       const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
       const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
       return matchesSearch && matchesTag && !card.archived; 
     });
 
-    // 2. Генерируем HTML для каждой карточки
     const cardsHtml = filteredCards.map(c => {
-      // Подсветка текста поиска в заголовке
       const displayTitle = highlightText(c.title, searchQuery);
       
-      // Логика дедлайна (просрочено или нет)
       const isOverdue = c.dueDate && c.dueDate < todayStr;
       const overdueClass = isOverdue ? 'deadline-overdue' : '';
 
-      // Генерация чек-листа
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
         const total = c.checklist.length;
@@ -867,7 +821,6 @@ function render() {
           </div>`;
       }
 
-      // Генерация даты (бейдж)
       let dueDateHtml = '';
       if (c.dueDate) {
         const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
@@ -875,7 +828,6 @@ function render() {
         dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
 
-      // Теги, комментарии, аватар
       const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
       const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
@@ -909,7 +861,6 @@ function render() {
     `;
     board.appendChild(wrap);
     
-    // Инициализация Sortable для карточек
     sortableInstances.push(new Sortable(document.getElementById(`cards-${col.id}`), { 
       group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, fallbackTolerance: 5,
       disabled: isViewer,
@@ -928,7 +879,6 @@ function render() {
     }));
   });
   
-  // Инициализация Sortable для колонок
   sortableInstances.push(new Sortable(board, { 
     animation: 200, handle: '.col-handle', ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, 
     disabled: isViewer,
@@ -941,9 +891,6 @@ function render() {
   lucide.createIcons();
 }
 
-// ==========================================
-// БЫСТРОЕ ДОБАВЛЕНИЕ (UI Style)
-// ==========================================
 let quickAddTargetColId = null;
 
 function quickAddCard(colId) {
@@ -952,7 +899,7 @@ function quickAddCard(colId) {
   const input = document.getElementById('quickAddInput');
   
   modal.classList.remove('hidden');
-  lucide.createIcons(); // Рисуем крестик
+  lucide.createIcons(); 
   
   setTimeout(() => {
     modal.classList.remove('opacity-0');
@@ -969,7 +916,7 @@ function closeQuickAdd() {
   setTimeout(() => {
     modal.classList.add('hidden');
     input.value = '';
-    desc.value = ''; // Очищаем и описание
+    desc.value = ''; 
     quickAddTargetColId = null;
   }, 300);
 }
@@ -985,7 +932,7 @@ function confirmQuickAdd() {
   const newCard = { 
     id: Date.now(), 
     title: title, 
-    description: description, // Сохраняем текст задачи
+    description: description, 
     tags: ['tag_urg'], 
     comments: [], 
     author: currentUser,
@@ -1001,9 +948,6 @@ function confirmQuickAdd() {
   closeQuickAdd();
 }
 
-// ==========================================
-// НАСТРОЙКИ: ФОН ДОСКИ
-// ==========================================
 document.getElementById('boardBgUpload').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if(!file) return;
@@ -1019,7 +963,6 @@ document.getElementById('boardBgUpload').addEventListener('change', async (e) =>
     
     if(data.success) {
       const bgUrl = data.data.url;
-      // Сохраняем фон в базу данных (Real-time сработает у всех!)
       db.collection("boards").doc(BOARD_ID).update({ background: bgUrl });
       statusEl.innerText = 'Готово! 🎉';
       setTimeout(() => statusEl.innerText = '', 3000);
@@ -1029,25 +972,19 @@ document.getElementById('boardBgUpload').addEventListener('change', async (e) =>
   } catch(err) {
     statusEl.innerText = 'Ошибка соединения';
   }
-  // Очищаем инпут, чтобы можно было загрузить ту же картинку еще раз
   e.target.value = '';
 });
 
 function resetBoardBackground() {
-  // Удаляем поле фона из базы
   db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() });
 }
 
-// Скролл (Горизонтальный на всю доску)
 const mainScroll = document.getElementById('mainScroll'); let isDown=false, startX, scrollLeft;
 mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item') || e.target.closest('button')) return; isDown=true; mainScroll.style.cursor='grabbing'; startX=e.pageX-mainScroll.offsetLeft; scrollLeft=mainScroll.scrollLeft; });
 mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
 
-// ==========================================
-// ЛОГИКА ТЕГОВ (КАСТОМИЗАЦИЯ И РУССКИЙ ЯЗЫК)
-// ==========================================
 const DEFAULT_BOARD_TAGS = [
   { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
   { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
@@ -1078,7 +1015,6 @@ function renderSettingsTags() {
   const form = document.getElementById('newTagForm');
   const currentTags = getBoardTags();
   
-  // Читатели не могут управлять тегами
   const isOwnerOrEditor = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role !== 'viewer' : true;
 
   form.style.display = isOwnerOrEditor ? 'block' : 'none';
@@ -1116,7 +1052,6 @@ function deleteCustomTag(tagId) {
   const updatedTags = getBoardTags().filter(t => t.id !== tagId);
   db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags });
   
-  // Очищаем удаленный тег из всех существующих карточек
   let boardUpdated = false;
   columns = columns.map(col => {
     let colUpdated = false;
@@ -1134,9 +1069,6 @@ function deleteCustomTag(tagId) {
   if (boardUpdated) persist();
 }
   
-// ======================= 
-// планировщик описание Ai
-// =======================
 async function generateAIDescription() {
   const title = document.getElementById('editTitle').value;
   const textarea = document.getElementById('editDescription');
@@ -1147,29 +1079,24 @@ async function generateAIDescription() {
     return;
   }
 
-  // Визуальный фидбек
   const originalBtnHTML = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="animate-spin inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full mr-1"></span> Думаю...';
 
-  // Формируем промпт для NGO/Project задач
   const prompt = encodeURIComponent(`Составь четкий план реализации для задачи: "${title}". 
     Используй методологию SMART. 
     Оформи в Markdown: используй жирный текст, списки и чек-боксы [ ] для подзадач. 
     Ответ дай только текстом описания на русском языке.`);
 
   try {
-    // Используем Pollinations Text API (бесплатно, без ключей)
     const response = await fetch(`https://text.pollinations.ai/${prompt}?model=openai&system=Ты профессиональный проджект-менеджер и эксперт по работе в NGO.`);
     
     if (!response.ok) throw new Error('Ошибка API');
     
     const resultText = await response.text();
     
-    // Вставляем результат
     textarea.value = resultText;
     
-    // Автоматически подстраиваем высоту поля под текст
     textarea.style.height = 'auto';
     textarea.style.height = (textarea.scrollHeight) + 'px';
 
@@ -1183,9 +1110,6 @@ async function generateAIDescription() {
   }
 }
 
-// =======================
-// для быстрых карточек Ai
-// =======================
 async function generateAIQuickDescription() {
   const title = document.getElementById('quickAddInput').value;
   const textarea = document.getElementById('quickAddDesc');
