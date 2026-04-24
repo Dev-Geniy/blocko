@@ -50,6 +50,8 @@
     /* Невидимый скролл для колонок */
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes deadline-pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+    .deadline-overdue { border-color: #ef4444 !important; animation: deadline-pulse 2s infinite; }
   </style>
 
   <script>
@@ -791,16 +793,19 @@ function render() {
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
     // Сначала фильтруем карточки по поиску и тегу
+    const todayStr = new Date().toISOString().split('T')[0]; // Сегодняшняя дата для сравнения
+
     const filteredCards = col.cards.filter(c => {
       const matchesSearch = c.title.toLowerCase().includes(searchQuery) || (c.description || "").toLowerCase().includes(searchQuery);
       const matchesTag = filterTag === "all" || (c.tags && c.tags.includes(filterTag));
-      return matchesSearch && matchesTag;
+      // Добавляем !c.archived, чтобы скрывать заархивированные задачи
+      return matchesSearch && matchesTag && !c.archived; 
     });
 
     // Теперь рисуем только отфильтрованные карточки
-    const cardsHtml = filteredCards.map(c => {
-      // Подсвечиваем заголовок
-      const displayTitle = highlightText(c.title, searchQuery);
+    // Проверяем: есть ли дата и меньше ли она, чем сегодня?
+    const isOverdue = c.dueDate && c.dueDate < todayStr;
+      const overdueClass = isOverdue ? 'deadline-overdue' : '';
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
         const total = c.checklist.length;
@@ -835,7 +840,7 @@ function render() {
       const hasDesc = c.description ? `<i data-lucide="align-left" class="w-3.5 h-3.5 text-gray-400"></i>` : '';
 
       return `
-        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
+        <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
           
           ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
           
