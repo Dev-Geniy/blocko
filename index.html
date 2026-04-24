@@ -390,38 +390,49 @@ function leaveBoard(event, boardId) {
 }
 
 async function createNewBoard() {
-  // 1. Проверка лимита количества досок
-  if (allBoards.length >= currentPlan.maxBoards) {
-    const modal = document.getElementById('limitModal');
-    modal.classList.remove('hidden');
-    setTimeout(() => modal.classList.add('opacity-100'), 10);
-    return;
+  try {
+    // 1. ФИКС: Защита от кэша браузера. Проверяем, существует ли currentPlan
+    const maxLimit = (typeof currentPlan !== 'undefined') ? currentPlan.maxBoards : 2;
+    
+    if (allBoards.length >= maxLimit) {
+      const modal = document.getElementById('limitModal');
+      if(modal) {
+          modal.classList.remove('hidden');
+          setTimeout(() => modal.classList.add('opacity-100'), 10);
+      } else {
+          alert("Достигнут лимит проектов на бесплатном тарифе!");
+      }
+      return;
+    }
+
+    // 2. Выбор режима и названия
+    const title = prompt("Название нового проекта:") || "Новый проект";
+    const mode = prompt("Выберите режим: 1 - Online (Cloud), 2 - Local (Network), 3 - Offline (Private)", "1");
+
+    const boardMode = mode === "2" ? "local" : (mode === "3" ? "offline" : "online");
+
+    const newBoard = {
+      title: title,
+      owner: currentUser.id,
+      members: [currentUser.id],
+      mode: boardMode, // Новое поле режима
+      columns: [
+        { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
+        { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
+        { id: Date.now()+2, name: "Готово", color: 'green', cards: [] }
+      ],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    const docRef = await db.collection("boards").add(newBoard);
+    window.location.href = `board.html?b=${docRef.id}`;
+    
+  } catch (error) {
+    console.error("Ошибка при создании:", error);
+    alert("Произошла ошибка при создании доски. Перезагрузите страницу (Ctrl+F5).");
   }
-
-  // 2. Выбор режима и названия
-  const title = prompt("Название нового проекта:") || "Новый проект";
-  const mode = prompt("Выберите режим: 1 - Online (Cloud), 2 - Local (Network), 3 - Offline (Private)", "1");
-
-  const boardMode = mode === "2" ? "local" : (mode === "3" ? "offline" : "online");
-
-  // Если оффлайн, мы в будущем будем писать в IndexedDB, пока делаем структуру
-  const newBoard = {
-    title: title,
-    owner: currentUser.id,
-    members: [currentUser.id],
-    mode: boardMode, // Новое поле режима
-    columns: [
-      { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
-      { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
-      { id: Date.now()+2, name: "Готово", color: 'green', cards: [] }
-    ],
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  const docRef = await db.collection("boards").add(newBoard);
-  window.location.href = `board.html?b=${docRef.id}`;
 }
-
+  
 function toggleTheme() { 
   document.documentElement.classList.toggle('dark'); 
   localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
