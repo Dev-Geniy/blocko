@@ -412,6 +412,19 @@ function loadBoard() {
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
+      // АВТО-ТЕГ: Проверяем наличие персонального тега
+      const userTagName = currentUser.name;
+      const currentTags = getBoardTags();
+      if (!currentTags.some(t => t.name === userTagName)) {
+          const newTag = { 
+              id: 'tag_user_' + currentUser.id, // Уникальный ID на основе профиля
+              name: userTagName, 
+              color: 'bg-indigo-500 text-white border-indigo-600' // Выделяющийся цвет
+          };
+          db.collection("boards").doc(BOARD_ID).update({ 
+              tags: firebase.firestore.FieldValue.arrayUnion(newTag) 
+          });
+      }
       
       // Рендерим интерфейс только если пользователь уже занесен в список members
       if (boardData.members && boardData.members.includes(currentUser.id)) {
