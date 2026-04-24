@@ -241,10 +241,14 @@ function renderBoardsGrid() {
           </div>
           
           <div class="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 dark:border-gray-700 z-10 relative">
+            <a href="archive.html?b=${data.id}" onclick="event.stopPropagation()" class="text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 p-2 rounded-lg transition-colors" title="Открыть архив проекта">
+              <i data-lucide="archive" class="w-4 h-4"></i>
+            </a>
+
             <button onclick="copyBoardLink(event, this, '${data.id}')" class="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" title="Скопировать инвайт">
               <i data-lucide="share-2" class="w-4 h-4"></i>
             </button>
-            
+  
             ${isOwner 
               ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Удалить доску навсегда"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
               : `<button onclick="leaveBoard(event, '${data.id}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 rounded-lg transition-colors" title="Покинуть доску"><i data-lucide="log-out" class="w-4 h-4"></i></button>`
