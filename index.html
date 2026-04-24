@@ -130,6 +130,39 @@
   </footer>
 </div>
 
+<div id="limitModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-950/80 backdrop-blur-md p-4 opacity-0 transition-opacity duration-300">
+  <div class="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-800 flex flex-col md:flex-row">
+    <div class="p-10 md:w-1/3 bg-indigo-600 text-white flex flex-col justify-center">
+      <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6"><i data-lucide="zap" class="w-8 h-8"></i></div>
+      <h2 class="text-3xl font-bold mb-4">Лимит достигнут</h2>
+      <p class="text-indigo-100 text-sm leading-relaxed">Чтобы создавать больше досок и приглашать всю команду, выберите подходящий план развития вашего бизнеса.</p>
+    </div>
+    <div class="p-10 md:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 dark:bg-gray-900">
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border-2 border-transparent hover:border-indigo-500 transition-all cursor-pointer group shadow-sm">
+        <h3 class="font-bold text-xl mb-1 group-hover:text-indigo-500">Freelancer</h3>
+        <div class="text-2xl font-black mb-4">$9 <span class="text-sm font-normal text-gray-400">/мес</span></div>
+        <ul class="text-xs space-y-3 mb-8 text-gray-500 dark:text-gray-400">
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> 15 проектов</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> Offline режим</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-green-500"></i> 10 участников</li>
+        </ul>
+        <button onclick="alert('Переход к оплате...')" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-indigo-500/20">Выбрать план</button>
+      </div>
+      <div class="bg-gray-900 dark:bg-black p-6 rounded-3xl border-2 border-indigo-500 shadow-xl relative overflow-hidden">
+        <div class="absolute top-3 right-3 bg-indigo-500 text-[10px] font-bold px-2 py-1 rounded text-white uppercase">Рекомендуем</div>
+        <h3 class="font-bold text-xl mb-1 text-white">Professional</h3>
+        <div class="text-2xl font-black mb-4 text-white">$29 <span class="text-sm font-normal text-gray-400">/мес</span></div>
+        <ul class="text-xs space-y-3 mb-8 text-gray-300">
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-indigo-400"></i> Безлимитные доски</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-indigo-400"></i> Local Network Sync</li>
+          <li class="flex items-center gap-2"><i data-lucide="check" class="w-3 h-3 text-indigo-400"></i> VIP AI поддержка</li>
+        </ul>
+        <button onclick="alert('Переход к оплате...')" class="w-full py-3 bg-white text-black rounded-xl font-bold text-sm">Стать Pro</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
@@ -357,11 +390,26 @@ function leaveBoard(event, boardId) {
 }
 
 async function createNewBoard() {
-  const title = prompt("Введите название нового проекта:") || "Новый проект";
+  // 1. Проверка лимита количества досок
+  if (allBoards.length >= currentPlan.maxBoards) {
+    const modal = document.getElementById('limitModal');
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('opacity-100'), 10);
+    return;
+  }
+
+  // 2. Выбор режима и названия
+  const title = prompt("Название нового проекта:") || "Новый проект";
+  const mode = prompt("Выберите режим: 1 - Online (Cloud), 2 - Local (Network), 3 - Offline (Private)", "1");
+
+  const boardMode = mode === "2" ? "local" : (mode === "3" ? "offline" : "online");
+
+  // Если оффлайн, мы в будущем будем писать в IndexedDB, пока делаем структуру
   const newBoard = {
     title: title,
     owner: currentUser.id,
     members: [currentUser.id],
+    mode: boardMode, // Новое поле режима
     columns: [
       { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
       { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
@@ -369,6 +417,7 @@ async function createNewBoard() {
     ],
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
+
   const docRef = await db.collection("boards").add(newBoard);
   window.location.href = `board.html?b=${docRef.id}`;
 }
