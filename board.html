@@ -86,7 +86,15 @@
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
 
-  <aside id="chatSidebar" class="w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col transition-all duration-300 transform translate-x-full hidden z-10 shadow-2xl">
+  <aside id="chatSidebar"
+  class="w-80 border-l border-gray-200 dark:border-gray-800 
+  bg-white/60 dark:bg-gray-900/60 
+  backdrop-blur-xl
+  flex flex-col 
+  transition-all duration-300 ease-out
+  transform translate-x-full opacity-0
+  z-10 shadow-2xl">
+    
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
       <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
