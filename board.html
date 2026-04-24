@@ -800,14 +800,18 @@ function render() {
   sortableInstances.forEach(inst => inst.destroy()); 
   sortableInstances = [];
 
+  // Читаем параметры поиска и фильтрации
   const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
   const filterTag = document.getElementById('tagFilter')?.value || "all";
-  const todayStr = new Date().toISOString().split('T')[0]; // Для сравнения дедлайнов
+  const todayStr = new Date().toISOString().split('T')[0]; // Сегодняшняя дата
 
+  // Проверка прав пользователя
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer';
 
-  document.getElementById('addColumnBtn').style.display = isViewer ? 'none' : 'flex';
+  // Управление видимостью кнопки добавления колонки
+  const addColBtn = document.getElementById('addColumnBtn');
+  if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
   
   columns.forEach(col => {
     const colorStyle = COL_COLORS[col.color] || COL_COLORS['default'];
@@ -815,22 +819,23 @@ function render() {
     wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
-    // Фильтруем: поиск + тег + НЕ архивные
+    // 1. Фильтруем карточки: Поиск + Тег + Проверка на архив
     const filteredCards = col.cards.filter(card => {
       const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
       const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
       return matchesSearch && matchesTag && !card.archived; 
     });
 
+    // 2. Генерируем HTML для каждой карточки
     const cardsHtml = filteredCards.map(c => {
-      // 1. Подсветка поиска
+      // Подсветка текста поиска в заголовке
       const displayTitle = highlightText(c.title, searchQuery);
       
-      // 2. Логика дедлайна и пульсации
+      // Логика дедлайна (просрочено или нет)
       const isOverdue = c.dueDate && c.dueDate < todayStr;
       const overdueClass = isOverdue ? 'deadline-overdue' : '';
 
-      // 3. Чек-листы
+      // Генерация чек-листа
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
         const total = c.checklist.length;
@@ -849,7 +854,7 @@ function render() {
           </div>`;
       }
 
-      // 4. Отрисовка даты (бейдж)
+      // Генерация даты (бейдж)
       let dueDateHtml = '';
       if (c.dueDate) {
         const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
@@ -857,6 +862,7 @@ function render() {
         dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
 
+      // Теги, комментарии, аватар
       const tagsHtml = c.tags?.length ? `<div class="flex gap-1 mb-2">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<div class="w-8 h-1.5 rounded-full ${t.color.split(' ')[0]}"></div>` : ''; }).join('')}</div>` : '';
       const commentsCount = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
       const authorAvatar = c.author ? `<img src="${c.author.avatar}" class="w-5 h-5 rounded-full border border-white dark:border-gray-800 shadow-sm" title="${c.author.name}" />` : '';
@@ -890,6 +896,7 @@ function render() {
     `;
     board.appendChild(wrap);
     
+    // Инициализация Sortable для карточек
     sortableInstances.push(new Sortable(document.getElementById(`cards-${col.id}`), { 
       group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, fallbackTolerance: 5,
       disabled: isViewer,
@@ -897,17 +904,25 @@ function render() {
         let mCard; 
         const fromCol = columns.find(c=>c.id===Number(evt.from.id.replace('cards-','')));
         const toCol = columns.find(c=>c.id===Number(evt.to.id.replace('cards-','')));
-        fromCol.cards = fromCol.cards.filter(c=>{if(c.id===Number(evt.item.dataset.id)){mCard=c;return false;}return true;}); 
-        toCol.cards.splice(evt.newIndex,0,mCard); 
+        if(!fromCol || !toCol) return;
+        fromCol.cards = fromCol.cards.filter(card => {
+          if(card.id === Number(evt.item.dataset.id)){ mCard = card; return false; }
+          return true;
+        }); 
+        if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
         persist(); 
       } 
     }));
   });
   
+  // Инициализация Sortable для колонок
   sortableInstances.push(new Sortable(board, { 
     animation: 200, handle: '.col-handle', ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, 
     disabled: isViewer,
-    onEnd: function (evt) { columns.splice(evt.newIndex, 0, columns.splice(evt.oldIndex, 1)[0]); persist(); } 
+    onEnd: function (evt) { 
+      columns.splice(evt.newIndex, 0, columns.splice(evt.oldIndex, 1)[0]); 
+      persist(); 
+    } 
   }));
   
   lucide.createIcons();
