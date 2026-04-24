@@ -36,6 +36,7 @@
       transform: rotate(2deg) scale(1.02); 
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; 
       cursor: grabbing !important; 
+      transition: transform 0.1s ease;
       z-index: 50;
     }
     
@@ -120,11 +121,19 @@ z-20 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)]">
     
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
-      <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+      
+<button onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative">
+  <i data-lucide="message-square" class="w-4 h-4"></i>
+  <span id="chatBadge"
+  class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] px-1.5 rounded-full hidden">
+    1
+  </span>
+</button>
+      
     </div>
     <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col"></div>
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-2.5 
+      <input id="chatInput" onkeydown="handleChatKey(event)" placeholder="Сообщение..." class="w-full px-4 py-2.5 
 bg-white/70 dark:bg-gray-800/70 
 backdrop-blur 
 rounded-xl outline-none text-sm 
@@ -243,8 +252,8 @@ transition-all" />
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
-// МЫ УДАЛИЛИ ОТСЮДА IMGBB_KEY И AVAILABLE_TAGS, ТАК КАК ОНИ УЖЕ ЕСТЬ В CONFIG.JS
-
+let unreadCount = 0;
+let chatOpen = false;
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let columns = [], sortableInstances = [];
@@ -296,8 +305,16 @@ function loadBoard() {
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
-    snapshot.forEach(doc => {
-      const msg = doc.data(), isMe = msg.user.id === currentUser.id;
+
+  snapshot.forEach(doc => {
+    const msg = doc.data(), isMe = msg.user.id === currentUser.id;
+      if (!chatOpen && !isMe) {
+        unreadCount++;
+        const badge = document.getElementById('chatBadge');
+        badge.innerText = unreadCount;
+        badge.classList.remove('hidden');
+      }
+    
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
       chatBox.innerHTML += `
         <div class="chat-message flex gap-2 ${isMe ? 'flex-row-reverse' : ''}">
@@ -313,6 +330,13 @@ function loadBoard() {
   });
 }
 
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+  
 // ФУНКЦИЯ ПЕРЕИМЕНОВАНИЯ
 function renameBoard() {
   const currentTitle = document.getElementById('boardTitleHeader').innerText;
@@ -335,6 +359,17 @@ function toggleChat() {
 
   const isOpen = !el.classList.contains('translate-x-full');
 
+  chatOpen = !chatOpen;
+
+  if (chatOpen) {
+    unreadCount = 0;
+    document.getElementById('chatBadge').classList.add('hidden');
+  }
+
+  setTimeout(() => {
+    document.getElementById('chatInput')?.focus();
+  }, 200);
+  
   if (isOpen) {
     el.classList.add('translate-x-full', 'opacity-0');
     overlay.classList.add('opacity-0');
@@ -382,6 +417,7 @@ function openViewModal(colId, cardId) {
   renderCommentsView();
   toggleModal('viewCardModal', true);
 }
+  
 function closeViewModal() { toggleModal('viewCardModal', false); }
 
 function renderCommentsView() {
@@ -396,6 +432,7 @@ function renderCommentsView() {
     </div>
   `).join('') : '<div class="text-gray-400 text-center py-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl">Нет комментариев</div>';
 }
+  
 function addCommentFromView() {
   const text = document.getElementById('viewCommentInput').value.trim();
   if(!text) return;
@@ -433,6 +470,7 @@ function openEditModal(colId, cardId = null) {
   renderTagsPicker();
   toggleModal('editCardModal', true);
 }
+  
 function closeEditModal() { toggleModal('editCardModal', false); }
 
 // Обработка Drag & Drop для зоны загрузки картинки
