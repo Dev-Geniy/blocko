@@ -291,6 +291,18 @@
   </div>
 </div>
 
+<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md opacity-0 transition-opacity duration-300">
+  <div class="w-full max-w-lg p-6 animate-in fade-in zoom-in duration-300">
+    <h3 class="text-white text-2xl font-bold mb-4 text-center">Введите название быстрой задачи</h3>
+    <input id="quickAddInput" 
+           type="text" 
+           placeholder="Что нужно сделать?" 
+           class="w-full px-6 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl text-xl outline-none border-2 border-transparent focus:border-blue-500 dark:text-white transition-all"
+           onkeydown="if(event.key==='Enter') confirmQuickAdd()" />
+    <p class="text-gray-400 text-center mt-4 text-sm">Нажмите <span class="font-bold text-gray-200">Enter</span> чтобы сохранить или <span class="font-bold text-gray-200">Esc</span> для отмены</p>
+  </div>
+</div>
+
 <script>
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ И STATE
@@ -859,22 +871,66 @@ function render() {
 // ==========================================
 // БЫСТРОЕ ДОБАВЛЕНИЕ (Double Click)
 // ==========================================
+// ==========================================
+// БЫСТРОЕ ДОБАВЛЕНИЕ (UI Style)
+// ==========================================
+let quickAddTargetColId = null;
+
 function quickAddCard(colId) {
-  const title = prompt("📝 Название быстрой задачи:");
-  if (!title || title.trim() === "") return;
+  quickAddTargetColId = colId;
+  const modal = document.getElementById('quickAddModal');
+  const input = document.getElementById('quickAddInput');
   
+  modal.classList.remove('hidden');
+  setTimeout(() => {
+    modal.classList.remove('opacity-0');
+    input.focus();
+  }, 10);
+
+  // Закрытие на Esc
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeQuickAdd();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+}
+
+function closeQuickAdd() {
+  const modal = document.getElementById('quickAddModal');
+  const input = document.getElementById('quickAddInput');
+  modal.classList.add('opacity-0');
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    input.value = '';
+    quickAddTargetColId = null;
+  }, 300);
+}
+
+function confirmQuickAdd() {
+  const input = document.getElementById('quickAddInput');
+  const title = input.value.trim();
+  
+  if (!title || !quickAddTargetColId) return;
+
   const newCard = { 
     id: Date.now(), 
-    title: title.trim(), 
+    title: title, 
     description: "", 
-    tags: [], 
+    tags: ['tag_urg'], // Автоматически присваиваем ID тега "Срочно"
     comments: [], 
     author: currentUser,
     dueDate: ""
   };
   
-  columns.find(c => c.id === colId).cards.push(newCard);
-  persist();
+  const col = columns.find(c => c.id === quickAddTargetColId);
+  if (col) {
+    col.cards.push(newCard);
+    persist();
+  }
+  
+  closeQuickAdd();
 }
 
 // ==========================================
