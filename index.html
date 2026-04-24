@@ -254,12 +254,7 @@ if (filteredBoards.length === 0 && searchQuery !== '') {
       }); 
     }
 
-    // Это красный пульсирующий кружок
-    const overdueBadge = boardHasOverdue 
-      ? `<div class="absolute top-6 right-24 bg-red-500 w-2 h-2 rounded-full animate-ping" title="Есть просроченные задачи!"></div>` 
-      : '';
-
-    // Создаем пульсирующий индикатор, если есть просроченные задачи
+// Создаем пульсирующий индикатор, если есть просроченные задачи
     const overdueBadge = boardHasOverdue 
       ? `<div class="absolute top-6 left-16 bg-red-500 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-ping" title="Есть просроченные задачи!"></div>` 
       : '';
