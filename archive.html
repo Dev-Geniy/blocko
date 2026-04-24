@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Архив проекта - FlowBoard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="К проектам">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 id="boardTitle" class="text-xl font-bold tracking-tight">Архив проекта</h1>
+      <p class="text-xs text-amber-500 font-bold uppercase tracking-widest">Хранилище карточек</p>
+    </div>
+  </div>
+</header>
+
+<main class="p-8 max-w-5xl mx-auto w-full flex-1">
+  <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="col-span-full py-20 text-center text-gray-400">Загрузка архива...</div>
+  </div>
+</main>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  lucide.createIcons();
+
+  const BOARD_ID = new URLSearchParams(window.location.search).get('b');
+  let currentBoardData = null;
+
+  auth.onAuthStateChanged(user => {
+    if (user && BOARD_ID) loadArchive();
+    else window.location.href = 'index.html';
+  });
+
+  function loadArchive() {
+    db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
+      if (!doc.exists) return window.location.href = 'index.html';
+      currentBoardData = doc.data();
+      document.getElementById('boardTitle').innerText = currentBoardData.title;
+      renderArchive();
+    });
+  }
+
+  function renderArchive() {
+    const grid = document.getElementById('archiveGrid');
+    let archivedCards = [];
+
+    // Собираем все карточки из всех колонок, у которых есть пометка archived: true
+    currentBoardData.columns.forEach(col => {
+      if (col.cards) {
+        col.cards.forEach(card => {
+          if (card.archived) archivedCards.push({ ...card, colName: col.name });
+        });
+      }
+    });
+
+    if (archivedCards.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full py-24 flex flex-col items-center opacity-50">
+          <i data-lucide="archive-x" class="w-16 h-16 mb-4"></i>
+          <p class="text-lg font-medium">Архив пуст</p>
+        </div>`;
+      lucide.createIcons();
+      return;
+    }
+
+    grid.innerHTML = archivedCards.map(card => `
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-[1.5rem] shadow-sm relative group overflow-hidden">
+        <div class="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tighter">Из колонки: ${card.colName}</div>
+        <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white">${card.title}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-6">${card.description || 'Нет описания'}</p>
+        
+        <div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <button onclick="restoreCard('${card.id}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
+          </button>
+          <button onclick="permanentDelete('${card.id}')" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  function restoreCard(cardId) {
+    if(!confirm("Вернуть карточку на доску?")) return;
+    
+    const updatedColumns = currentBoardData.columns.map(col => {
+      col.cards = col.cards.map(c => c.id == cardId ? { ...c, archived: false } : c);
+      return col;
+    });
+
+    db.collection("boards").doc(BOARD_ID).update({ columns: updatedColumns });
+  }
+
+  function permanentDelete(cardId) {
+    if(!confirm("Удалить карточку навсегда? Это нельзя отменить.")) return;
+    
+    const updatedColumns = currentBoardData.columns.map(col => {
+      col.cards = col.cards.filter(c => c.id != cardId);
+      return col;
+    });
+
+    db.collection("boards").doc(BOARD_ID).update({ columns: updatedColumns });
+  }
+</script>
+</body>
+</html>
