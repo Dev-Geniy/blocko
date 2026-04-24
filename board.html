@@ -136,7 +136,15 @@
         <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон на стандартный</button>
       </div>
 
-<div>
+      <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+          <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Данные проекта</h4>
+          <button onclick="exportBoardToCSV()" class="w-full py-3 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 border border-emerald-200 dark:border-emerald-800/50">
+            <i data-lucide="download" class="w-4 h-4"></i> Экспорт доски в CSV
+          </button>
+          <p class="text-[10px] text-gray-400 text-center mt-2">Скачать отчет для Excel</p>
+      </div>
+      
+      <div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Теги доски</h4>
         <div id="settingsTagsList" class="space-y-2 mb-4 max-h-48 overflow-y-auto hide-scroll"></div>
         
@@ -307,10 +315,11 @@
       <div>
         <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1 block">Заголовок</span>
         <input id="quickAddInput" 
-               type="text" 
-               placeholder="Что нужно сделать?" 
-               class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
-      </div>
+          type="text" 
+          placeholder="Что нужно сделать?" 
+          onkeypress="if(event.key==='Enter') confirmQuickAdd()"
+          class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
+        </div>
 
       <div>
         <div class="flex justify-between items-center mb-1">
@@ -1133,6 +1142,40 @@ async function generateAIQuickDescription() {
     btn.innerHTML = originalBtnHTML;
     lucide.createIcons();
   }
+}
+
+// Функция экспорта доски в CSV
+function exportBoardToCSV() {
+  let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF для поддержки кириллицы в Excel
+  csvContent += "Колонка;Название задачи;Описание;Дедлайн;Автор;Чек-лист\n"; // Заголовки столбцов
+  
+  columns.forEach(col => {
+    col.cards.forEach(card => {
+      if (!card.archived) {
+         // Очищаем описание от переносов строк, чтобы не сломать таблицу
+         const cleanDesc = (card.description || "").replace(/\n/g, " ").replace(/"/g, '""');
+         const authorName = card.author ? card.author.name : "Неизвестно";
+         const dueDate = card.dueDate ? new Date(card.dueDate).toLocaleDateString('ru-RU') : "Без срока";
+         
+         // Считаем прогресс
+         const checklistTotal = card.checklist ? card.checklist.length : 0;
+         const checklistDone = card.checklist ? card.checklist.filter(i => i.isCompleted).length : 0;
+         const checkStatus = checklistTotal > 0 ? `${checklistDone} из ${checklistTotal}` : "Нет";
+         
+         // Разделитель - точка с запятой (лучше для русского Excel)
+         csvContent += `"${col.name}";"${card.title}";"${cleanDesc}";"${dueDate}";"${authorName}";"${checkStatus}"\n`;
+      }
+    });
+  });
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  const dateStr = new Date().toISOString().split('T')[0];
+  link.setAttribute("download", `Blocko_Report_${dateStr}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 </script>
 </body>
