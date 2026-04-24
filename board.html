@@ -136,7 +136,7 @@
         <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон на стандартный</button>
       </div>
 
-      <div>
+<div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Теги доски</h4>
         <div id="settingsTagsList" class="space-y-2 mb-4 max-h-48 overflow-y-auto hide-scroll"></div>
         
@@ -146,6 +146,7 @@
           <button onclick="addNewCustomTag()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Создать тег</button>
         </div>
       </div>
+
     </div>
   </aside>
   
@@ -572,7 +573,7 @@ function openColModal(id){ editingColId = id; const col = columns.find(c => c.id
 function closeColModal(){ toggleModal('colModal', false); }
 function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); persist(); closeColModal(); }
 function deleteColumn() { columns = columns.filter(c => c.id !== editingColId); persist(); closeColModal(); }
-function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(COL_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
+function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
 
 function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
@@ -749,7 +750,7 @@ function toggleChecklistView(index) {
   renderChecklistView(); 
 }
 
-const COL_COLORS = {
+const BOARD_UI_COLORS = {
   'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
   'blue': { hex: '#3b82f6', border: 'border-blue-200 dark:border-blue-800' },
   'green': { hex: '#10b981', border: 'border-emerald-200 dark:border-emerald-800' },
@@ -775,7 +776,7 @@ function render() {
   if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
   
   columns.forEach(col => {
-    const colorStyle = COL_COLORS[col.color] || COL_COLORS['default'];
+    const colorStyle = BOARD_UI_COLORS[col.color] || BOARD_UI_COLORS['default'];
     const wrap = document.createElement('div'); 
     wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
