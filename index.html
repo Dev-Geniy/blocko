@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FlowBoard - Мои проекты</title>
+  <title>FlowBoard Pro - Мои проекты</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -21,6 +21,7 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .loading-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
@@ -32,12 +33,12 @@
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
 <div id="authScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
-  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800 transform transition-transform scale-100">
+  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800 transform transition-transform scale-100">
     <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-blue-500/30 text-white">
       <i data-lucide="layers" class="w-12 h-12"></i>
     </div>
     <h1 class="text-4xl font-bold mb-3 tracking-tight">FlowBoard <span class="text-blue-500">Pro</span></h1>
-    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium">Управляйте проектами вместе в реальном времени</p>
+    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium">Ваше рабочее пространство в реальном времени</p>
     
     <button id="loginBtn" onclick="loginWithGoogle()" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg text-gray-900 dark:text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 group">
       <svg class="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
@@ -48,23 +49,24 @@
       </svg>
       Войти через Google
     </button>
-    <div id="authLoading" class="hidden mt-4 text-sm font-medium text-gray-500 loading-pulse">Авторизация...</div>
+    <div id="authLoading" class="hidden mt-4 text-sm font-medium text-gray-500 loading-pulse">Инициализация среды...</div>
   </div>
 </div>
 
 <div id="dashboardScreen" class="hidden flex-col h-screen w-full overflow-y-auto">
-  <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-10">
+  <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
     <div class="flex items-center gap-3">
-      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-md shadow-blue-500/20">
+      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-md shadow-blue-500/20">
         <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
       </div>
-      <h1 class="text-2xl font-bold tracking-tight">Мои проекты</h1>
+      <h1 class="text-2xl font-bold tracking-tight">FlowBoard</h1>
     </div>
     
     <div class="flex items-center gap-5">
-      <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
+      <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors group relative">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
-        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск досок..." class="bg-transparent outline-none text-sm w-48 dark:text-white placeholder-gray-400" />
+        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white placeholder-gray-400 pr-6" />
+        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
       </div>
 
       <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400">
@@ -83,12 +85,12 @@
   </header>
 
   <main class="p-8 max-w-7xl mx-auto w-full">
-    <div class="flex justify-between items-end mb-8">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-8 gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
         <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выберите проект или создайте новый</p>
       </div>
-      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
         <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
       </button>
     </div>
@@ -107,7 +109,7 @@ if (localStorage.getItem('theme') === 'light') document.documentElement.classLis
 lucide.createIcons();
 
 let currentUser = null;
-let allBoards = []; // Глобальный массив для локального поиска
+let allBoards = [];
 
 // ==========================================
 // АВТОРИЗАЦИЯ
@@ -150,18 +152,30 @@ function loginWithGoogle() {
 function logout() { auth.signOut(); }
 
 // ==========================================
-// ЗАГРУЗКА ДОСОК ИЗ БАЗЫ
+// УТИЛИТЫ
+// ==========================================
+// Генерируем "заглушку" аватарки на основе ID (чтобы цвета у разных юзеров отличались)
+function generateAvatarById(uid) {
+  const colors = ['3b82f6', '10b981', 'f59e0b', 'f43f5e', '8b5cf6'];
+  const colorIndex = uid.charCodeAt(0) % colors.length; // Берем первый символ ID для цвета
+  return `https://ui-avatars.com/api/?name=${uid.substr(0,2)}&background=${colors[colorIndex]}&color=fff&font-size=0.4`;
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  renderBoardsGrid();
+}
+
+// ==========================================
+// ЗАГРУЗКА ДОСОК
 // ==========================================
 function loadBoards() {
   db.collection("boards")
     .where("members", "array-contains", currentUser.id)
     .onSnapshot(snapshot => {
-      allBoards = []; // Очищаем перед обновлением
-      snapshot.forEach(doc => {
-        allBoards.push({ id: doc.id, ...doc.data() });
-      });
+      allBoards = []; 
+      snapshot.forEach(doc => { allBoards.push({ id: doc.id, ...doc.data() }); });
       
-      // Локальная сортировка (От новых к старым)
       allBoards.sort((a, b) => {
         const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
         const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
@@ -173,14 +187,21 @@ function loadBoards() {
 }
 
 // ==========================================
-// РЕНДЕР И ПОИСК ДОСОК
+// РЕНДЕР ДОСОК
 // ==========================================
 function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
-  const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase() : '';
+  const searchInput = document.getElementById('searchInput');
+  const clearBtn = document.getElementById('clearSearchBtn');
+  
+  const searchQuery = searchInput ? searchInput.value.toLowerCase() : '';
+  
+  // Логика кнопки очистки поиска
+  if (searchQuery.length > 0) clearBtn.classList.remove('hidden');
+  else clearBtn.classList.add('hidden');
+
   grid.innerHTML = '';
   
-  // Фильтруем доски по поиску
   const filteredBoards = allBoards.filter(board => {
     const title = board.title ? board.title.toLowerCase() : '';
     return title.includes(searchQuery);
@@ -188,16 +209,17 @@ function renderBoardsGrid() {
 
   if (allBoards.length === 0) { 
     grid.innerHTML = `
-      <div class="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2rem] bg-gray-50/50 dark:bg-gray-900/30">
-        <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mb-4"><i data-lucide="folder-open" class="w-8 h-8"></i></div>
-        <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">У вас пока нет проектов</h3>
-        <button onclick="createNewBoard()" class="text-blue-500 font-bold hover:underline mt-2">Создать сейчас →</button>
+      <div class="col-span-full flex flex-col items-center justify-center py-24 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[2.5rem] bg-gray-50/50 dark:bg-gray-900/30">
+        <div class="w-20 h-20 bg-white dark:bg-gray-800 text-blue-500 rounded-full flex items-center justify-center mb-6 shadow-sm"><i data-lucide="layout-template" class="w-10 h-10"></i></div>
+        <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Нет активных проектов</h3>
+        <p class="text-sm text-gray-500 mb-8 max-w-sm text-center">Создайте свою первую доску для работы или попросите команду прислать вам инвайт-ссылку.</p>
+        <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-2xl shadow-lg shadow-blue-500/25 transition-transform active:scale-95">Создать проект</button>
       </div>`;
     lucide.createIcons(); return; 
   }
 
   if (filteredBoards.length === 0) {
-    grid.innerHTML = `<div class="col-span-full py-10 text-center text-gray-400">По запросу "${searchQuery}" ничего не найдено.</div>`;
+    grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500 font-medium">Проекты с названием "${searchQuery}" не найдены.</div>`;
     return;
   }
   
@@ -205,30 +227,43 @@ function renderBoardsGrid() {
     const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
     const isOwner = data.owner === currentUser.id;
     
+    // Подсчет количества задач на доске
+    let tasksCount = 0;
+    if (data.columns) { data.columns.forEach(col => { tasksCount += col.cards ? col.cards.length : 0; }); }
+    
     grid.innerHTML += `
-      <a href="board.html?b=${data.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-3xl hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden">
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      <a href="board.html?b=${data.id}" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col h-full">
+        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         
-        <div class="flex justify-between items-start mb-4">
-          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
+        <div class="flex justify-between items-start mb-5">
+          <div class="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
             <i data-lucide="kanban-square" class="w-6 h-6"></i>
           </div>
-          <div class="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 dark:border-gray-700">
-            <button onclick="copyBoardLink(event, this, '${data.id}')" class="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" title="Скопировать ссылку-приглашение">
+          
+          <div class="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 dark:border-gray-700 z-10 relative">
+            <button onclick="copyBoardLink(event, this, '${data.id}')" class="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" title="Скопировать инвайт">
               <i data-lucide="share-2" class="w-4 h-4"></i>
             </button>
-            ${isOwner ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Удалить доску"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+            
+            ${isOwner 
+              ? `<button onclick="deleteBoard(event, '${data.id}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Удалить доску навсегда"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
+              : `<button onclick="leaveBoard(event, '${data.id}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 rounded-lg transition-colors" title="Покинуть доску"><i data-lucide="log-out" class="w-4 h-4"></i></button>`
+            }
           </div>
         </div>
         
-        <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1">${data.title || 'Без названия'}</h3>
-        <div class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-6">Создано: ${date}</div>
+        <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1 pr-2">${data.title || 'Без названия'}</h3>
+        <div class="text-sm font-medium text-gray-400 dark:text-gray-500 mb-6 flex items-center gap-2">
+          <span>${date}</span>
+          <span class="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
+          <span>${tasksCount} задач</span>
+        </div>
         
-        <div class="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-700/50">
-          <div class="text-xs font-bold text-gray-500">Участники</div>
+        <div class="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-700/50 mt-auto">
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Команда</div>
           <div class="flex -space-x-2">
-            ${data.members.slice(0, 4).map(() => `<div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-xs text-gray-500 shadow-sm"><i data-lucide="user" class="w-4 h-4"></i></div>`).join('')}
-            ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-400 shadow-sm">+${data.members.length - 4}</div>` : ''}
+            ${data.members.slice(0, 4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" />`).join('')}
+            ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300 shadow-sm">+${data.members.length - 4}</div>` : ''}
           </div>
         </div>
       </a>
@@ -238,19 +273,16 @@ function renderBoardsGrid() {
 }
 
 // ==========================================
-// ЭКШЕНЫ КАРТОЧКИ ДОСКИ
+// ЭКШЕНЫ НА КАРТОЧКЕ
 // ==========================================
 function copyBoardLink(event, btnElement, boardId) {
   event.preventDefault(); 
   event.stopPropagation();
   
-  // Формируем правильную ссылку
   const baseUrl = window.location.href.split('index.html')[0];
   const url = `${baseUrl}board.html?b=${boardId}`;
-  
   navigator.clipboard.writeText(url);
   
-  // Визуальный фидбэк (меняем иконку на галочку)
   const icon = btnElement.querySelector('i');
   icon.setAttribute('data-lucide', 'check');
   icon.classList.replace('text-gray-400', 'text-green-500');
@@ -263,17 +295,29 @@ function copyBoardLink(event, btnElement, boardId) {
   }, 2000);
 }
 
+// ЭКШЕН: УДАЛИТЬ (ДЛЯ СОЗДАТЕЛЯ)
 function deleteBoard(event, boardId) {
   event.preventDefault(); 
   event.stopPropagation(); 
-  
-  if(confirm("Вы уверены, что хотите навсегда удалить этот проект и все его карточки?")) {
+  if(confirm("Вы уверены, что хотите навсегда удалить этот проект? Это действие нельзя отменить.")) {
     db.collection("boards").doc(boardId).delete();
   }
 }
 
+// ЭКШЕН: ПОКИНУТЬ ДОСКУ (ДЛЯ УЧАСТНИКА)
+function leaveBoard(event, boardId) {
+  event.preventDefault(); 
+  event.stopPropagation(); 
+  if(confirm("Вы уверены, что хотите покинуть этот проект? Вы больше не будете видеть его в списке.")) {
+    // Удаляем UID текущего пользователя из массива members
+    db.collection("boards").doc(boardId).update({
+      members: firebase.firestore.FieldValue.arrayRemove(currentUser.id)
+    });
+  }
+}
+
 // ==========================================
-// СОЗДАНИЕ НОВОЙ ДОСКИ
+// СОЗДАНИЕ ДОСКИ
 // ==========================================
 async function createNewBoard() {
   const title = prompt("Введите название нового проекта:") || "Новый проект";
@@ -293,7 +337,7 @@ async function createNewBoard() {
     const docRef = await db.collection("boards").add(newBoard);
     await db.collection("boards").doc(docRef.id).collection("chat").add({ 
       text: `🚀 Проект "${title}" успешно создан! Пригласите команду, отправив им ссылку.`, 
-      user: { id: 'system', name: 'FlowBot', avatar: 'https://ui-avatars.com/api/?name=B&background=10b981&color=fff' }, 
+      user: { id: 'system', name: 'FlowBot', avatar: 'https://ui-avatars.com/api/?name=F&background=3b82f6&color=fff' }, 
       timestamp: firebase.firestore.FieldValue.serverTimestamp() 
     });
     window.location.href = `board.html?b=${docRef.id}`;
