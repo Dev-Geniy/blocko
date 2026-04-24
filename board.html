@@ -307,10 +307,11 @@
       <div>
         <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1 block">Заголовок</span>
         <input id="quickAddInput" 
-               type="text" 
-               placeholder="Что нужно сделать?" 
-               class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
-      </div>
+          type="text" 
+          placeholder="Что нужно сделать?" 
+          onkeypress="if(event.key==='Enter') confirmQuickAdd()"
+          class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
+         </div>
 
       <div>
         <div class="flex justify-between items-center mb-1">
