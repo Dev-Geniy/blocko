@@ -540,10 +540,48 @@ function renderMembersSidebar() {
   lucide.createIcons();
 }
 
+let lastMessageTime = 0;
+let cooldownTimer = null;
+
 function sendChatMessage() {
+  const now = Date.now();
+  const cooldown = currentPlan.chatCooldown * 1000;
+  
+  if (now - lastMessageTime < cooldown) {
+    alert(`Пожалуйста, подождите. Ваш тариф позволяет писать раз в ${currentPlan.chatCooldown} сек.`);
+    return;
+  }
+
   const text = document.getElementById('chatInput').value.trim();
-  if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+  if(text) {
+    db.collection("boards").doc(BOARD_ID).collection("chat").add({ 
+      text, 
+      user: currentUser, 
+      timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+    });
+    
+    lastMessageTime = now;
+    startChatCooldown(currentPlan.chatCooldown); // Запуск визуального таймера
+  }
   document.getElementById('chatInput').value = '';
+}
+
+function startChatCooldown(seconds) {
+  const input = document.getElementById('chatInput');
+  const originalPlaceholder = input.placeholder;
+  let remaining = seconds;
+
+  input.disabled = true;
+  
+  cooldownTimer = setInterval(() => {
+    remaining--;
+    input.placeholder = `Подождите ${remaining}с...`;
+    if (remaining <= 0) {
+      clearInterval(cooldownTimer);
+      input.disabled = false;
+      input.placeholder = originalPlaceholder;
+    }
+  }, 1000);
 }
 
 function toggleModal(modalId, show) {
