@@ -7,6 +7,7 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -24,6 +25,15 @@
     
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .loading-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    
+    /* СТИЛИ ПЕРЕТАСКИВАНИЯ (ДЛЯ ПРОЕКТОВ) */
+    .sortable-ghost { opacity: 0.3; transform: scale(0.98); border: 2px dashed #3b82f6; }
+    .sortable-drag { 
+      cursor: grabbing !important; 
+      transform: rotate(2deg) scale(1.02); 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      z-index: 50;
+    }
   </style>
 
   <script>
@@ -83,7 +93,7 @@
     </div>
   </header>
 
-<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  <main class="p-8 max-w-7xl mx-auto w-full flex-1">
     <div class="flex justify-between items-end mb-8">
       <div>
         <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
@@ -94,10 +104,11 @@
       </button>
     </div>
     
-    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
       <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Загрузка проектов...</div>
     </div>
   </main>
+
   <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md py-4 px-8">
     <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
       
@@ -131,6 +142,7 @@ lucide.createIcons();
 
 let currentUser = null;
 let allBoards = [];
+let sortableBoardsInstance = null;
 
 auth.onAuthStateChanged((user) => {
   const authScreen = document.getElementById('authScreen');
@@ -173,7 +185,21 @@ function loadBoards() {
     .onSnapshot(snapshot => {
       allBoards = []; 
       snapshot.forEach(doc => { allBoards.push({ id: doc.id, ...doc.data() }); });
-      allBoards.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      
+      // Сортировка проектов (Сначала сохраненный порядок, затем новые)
+      const savedOrder = JSON.parse(localStorage.getItem(`boardOrder_${currentUser.id}`)) || [];
+      
+      allBoards.sort((a, b) => {
+        const idxA = savedOrder.indexOf(a.id);
+        const idxB = savedOrder.indexOf(b.id);
+        
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB; // Оба проекта были перетащены ранее
+        if (idxA !== -1) return 1;  // Проект B - новый, ставим его выше
+        if (idxB !== -1) return -1; // Проект A - новый, ставим его выше
+        
+        return (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0); // Оба новые
+      });
+      
       renderBoardsGrid();
     });
 }
@@ -273,11 +299,13 @@ function renderBoardsGrid() {
       ? `<div class="absolute top-6 left-16 bg-red-500 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-ping" title="Есть просроченные задачи!"></div>` 
       : '';
 
+    // ДОБАВЛЕН АТРИБУТ data-id ДЛЯ SORTABLEJS И КЛАСС drag-handle
     grid.innerHTML += `
-      <div onclick="window.location.href='board.html?b=${data.id}'" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col h-full cursor-pointer">
+      <div data-id="${data.id}" onclick="window.location.href='board.html?b=${data.id}'" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col h-full cursor-pointer">
+        
         <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
         
-        <div class="flex justify-between items-start mb-5">
+        <div class="flex justify-between items-start mb-5 drag-handle">
           <div class="relative">
             <div class="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
               <i data-lucide="kanban-square" class="w-6 h-6"></i>
@@ -318,7 +346,30 @@ function renderBoardsGrid() {
       </div>
     `;
   });
+  
   lucide.createIcons();
+
+  // --- 4. ИНИЦИАЛИЗАЦИЯ SORTABLE JS ---
+  if (sortableBoardsInstance) sortableBoardsInstance.destroy();
+  
+  // Включаем перетаскивание только если не активен поиск, чтобы не сломать сортировку
+  if (searchQuery === '') {
+    sortableBoardsInstance = new Sortable(grid, {
+      animation: 200,
+      delay: 150, // Небольшая задержка, чтобы обычный клик по карточке работал без перетаскивания
+      delayOnTouchOnly: true,
+      ghostClass: 'sortable-ghost',
+      dragClass: 'sortable-drag',
+      onEnd: function () {
+        // Сохраняем новый порядок ID карточек в LocalStorage
+        const newOrder = Array.from(grid.children)
+                              .map(el => el.getAttribute('data-id'))
+                              .filter(id => id !== null); // Исключаем "нет проектов"
+        
+        localStorage.setItem(`boardOrder_${currentUser.id}`, JSON.stringify(newOrder));
+      }
+    });
+  }
 }
 
 function copyBoardLink(event, btnElement, boardId) {
