@@ -72,8 +72,12 @@
     </div>
   </div>
 
-  <div class="flex gap-2 items-center">
-    <button onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative">
+<div class="flex gap-2 items-center">
+    <button onclick="toggleSettings()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Настройки доски">
+      <i data-lucide="settings" class="w-4 h-4"></i>
+    </button>
+    
+    <button onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative" title="Чат">
       <i data-lucide="message-square" class="w-4 h-4"></i>
     </button>
     <button onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
@@ -95,6 +99,37 @@
     <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50">
       <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+    </div>
+  </aside>
+  <aside id="settingsSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="settings" class="w-4 h-4 text-blue-500"></i> Настройки доски</h3>
+      <button onclick="toggleSettings()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto p-6 space-y-8">
+      
+      <div>
+        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
+        <label class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-32 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+          <div id="bgDropzoneText" class="flex flex-col items-center">
+            <div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform"><i data-lucide="image" class="w-5 h-5 text-blue-500"></i></div>
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors">Загрузить фон</span>
+          </div>
+          <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
+        </label>
+        <div id="bgUploadStatus" class="text-xs font-bold text-blue-500 text-center mt-2 h-4"></div>
+        
+        <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон на стандартный</button>
+      </div>
+
+      <div class="opacity-50 pointer-events-none">
+        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center justify-between">Роли и права <span class="bg-blue-500 text-white px-2 py-0.5 rounded text-[10px]">В разработке</span></h4>
+        <div class="bg-gray-100 dark:bg-gray-800 rounded-xl p-4 text-center text-sm font-medium text-gray-500">
+          Скоро здесь появится управление командой
+        </div>
+      </div>
+
     </div>
   </aside>
 </div>
@@ -244,8 +279,20 @@ function loadBoard() {
 
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
-      document.getElementById('boardTitleHeader').innerText = doc.data().title;
-      columns = doc.data().columns || []; 
+      const data = doc.data();
+      document.getElementById('boardTitleHeader').innerText = data.title;
+      
+      // ПРИМЕНЯЕМ ФОН
+      if (data.background) {
+        document.body.style.backgroundImage = `url('${data.background}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+      } else {
+        document.body.style.backgroundImage = 'none';
+      }
+
+      columns = data.columns || []; 
       render(); 
     } else {
       window.location.href = 'index.html';
@@ -288,9 +335,19 @@ function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); 
 // ==========================================
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
 
+// Логика боковых панелей (Чат и Настройки)
 function toggleChat() { 
-  // Исправленная логика без скрытия дисплея, работает на транслейтах
-  document.getElementById('chatSidebar').classList.toggle('translate-x-full'); 
+  const chat = document.getElementById('chatSidebar');
+  const settings = document.getElementById('settingsSidebar');
+  if (!settings.classList.contains('translate-x-full')) settings.classList.add('translate-x-full'); // Скрываем настройки, если открыты
+  chat.classList.toggle('translate-x-full'); 
+}
+
+function toggleSettings() {
+  const chat = document.getElementById('chatSidebar');
+  const settings = document.getElementById('settingsSidebar');
+  if (!chat.classList.contains('translate-x-full')) chat.classList.add('translate-x-full'); // Скрываем чат, если открыт
+  settings.classList.toggle('translate-x-full');
 }
 
 function sendChatMessage() {
@@ -563,6 +620,43 @@ function quickAddCard(colId) {
   
   columns.find(c => c.id === colId).cards.push(newCard);
   persist();
+}
+
+// ==========================================
+// НАСТРОЙКИ: ФОН ДОСКИ
+// ==========================================
+document.getElementById('boardBgUpload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  
+  const statusEl = document.getElementById('bgUploadStatus');
+  statusEl.innerText = 'Загрузка обоев...';
+  
+  try {
+    const fd = new FormData(); 
+    fd.append('image', file); 
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd }); 
+    const data = await res.json(); 
+    
+    if(data.success) {
+      const bgUrl = data.data.url;
+      // Сохраняем фон в базу данных (Real-time сработает у всех!)
+      db.collection("boards").doc(BOARD_ID).update({ background: bgUrl });
+      statusEl.innerText = 'Готово! 🎉';
+      setTimeout(() => statusEl.innerText = '', 3000);
+    } else {
+      statusEl.innerText = 'Ошибка загрузки :(';
+    }
+  } catch(err) {
+    statusEl.innerText = 'Ошибка соединения';
+  }
+  // Очищаем инпут, чтобы можно было загрузить ту же картинку еще раз
+  e.target.value = '';
+});
+
+function resetBoardBackground() {
+  // Удаляем поле фона из базы
+  db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() });
 }
 
 // Скролл (Горизонтальный на всю доску)
