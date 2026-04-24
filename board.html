@@ -46,6 +46,30 @@
     .md-content strong { font-weight: 700; color: #3b82f6; }
     .md-content a { color: #3b82f6; text-decoration: underline; }
     .md-content input[type="checkbox"] { margin-right: 0.5rem; accent-color: #3b82f6; }
+    .chat-message {
+      animation: fadeInUp 0.2s ease;
+    }
+
+    @keyframes fadeInUp {
+     from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #chatSidebar::before {
+      content: "";
+      position: absolute;
+      left: -1px;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.4), transparent);
+    }
   </style>
 
   <script>
@@ -86,14 +110,13 @@
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
 
-  <aside id="chatSidebar"
-  class="w-80 border-l border-gray-200 dark:border-gray-800 
-  bg-white/60 dark:bg-gray-900/60 
-  backdrop-blur-xl
-  flex flex-col 
-  transition-all duration-300 ease-out
-  transform translate-x-full opacity-0
-  z-10 shadow-2xl">
+  <aside id="chatSidebar" class="w-80 border-l border-gray-200 dark:border-gray-800 
+bg-white/60 dark:bg-gray-900/60 
+backdrop-blur-xl
+flex flex-col 
+transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+transform translate-x-full opacity-0
+z-20 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)]">
     
     <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
@@ -101,7 +124,13 @@
     </div>
     <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col"></div>
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-2.5 
+bg-white/70 dark:bg-gray-800/70 
+backdrop-blur 
+rounded-xl outline-none text-sm 
+dark:text-white 
+focus:ring-2 focus:ring-blue-500 
+transition-all" />
     </div>
   </aside>
 </div>
@@ -202,6 +231,11 @@
   </div>
 </div>
 
+<div id="chatOverlay"
+  onclick="toggleChat()"
+  class="fixed inset-0 bg-black/30 opacity-0 pointer-events-none transition-opacity duration-300 z-10">
+</div>
+  
 <script>
 // ==========================================
 // ИНИЦИАЛИЗАЦИЯ И STATE
@@ -266,7 +300,7 @@ function loadBoard() {
       const msg = doc.data(), isMe = msg.user.id === currentUser.id;
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
       chatBox.innerHTML += `
-        <div class="flex gap-2 ${isMe ? 'flex-row-reverse' : ''}">
+        <div class="chat-message flex gap-2 ${isMe ? 'flex-row-reverse' : ''}">
           <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800" />
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
             <span class="text-[10px] text-gray-500 font-medium mb-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
@@ -294,7 +328,28 @@ function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); 
 // UI ЭКШЕНЫ
 // ==========================================
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
-function toggleChat() { document.getElementById('chatSidebar').classList.toggle('hidden'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
+  
+function toggleChat() {
+  const el = document.getElementById('chatSidebar');
+  const overlay = document.getElementById('chatOverlay');
+
+  const isOpen = !el.classList.contains('translate-x-full');
+
+  if (isOpen) {
+    el.classList.add('translate-x-full', 'opacity-0');
+    overlay.classList.add('opacity-0');
+    overlay.classList.remove('pointer-events-auto');
+  } else {
+    el.classList.remove('translate-x-full');
+    overlay.classList.remove('opacity-0');
+    overlay.classList.add('pointer-events-auto');
+
+    setTimeout(() => {
+      el.classList.remove('opacity-0');
+    }, 10);
+  }
+}
+  
 function sendChatMessage() {
   const text = document.getElementById('chatInput').value.trim();
   if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
@@ -477,6 +532,7 @@ mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item'
 mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
 mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
+
 </script>
 </body>
 </html>
