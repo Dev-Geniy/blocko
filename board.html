@@ -66,14 +66,25 @@
     <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all" title="Нажмите, чтобы переименовать">Загрузка проекта...</h1>
   </div>
   
-  <div class="flex-1 flex justify-center mx-4">
-    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-4 pr-1 py-1 border border-transparent dark:border-gray-700 max-w-sm w-full cursor-pointer group hover:border-blue-200 dark:hover:border-blue-900 transition-colors" onclick="copyShareLink()" title="Скопировать инвайт-ссылку">
-      <div class="flex-1 truncate text-xs text-gray-500 dark:text-gray-400 font-mono select-none" id="shareUrlText">Ссылка</div>
-      <button class="bg-white dark:bg-gray-700 p-1.5 rounded-full shadow-sm text-gray-700 dark:text-gray-200 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/50 group-hover:text-blue-500 transition-colors">
-        <i data-lucide="link" class="w-4 h-4"></i>
-      </button>
-    </div>
+<div class="flex-1 flex items-center justify-between mx-4 gap-4">
+  <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-3 pr-1 py-1 border border-transparent dark:border-gray-700 max-w-[200px] cursor-pointer group hover:border-blue-200 transition-colors" onclick="copyShareLink()" title="Скопировать инвайт-ссылку">
+    <div class="flex-1 truncate text-[10px] text-gray-500 font-mono select-none" id="shareUrlText">Ссылка</div>
+    <div class="ml-2 p-1 text-gray-400 group-hover:text-blue-500"><i data-lucide="link" class="w-3 h-3"></i></div>
   </div>
+
+  <div class="flex flex-1 max-w-xl items-center gap-2">
+    <div class="relative flex-1">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input type="text" id="boardSearch" oninput="handleSearchAndFilter()" placeholder="Поиск задач..." 
+             class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 rounded-xl text-sm outline-none transition-all dark:text-white">
+    </div>
+    
+    <select id="tagFilter" onchange="handleSearchAndFilter()" 
+            class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold px-3 py-2 rounded-xl border-none outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+      <option value="all">Все теги</option>
+      </select>
+  </div>
+</div>
 
 <div class="flex gap-2 items-center">
     <!-- управление правами -->
@@ -287,6 +298,13 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
+// Подсветка поиска
+function highlightText(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, 'gi');
+  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-500/50 dark:text-black rounded-sm">$1</mark>');
+}
+
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let columns = [], sortableInstances = [];
@@ -340,7 +358,7 @@ function loadBoard() {
   // ПОДПИСКА НА ИЗМЕНЕНИЯ ДОСКИ
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
-      boardData = doc.data(); // Сохраняем глобально!
+      boardData = doc.data();
       document.getElementById('boardTitleHeader').innerText = boardData.title;
       
       if (boardData.background) {
@@ -351,6 +369,7 @@ function loadBoard() {
       } else { document.body.style.backgroundImage = 'none'; }
 
       columns = boardData.columns || []; 
+      updateTagFilterDropdown();
       render(); 
       renderMembersSidebar();
       renderSettingsTags();
@@ -395,7 +414,23 @@ function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); 
 // ==========================================
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
 
+function handleSearchAndFilter() {
+  render(); // Просто перерисовываем всё с учетом новых условий
+}
 
+function updateTagFilterDropdown() {
+  const select = document.getElementById('tagFilter');
+  if (!select) return;
+  const currentTags = getBoardTags();
+  const savedValue = select.value;
+  
+  let options = '<option value="all">Все теги</option>';
+  currentTags.forEach(t => {
+    options += `<option value="${t.id}">${t.name}</option>`;
+  });
+  select.innerHTML = options;
+  if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
+}
 // ==========================================
 // ЛОГИКА БОКОВЫХ ПАНЕЛЕЙ И РОЛЕЙ (Чат, Настройки, права доступа)
 // ==========================================
@@ -703,8 +738,12 @@ function render() {
   board.innerHTML = '';
   sortableInstances.forEach(inst => inst.destroy()); 
   sortableInstances = [];
-  
-  // ПРОВЕРКА ПРАВ
+
+  // Читаем, что написано в поиске и какой тег выбран
+  const searchQuery = document.getElementById('boardSearch')?.value.toLowerCase() || "";
+  const filterTag = document.getElementById('tagFilter')?.value || "all";
+
+  // Проверка прав
   const myRole = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
   const isViewer = myRole === 'viewer';
 
@@ -717,7 +756,17 @@ function render() {
     wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
-    const cardsHtml = col.cards.map(c => {
+    // Сначала фильтруем карточки по поиску и тегу
+    const filteredCards = col.cards.filter(c => {
+      const matchesSearch = c.title.toLowerCase().includes(searchQuery) || (c.description || "").toLowerCase().includes(searchQuery);
+      const matchesTag = filterTag === "all" || (c.tags && c.tags.includes(filterTag));
+      return matchesSearch && matchesTag;
+    });
+
+    // Теперь рисуем только отфильтрованные карточки
+    const cardsHtml = filteredCards.map(c => {
+      // Подсвечиваем заголовок
+      const displayTitle = highlightText(c.title, searchQuery);
       let checklistHtml = '';
       if (c.checklist && c.checklist.length > 0) {
         const total = c.checklist.length;
@@ -756,9 +805,9 @@ function render() {
           
           ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
           
-          ${c.image ? `<img src="${c.image}" class="mb-3 rounded-lg w-full h-32 object-cover border border-gray-100 dark:border-gray-700/50 pointer-events-none" />` : ''}
+          ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border border-gray-100 dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
-          <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${c.title}</div>
+          <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
           
           <div class="flex justify-between items-end mt-3">
