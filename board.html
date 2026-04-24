@@ -307,11 +307,10 @@
       <div>
         <span class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1 block">Заголовок</span>
         <input id="quickAddInput" 
-          type="text" 
-          placeholder="Что нужно сделать?" 
-          onkeypress="if(event.key==='Enter') confirmQuickAdd()"
-          class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
-         </div>
+               type="text" 
+               placeholder="Что нужно сделать?" 
+               class="w-full px-0 py-2 bg-transparent text-xl font-bold outline-none border-b-2 border-gray-100 dark:border-gray-700 focus:border-blue-500 dark:text-white transition-all" />
+      </div>
 
       <div>
         <div class="flex justify-between items-center mb-1">
@@ -335,8 +334,6 @@
 </div>
 
 <script>
-
-  
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
@@ -352,7 +349,6 @@ let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
 let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
 let boardData = {};
-let userTagChecked = false;
   
 auth.onAuthStateChanged((user) => {
   if (user) {
@@ -371,105 +367,55 @@ function loadBoard() {
   document.getElementById('shareUrlText').innerText = window.location.href;
   const docRef = db.collection("boards").doc(BOARD_ID);
   
-  // 1. Первичная проверка и регистрация пользователя в структуре доски
   docRef.get().then(doc => {
     if (doc.exists) {
       let data = doc.data();
       let updates = {};
       let users = data.users || {};
       
-      // Если пользователя нет в массиве ID участников, инициируем добавление
-      if (!data.members.includes(currentUser.id)) {
-        console.log("Регистрация нового участника...");
-        
-        // Добавляем ID в массив прав доступа
-        updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-        
-        // Создаем запись в объекте пользователей с ролью редактора по умолчанию
-        users[currentUser.id] = {
+      if (!users[currentUser.id]) {
+         users[currentUser.id] = {
            name: currentUser.name,
            avatar: currentUser.avatar,
-           role: 'editor' 
-        };
-        updates.users = users;
-        
-        // Применяем обновления в БД
-        docRef.update(updates).then(() => {
-          console.log("Доступ успешно настроен");
-        }).catch(err => {
-          console.error("Ошибка при обновлении прав:", err);
-        });
+           role: data.owner === currentUser.id ? 'owner' : 'editor'
+         };
+         updates.users = users;
       }
+      if (!data.members.includes(currentUser.id)) updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
+      if (Object.keys(updates).length > 0) docRef.update(updates);
     } else {
-      alert("Доска не найдена или была удалена."); 
-      window.location.href = 'index.html';
+      alert("Доска не найдена или удалена!"); window.location.href = 'index.html';
     }
-  }).catch(error => {
-    console.error("Ошибка Firestore:", error);
-    // Если срабатывают Security Rules, пользователь увидит это сообщение
-    alert("Доступ ограничен. Убедитесь, что вы авторизованы и имеете права доступа.");
-    window.location.href = 'index.html';
   });
 
-// 2. Подписка на изменения данных в реальном времени
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
+      document.getElementById('boardTitleHeader').innerText = boardData.title;
+      
+      if (boardData.background) {
+        document.body.style.backgroundImage = `url('${boardData.background}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+      } else { document.body.style.backgroundImage = 'none'; }
 
-      // Проверяем, есть ли у пользователя доступ к этой доске
-      if (boardData.members && boardData.members.includes(currentUser.id)) {
-        
-        // АВТО-ТЕГ (ИСПРАВЛЕНО: выполняется только один раз за сессию пользователя)
-        if (!userTagChecked) {
-          const userTagName = currentUser.name;
-          const currentTags = getBoardTags();
-          
-          // Проверяем, нет ли уже тега с таким именем
-          if (!currentTags.some(t => t.name === userTagName)) {
-              const newTag = { 
-                  id: 'tag_user_' + currentUser.id, 
-                  name: userTagName, 
-                  color: 'bg-indigo-500 text-white border-indigo-600' 
-              };
-              // Обновляем БД только если тега реально нет
-              db.collection("boards").doc(BOARD_ID).update({ 
-                  tags: firebase.firestore.FieldValue.arrayUnion(newTag) 
-              });
-          }
-          userTagChecked = true; // Устанавливаем флаг, чтобы больше не проверять в этой сессии
-        }
-        
-        // Рендерим интерфейс
-        document.getElementById('boardTitleHeader').innerText = boardData.title;
-        
-        // Установка фонового изображения
-        if (boardData.background) {
-          document.body.style.backgroundImage = `url('${boardData.background}')`;
-          document.body.style.backgroundSize = 'cover';
-          document.body.style.backgroundPosition = 'center';
-          document.body.style.backgroundAttachment = 'fixed';
-        } else { 
-          document.body.style.backgroundImage = 'none'; 
-        }
-
-        columns = boardData.columns || []; 
-        updateTagFilterDropdown();
-        render(); 
-        renderMembersSidebar();
-        renderSettingsTags();
-      }
+      columns = boardData.columns || []; 
+      updateTagFilterDropdown();
+      render(); 
+      renderMembersSidebar();
+      renderSettingsTags();
+    } else {
+      window.location.href = 'index.html';
     }
   });
 
-  // 3. Загрузка сообщений чата проекта
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
-    
     snapshot.forEach(doc => {
       const msg = doc.data(), isMe = msg.user.id === currentUser.id;
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-      
       chatBox.innerHTML += `
         <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
           <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800 flex-shrink-0" />
@@ -570,50 +516,12 @@ function renderMembersSidebar() {
   lucide.createIcons();
 }
 
-let lastMessageTime = 0;
-let cooldownTimer = null;
-
 function sendChatMessage() {
-  const now = Date.now();
-  const cooldown = currentPlan.chatCooldown * 1000;
-  
-  if (now - lastMessageTime < cooldown) {
-    alert(`Пожалуйста, подождите. Ваш тариф позволяет писать раз в ${currentPlan.chatCooldown} сек.`);
-    return;
-  }
-
   const text = document.getElementById('chatInput').value.trim();
-  if(text) {
-    db.collection("boards").doc(BOARD_ID).collection("chat").add({ 
-      text, 
-      user: currentUser, 
-      timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-    });
-    
-    lastMessageTime = now;
-    startChatCooldown(currentPlan.chatCooldown); // Запуск визуального таймера
-  }
+  if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
   document.getElementById('chatInput').value = '';
 }
 
-function startChatCooldown(seconds) {
-  const input = document.getElementById('chatInput');
-  const originalPlaceholder = input.placeholder;
-  let remaining = seconds;
-
-  input.disabled = true;
-  
-  cooldownTimer = setInterval(() => {
-    remaining--;
-    input.placeholder = `Подождите ${remaining}с...`;
-    if (remaining <= 0) {
-      clearInterval(cooldownTimer);
-      input.disabled = false;
-      input.placeholder = originalPlaceholder;
-    }
-  }, 1000);
-}
-  
 function toggleModal(modalId, show) {
   const el = document.getElementById(modalId);
   if (show) { el.classList.remove('hidden'); setTimeout(() => el.classList.remove('opacity-0'), 10); } 
@@ -660,22 +568,7 @@ function addCommentFromView() {
   persist(); renderCommentsView();
 }
 
-function addColumn() {
-  // ИСПРАВЛЕНО: Добавлена проверка лимитов из config.js
-  if (columns.length >= currentPlan.maxCols) {
-    alert(`Лимит вашего плана (${currentPlan.name}): максимум ${currentPlan.maxCols} колонок.`);
-    // Тут можно вызвать твое модальное окно limitModal
-    return;
-  }
-  
-  columns.push({ 
-    id: Date.now(), 
-    name: "Новая колонка", 
-    color: 'default', 
-    cards: [] 
-  }); 
-  persist(); 
-}
+function addColumn(){ columns.push({ id: Date.now(), name: "Новая колонка", color: 'default', cards: [] }); persist(); }
 function openColModal(id){ editingColId = id; const col = columns.find(c => c.id === id); selectedColColor = col.color || 'default'; document.getElementById('colNameInput').value = col.name; renderColorPicker(); toggleModal('colModal', true); }
 function closeColModal(){ toggleModal('colModal', false); }
 function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); persist(); closeColModal(); }
@@ -967,28 +860,19 @@ function render() {
       group: 'shared', animation: 150, delay: 100, delayOnTouchOnly: true, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, fallbackTolerance: 5,
       disabled: isViewer,
       onEnd: function (evt) { 
-    let mCard; 
-    // ИСПРАВЛЕНО: приведение к String для надежного поиска
-    const fromColId = evt.from.id.replace('cards-','');
-    const toColId = evt.to.id.replace('cards-','');
-    
-    const fromCol = columns.find(c => String(c.id) === fromColId);
-    const toCol = columns.find(c => String(c.id) === toColId);
-    
-    if(!fromCol || !toCol) return;
-    
-    // Ищем карточку по ID (приводим к строке оба значения)
-    fromCol.cards = fromCol.cards.filter(card => {
-      if(String(card.id) === String(evt.item.dataset.id)){ 
-          mCard = card; 
-          return false; 
-      }
-      return true;
-    }); 
-    
-    if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
-    persist(); 
-}
+        let mCard; 
+        const fromCol = columns.find(c=>c.id===Number(evt.from.id.replace('cards-','')));
+        const toCol = columns.find(c=>c.id===Number(evt.to.id.replace('cards-','')));
+        if(!fromCol || !toCol) return;
+        fromCol.cards = fromCol.cards.filter(card => {
+          if(card.id === Number(evt.item.dataset.id)){ mCard = card; return false; }
+          return true;
+        }); 
+        if(mCard) toCol.cards.splice(evt.newIndex, 0, mCard); 
+        persist(); 
+      } 
+    }));
+  });
   
   sortableInstances.push(new Sortable(board, { 
     animation: 200, handle: '.col-handle', ghostClass: 'sortable-ghost', dragClass: 'sortable-drag', forceFallback: true, 
