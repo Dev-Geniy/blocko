@@ -3,18 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Архив проекта - FlowBoard</title>
+  <title>Архив проекта - FlowBoard Pro</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .hide-scroll::-webkit-scrollbar { display: none; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
   </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
@@ -24,15 +33,25 @@
       <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
     <div>
-      <h1 id="boardTitle" class="text-xl font-bold tracking-tight">Архив проекта</h1>
-      <p class="text-xs text-amber-500 font-bold uppercase tracking-widest">Хранилище карточек</p>
+      <div class="flex items-center gap-2">
+        <h1 id="boardTitle" class="text-xl font-bold tracking-tight">Загрузка...</h1>
+        <span id="roleBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-500"></span>
+      </div>
+      <p class="text-xs text-amber-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1">
+        <i data-lucide="archive" class="w-3 h-3"></i> Хранилище карточек
+      </p>
     </div>
+  </div>
+  
+  <div class="relative hidden sm:block">
+    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+    <input id="archiveSearch" oninput="renderArchive()" placeholder="Поиск в архиве..." class="pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500 transition-shadow w-64 dark:text-white">
   </div>
 </header>
 
-<main class="p-8 max-w-5xl mx-auto w-full flex-1">
-  <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    <div class="col-span-full py-20 text-center text-gray-400">Загрузка архива...</div>
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="col-span-full py-20 text-center text-gray-400 font-medium">Синхронизация с базой данных...</div>
   </div>
 </main>
 
@@ -42,26 +61,73 @@
 
   const BOARD_ID = new URLSearchParams(window.location.search).get('b');
   let currentBoardData = null;
+  let currentUser = null;
+
+  // Стандартные теги (если на доске нет кастомных)
+  const DEFAULT_BOARD_TAGS = [
+    { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
+    { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+    { id: 'tag_urg', name: 'Срочно', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+    { id: 'tag_des', name: 'Дизайн', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+    { id: 'tag_back', name: 'Бэкенд', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+    { id: 'tag_test', name: 'Тест', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+  ];
 
   auth.onAuthStateChanged(user => {
-    if (user && BOARD_ID) loadArchive();
-    else window.location.href = 'index.html';
+    if (user && BOARD_ID) {
+      currentUser = user;
+      loadArchive();
+    } else {
+      window.location.href = 'index.html';
+    }
   });
 
   function loadArchive() {
     db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
       if (!doc.exists) return window.location.href = 'index.html';
+      
       currentBoardData = doc.data();
       document.getElementById('boardTitle').innerText = currentBoardData.title;
+      
+      // Устанавливаем бейдж роли
+      const isOwner = currentBoardData.owner === currentUser.uid;
+      const roleBadge = document.getElementById('roleBadge');
+      roleBadge.classList.remove('hidden');
+      
+      if (isOwner) {
+        roleBadge.innerText = 'Владелец';
+        roleBadge.classList.add('bg-amber-50', 'dark:bg-amber-900/20', 'text-amber-600', 'dark:text-amber-400', 'border-amber-200', 'dark:border-amber-800/50');
+      } else {
+        roleBadge.innerHTML = '<i data-lucide="eye" class="w-3 h-3 inline pb-0.5"></i> Участник';
+      }
+
       renderArchive();
     });
   }
 
+  // Очистка текста от Markdown символов для красивого превью
+  function cleanMarkdown(text) {
+    if (!text) return 'Нет описания';
+    return text
+      .replace(/(\*\*|__)(.*?)\1/g, '$2') // Жирный
+      .replace(/(\*|_)(.*?)\1/g, '$2')    // Курсив
+      .replace(/\[[ x]\] /g, '• ')        // Чекбоксы в маркеры
+      .replace(/#/g, '')                  // Заголовки
+      .trim();
+  }
+
+  function getTagInfo(tagId) {
+    const tags = currentBoardData.tags && currentBoardData.tags.length > 0 ? currentBoardData.tags : DEFAULT_BOARD_TAGS;
+    return tags.find(t => t.id === tagId);
+  }
+
   function renderArchive() {
     const grid = document.getElementById('archiveGrid');
+    const searchQuery = document.getElementById('archiveSearch').value.toLowerCase();
     let archivedCards = [];
+    const isOwner = currentBoardData.owner === currentUser.uid;
 
-    // Собираем все карточки из всех колонок, у которых есть пометка archived: true
+    // Собираем архивные карточки
     currentBoardData.columns.forEach(col => {
       if (col.cards) {
         col.cards.forEach(card => {
@@ -70,37 +136,86 @@
       }
     });
 
+    // Пустое состояние (В архиве вообще ничего нет)
     if (archivedCards.length === 0) {
       grid.innerHTML = `
-        <div class="col-span-full py-24 flex flex-col items-center opacity-50">
-          <i data-lucide="archive-x" class="w-16 h-16 mb-4"></i>
-          <p class="text-lg font-medium">Архив пуст</p>
+        <div class="col-span-full py-24 flex flex-col items-center opacity-70">
+          <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+            <i data-lucide="archive-x" class="w-10 h-10 text-gray-400"></i>
+          </div>
+          <h3 class="text-xl font-bold mb-1">Архив чист</h3>
+          <p class="text-sm text-gray-500">Удаленные из активной работы карточки появятся здесь.</p>
         </div>`;
       lucide.createIcons();
       return;
     }
 
-    grid.innerHTML = archivedCards.map(card => `
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-[1.5rem] shadow-sm relative group overflow-hidden">
-        <div class="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-tighter">Из колонки: ${card.colName}</div>
-        <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white">${card.title}</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 mb-6">${card.description || 'Нет описания'}</p>
-        
-        <div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4">
-          <button onclick="restoreCard('${card.id}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
-          </button>
-          <button onclick="permanentDelete('${card.id}')" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
-            <i data-lucide="trash-2" class="w-4 h-4"></i>
-          </button>
+    // Фильтрация по поиску
+    archivedCards = archivedCards.filter(c => 
+      c.title.toLowerCase().includes(searchQuery) || 
+      (c.description && c.description.toLowerCase().includes(searchQuery))
+    );
+
+    // Пустое состояние поиска
+    if (archivedCards.length === 0 && searchQuery !== '') {
+      grid.innerHTML = `
+        <div class="col-span-full py-16 text-center">
+          <p class="text-gray-500">Карточек по запросу "${searchQuery}" не найдено.</p>
+        </div>`;
+      return;
+    }
+
+    // Отрисовка сетки
+    grid.innerHTML = archivedCards.map(card => {
+      const cleanDesc = cleanMarkdown(card.description);
+      
+      // Генерация тегов
+      const tagsHtml = card.tags && card.tags.length > 0 
+        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + 
+          card.tags.map(tId => { 
+            const t = getTagInfo(tId); 
+            return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}">${t.name}</span>` : ''; 
+          }).join('') + `</div>` 
+        : '';
+
+      // Блок кнопок (Зависит от роли)
+      const actionsHtml = isOwner 
+        ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
+            <button onclick="restoreCard('${card.id}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть на доску
+            </button>
+            <button onclick="permanentDelete('${card.id}')" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>`
+        : `<div class="border-t border-gray-100 dark:border-gray-800 pt-4 mt-4 text-center">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/50 text-[11px] font-bold text-gray-400">
+              <i data-lucide="lock" class="w-3 h-3"></i> Действия доступны только владельцу
+            </span>
+          </div>`;
+
+      return `
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col">
+          <div class="flex justify-between items-start mb-3">
+            ${tagsHtml}
+            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap">
+              ${card.colName}
+            </div>
+          </div>
+          
+          <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${card.title}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${cleanDesc}</p>
+          
+          ${actionsHtml}
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
+    
     lucide.createIcons();
   }
 
   function restoreCard(cardId) {
-    if(!confirm("Вернуть карточку на доску?")) return;
+    if(!confirm("Вернуть карточку на доску? Она появится в своей исходной колонке.")) return;
     
     const updatedColumns = currentBoardData.columns.map(col => {
       col.cards = col.cards.map(c => c.id == cardId ? { ...c, archived: false } : c);
@@ -111,7 +226,7 @@
   }
 
   function permanentDelete(cardId) {
-    if(!confirm("Удалить карточку навсегда? Это нельзя отменить.")) return;
+    if(!confirm("Вы уверены, что хотите удалить карточку навсегда? Это действие невозможно отменить.")) return;
     
     const updatedColumns = currentBoardData.columns.map(col => {
       col.cards = col.cards.filter(c => c.id != cardId);
