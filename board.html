@@ -151,6 +151,8 @@
     <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-6 mb-8 border border-gray-100 dark:border-gray-800">
       <div id="viewDescription" class="md-content text-sm text-gray-700 dark:text-gray-300 leading-relaxed"></div>
     </div>
+
+    <div id="viewChecklistContainer" class="mb-8"></div>
     
     <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение</h3>
     <div id="viewCommentsList" class="space-y-4 mb-4 text-sm"></div>
@@ -194,6 +196,23 @@
           <input type="file" id="editImage" class="hidden" accept="image/*" />
         </label>
         <div id="uploadStatus" class="text-xs font-medium text-blue-500 text-center mt-2"></div>
+      </div>
+
+      <div>
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex justify-between items-center">
+          Чек-лист
+          <span id="checklistProgressText" class="text-blue-500 font-bold">0%</span>
+        </span>
+        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden">
+          <div id="checklistProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        
+        <div id="editChecklistContainer" class="space-y-2 mb-3"></div>
+        
+        <div class="flex gap-2">
+          <input id="newChecklistItem" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+          <button onclick="addChecklistItem()" class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors">Добавить</button>
+        </div>
       </div>
       
       <div>
@@ -246,7 +265,7 @@ let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
-let selectedColColor = 'default', activeTags = [], pendingImageFile = null;
+let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
 
 // ==========================================
 // АВТОРИЗАЦИЯ И СИНХРОНИЗАЦИЯ (Firebase)
@@ -378,6 +397,7 @@ function openViewModal(colId, cardId) {
   const imgEl = document.getElementById('viewImage'); 
   if(viewingCard.image) { imgEl.src = viewingCard.image; imgEl.classList.remove('hidden'); } else imgEl.classList.add('hidden');
   
+  renderChecklistView(); // <--- ДОБАВИТЬ ЭТО
   renderCommentsView();
   toggleModal('viewCardModal', true);
 }
@@ -424,19 +444,23 @@ function openEditModal(colId, cardId = null) {
   activeTags = editingCard ? [...(editingCard.tags || [])] : []; 
   pendingImageFile = null;
   
+  // ЗАГРУЖАЕМ ЧЕК-ЛИСТ
+  activeChecklist = editingCard && editingCard.checklist ? [...editingCard.checklist] : [];
+  
   document.getElementById('editTitle').value = editingCard?.title || ''; 
   document.getElementById('editDescription').value = editingCard?.description || '';
   
-  // НОВОЕ: Загружаем дату в календарь
+  // Загружаем дату в календарь
   document.getElementById('editDueDate').value = editingCard?.dueDate || '';
   
   document.getElementById('uploadStatus').innerText = ''; 
   const preview = document.getElementById('editImagePreview');
-  
+
   if (editingCard?.image) { preview.src = editingCard.image; preview.classList.remove('hidden'); document.getElementById('dropzoneText').classList.add('opacity-0'); } 
   else { preview.classList.add('hidden'); document.getElementById('dropzoneText').classList.remove('opacity-0'); }
   
   renderTagsPicker();
+  renderChecklistEdit();
   toggleModal('editCardModal', true);
 }
   
@@ -478,7 +502,7 @@ async function saveCard() {
     }
   }
   
-  const cardObj = { 
+const cardObj = { 
     id: editingCard ? editingCard.id : Date.now(), 
     title: document.getElementById('editTitle').value || 'Без названия', 
     description: document.getElementById('editDescription').value, 
@@ -486,8 +510,8 @@ async function saveCard() {
     image: imageUrl, 
     comments: editingCard?.comments || [], 
     author: editingCard?.author || currentUser,
-    // НОВОЕ: Сохраняем выбранную дату
-    dueDate: document.getElementById('editDueDate').value 
+    dueDate: document.getElementById('editDueDate').value,
+    checklist: activeChecklist 
   };
   
   columns = columns.map(col => { if(col.id === currentColumn) { if(editingCard) col.cards = col.cards.map(c => c.id === editingCard.id ? cardObj : c); else col.cards.push(cardObj); } return col; });
@@ -497,8 +521,91 @@ async function saveCard() {
 function deleteCard() { columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.filter(c => c.id !== editingCard.id); return col; }); persist(); closeEditModal(); }
 
 // ==========================================
-// РЕНДЕР И SORTABLEJS
+// ЛОГИКА ЧЕК-ЛИСТОВ
 // ==========================================
+// 1. Рендер в Редакторе (Создание/Удаление)
+function renderChecklistEdit() {
+  const container = document.getElementById('editChecklistContainer');
+  const progressText = document.getElementById('checklistProgressText');
+  const progressBar = document.getElementById('checklistProgressBar');
+
+  if (activeChecklist.length === 0) {
+    container.innerHTML = '';
+    progressText.innerText = '0%';
+    progressBar.style.width = '0%';
+    return;
+  }
+
+  const doneCount = activeChecklist.filter(i => i.isCompleted).length;
+  const percent = Math.round((doneCount / activeChecklist.length) * 100);
+
+  progressText.innerText = `${percent}%`;
+  progressBar.style.width = `${percent}%`;
+  progressBar.className = percent === 100 ? 'bg-green-500 h-full transition-all duration-300' : 'bg-blue-500 h-full transition-all duration-300';
+
+  container.innerHTML = activeChecklist.map((item, index) => `
+    <div class="flex items-center justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+      <label class="flex items-center gap-3 cursor-pointer flex-1 px-2">
+        <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 accent-blue-500 cursor-pointer" />
+        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} transition-all">${item.text}</span>
+      </label>
+      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+function addChecklistItem() {
+  const input = document.getElementById('newChecklistItem');
+  const text = input.value.trim();
+  if (!text) return;
+  activeChecklist.push({ id: Date.now(), text, isCompleted: false });
+  input.value = '';
+  renderChecklistEdit();
+}
+function toggleChecklistItemEdit(index) { activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; renderChecklistEdit(); }
+function removeChecklistItem(index) { activeChecklist.splice(index, 1); renderChecklistEdit(); }
+
+// 2. Рендер в Просмотре (Интерактивные галочки)
+function renderChecklistView() {
+  const container = document.getElementById('viewChecklistContainer');
+  if (!viewingCard.checklist || viewingCard.checklist.length === 0) {
+    container.innerHTML = ''; return;
+  }
+  
+  const doneCount = viewingCard.checklist.filter(i => i.isCompleted).length;
+  const percent = Math.round((doneCount / viewingCard.checklist.length) * 100);
+  const colorClass = percent === 100 ? 'bg-green-500' : 'bg-blue-500';
+
+  let html = `
+    <div class="mb-2 flex items-center justify-between">
+      <h3 class="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="check-square" class="w-4 h-4 text-blue-500"></i> Чек-лист подзадач</h3>
+      <span class="text-xs font-bold text-gray-500">${percent}%</span>
+    </div>
+    <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-4">
+      <div class="${colorClass} h-full transition-all duration-300" style="width: ${percent}%"></div>
+    </div>
+    <div class="space-y-2">
+  `;
+
+  html += viewingCard.checklist.map((item, index) => `
+    <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-900 rounded-xl cursor-pointer transition-colors border border-gray-100 dark:border-gray-800">
+      <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistView(${index})" class="w-5 h-5 text-blue-600 rounded border-gray-300 focus:ring-blue-500 accent-blue-500 cursor-pointer" />
+      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} transition-all">${item.text}</span>
+    </label>
+  `).join('');
+  
+  container.innerHTML = html + '</div>';
+  lucide.createIcons();
+}
+
+function toggleChecklistView(index) {
+  viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
+  columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
+  persist(); // Сохраняем в базу (доска обновится автоматически)
+  renderChecklistView(); // Перерисовываем галочки в модалке
+}
+  
 // ==========================================
 // РЕНДЕР И SORTABLEJS (ОБНОВЛЕННЫЙ)
 // ==========================================
@@ -515,26 +622,24 @@ function render() {
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
     const cardsHtml = col.cards.map(c => {
-      // 1. Считаем чек-листы для прогресс-бара
+// 1. Считаем чек-листы для прогресс-бара (Теперь берем из базы, а не Markdown)
       let checklistHtml = '';
-      if (c.description) {
-        const total = (c.description.match(/- \[[ xX]\]/g) || []).length;
-        const done = (c.description.match(/- \[[xX]\]/g) || []).length;
-        if (total > 0) {
-          const percent = Math.round((done / total) * 100);
-          const colorClass = done === total ? 'bg-green-500' : 'bg-blue-500';
-          checklistHtml = `
-            <div class="mt-3 mb-1">
-              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
-                <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span>
-                <span>${percent}%</span>
-              </div>
-              <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div class="${colorClass} h-full transition-all duration-500" style="width: ${percent}%"></div>
-              </div>
+      if (c.checklist && c.checklist.length > 0) {
+        const total = c.checklist.length;
+        const done = c.checklist.filter(i => i.isCompleted).length;
+        const percent = Math.round((done / total) * 100);
+        const colorClass = done === total ? 'bg-green-500' : 'bg-blue-500';
+        checklistHtml = `
+          <div class="mt-3 mb-1">
+            <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+              <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${total}</span>
+              <span>${percent}%</span>
             </div>
-          `;
-        }
+            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div class="${colorClass} h-full transition-all duration-500" style="width: ${percent}%"></div>
+            </div>
+          </div>
+        `;
       }
 
       // 2. Дедлайны
