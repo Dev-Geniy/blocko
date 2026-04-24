@@ -367,55 +367,83 @@ function loadBoard() {
   document.getElementById('shareUrlText').innerText = window.location.href;
   const docRef = db.collection("boards").doc(BOARD_ID);
   
+  // 1. Первичная проверка и регистрация пользователя в структуре доски
   docRef.get().then(doc => {
     if (doc.exists) {
       let data = doc.data();
       let updates = {};
       let users = data.users || {};
       
-      if (!users[currentUser.id]) {
-         users[currentUser.id] = {
+      // Если пользователя нет в массиве ID участников, инициируем добавление
+      if (!data.members.includes(currentUser.id)) {
+        console.log("Регистрация нового участника...");
+        
+        // Добавляем ID в массив прав доступа
+        updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
+        
+        // Создаем запись в объекте пользователей с ролью редактора по умолчанию
+        users[currentUser.id] = {
            name: currentUser.name,
            avatar: currentUser.avatar,
-           role: data.owner === currentUser.id ? 'owner' : 'editor'
-         };
-         updates.users = users;
+           role: 'editor' 
+        };
+        updates.users = users;
+        
+        // Применяем обновления в БД
+        docRef.update(updates).then(() => {
+          console.log("Доступ успешно настроен");
+        }).catch(err => {
+          console.error("Ошибка при обновлении прав:", err);
+        });
       }
-      if (!data.members.includes(currentUser.id)) updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-      if (Object.keys(updates).length > 0) docRef.update(updates);
     } else {
-      alert("Доска не найдена или удалена!"); window.location.href = 'index.html';
+      alert("Доска не найдена или была удалена."); 
+      window.location.href = 'index.html';
     }
+  }).catch(error => {
+    console.error("Ошибка Firestore:", error);
+    // Если срабатывают Security Rules, пользователь увидит это сообщение
+    alert("Доступ ограничен. Убедитесь, что вы авторизованы и имеете права доступа.");
+    window.location.href = 'index.html';
   });
 
+  // 2. Подписка на изменения данных в реальном времени
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
       boardData = doc.data();
-      document.getElementById('boardTitleHeader').innerText = boardData.title;
       
-      if (boardData.background) {
-        document.body.style.backgroundImage = `url('${boardData.background}')`;
-        document.body.style.backgroundSize = 'cover';
-        document.body.style.backgroundPosition = 'center';
-        document.body.style.backgroundAttachment = 'fixed';
-      } else { document.body.style.backgroundImage = 'none'; }
+      // Рендерим интерфейс только если пользователь уже занесен в список members
+      if (boardData.members && boardData.members.includes(currentUser.id)) {
+        document.getElementById('boardTitleHeader').innerText = boardData.title;
+        
+        // Установка фонового изображения
+        if (boardData.background) {
+          document.body.style.backgroundImage = `url('${boardData.background}')`;
+          document.body.style.backgroundSize = 'cover';
+          document.body.style.backgroundPosition = 'center';
+          document.body.style.backgroundAttachment = 'fixed';
+        } else { 
+          document.body.style.backgroundImage = 'none'; 
+        }
 
-      columns = boardData.columns || []; 
-      updateTagFilterDropdown();
-      render(); 
-      renderMembersSidebar();
-      renderSettingsTags();
-    } else {
-      window.location.href = 'index.html';
+        columns = boardData.columns || []; 
+        updateTagFilterDropdown();
+        render(); 
+        renderMembersSidebar();
+        renderSettingsTags();
+      }
     }
   });
 
+  // 3. Загрузка сообщений чата проекта
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
+    
     snapshot.forEach(doc => {
       const msg = doc.data(), isMe = msg.user.id === currentUser.id;
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+      
       chatBox.innerHTML += `
         <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
           <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800 flex-shrink-0" />
