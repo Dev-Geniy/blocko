@@ -83,51 +83,46 @@
     </div>
   </header>
 
-<main class="p-8 max-w-7xl mx-auto w-full">
-    
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-10 gap-6">
-      
-      <div class="flex flex-col gap-4">
-        <div>
-          <h2 class="text-3xl font-bold tracking-tight mb-1 text-gray-900 dark:text-white">Рабочие пространства</h2>
-          <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выберите проект или создайте новый</p>
-        </div>
-        
-        <div id="statsBar" class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm mt-1">
-          
-          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-            <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
-            <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
-          </div>
-          
-          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-            <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
-            <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
-          </div>
-          
-          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-            <i data-lucide="clock" class="w-4 h-4 text-red-400 dark:text-red-500/80"></i>
-            <span>Дедлайнов: <span id="statOverdueTasks" class="font-bold text-red-500">0</span></span>
-          </div>
-          
-          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-            <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
-            <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
-          </div>
-
-        </div>
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+    <div class="flex justify-between items-end mb-8">
+      <div>
+        <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выберите проект или создайте новый</p>
       </div>
-
-      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 active:scale-95 transition-all whitespace-nowrap shrink-0 mt-1">
-        <i data-lucide="plus" class="w-4 h-4"></i> Создать доску
+      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+        <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
       </button>
-
     </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Загрузка проектов...</div>
     </div>
   </main>
+  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md py-4 px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+      
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
+          <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
+          <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4 opacity-70"></i>
+          <span>Дедлайны: <span id="statOverdueTasks" class="font-bold text-gray-900 dark:text-white transition-colors duration-300">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
+          <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+      </div>
+      
+      <div class="text-xs opacity-50">Blocko Pro © 2026</div>
+    </div>
+  </footer>
 </div>
 
 <script>
@@ -214,12 +209,23 @@ function renderBoardsGrid() {
     }
   });
 
-  // Обновляем цифры в Stats Bar (убедитесь, что вы добавили HTML блок статистики выше)
+  // Обновляем цифры в Футере
+  const statOverdueEl = document.getElementById('statOverdueTasks');
+  
   if (document.getElementById('statTotalBoards')) {
     document.getElementById('statTotalBoards').innerText = allBoards.length;
     document.getElementById('statTotalTasks').innerText = totalTasks;
-    document.getElementById('statOverdueTasks').innerText = overdueTasks;
     document.getElementById('statTotalMembers').innerText = uniqueMembers.size;
+    
+    // Логика цвета для дедлайнов
+    statOverdueEl.innerText = overdueTasks;
+    if (overdueTasks > 0) {
+      statOverdueEl.classList.remove('text-gray-900', 'dark:text-white');
+      statOverdueEl.classList.add('text-red-500');
+    } else {
+      statOverdueEl.classList.remove('text-red-500');
+      statOverdueEl.classList.add('text-gray-900', 'dark:text-white');
+    }
   }
 
   // --- 2. ПРОВЕРКА ПУСТЫХ СОСТОЯНИЙ ---
@@ -228,7 +234,7 @@ function renderBoardsGrid() {
     lucide.createIcons(); return;
   }
 
-if (filteredBoards.length === 0 && searchQuery !== '') {
+  if (filteredBoards.length === 0 && searchQuery !== '') {
     grid.innerHTML = `
       <div class="col-span-full py-20 text-center bg-gray-100/50 dark:bg-gray-900/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-gray-800">
         <div class="w-16 h-16 bg-white dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -246,9 +252,8 @@ if (filteredBoards.length === 0 && searchQuery !== '') {
     const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
     const isOwner = data.owner === currentUser.id;
     
-   let tasksCount = 0;
+    let tasksCount = 0;
     let boardHasOverdue = false;
-    const todayStr = new Date().toISOString().split('T')[0];
 
     if (data.columns) { 
       data.columns.forEach(col => { 
@@ -256,7 +261,6 @@ if (filteredBoards.length === 0 && searchQuery !== '') {
           col.cards.forEach(c => {
             if (!c.archived) {
               tasksCount++;
-              // Если дата есть и она меньше сегодняшней — зажигаем тревогу
               if (c.dueDate && c.dueDate < todayStr) boardHasOverdue = true;
             }
           });
@@ -264,7 +268,7 @@ if (filteredBoards.length === 0 && searchQuery !== '') {
       }); 
     }
 
-// Создаем пульсирующий индикатор, если есть просроченные задачи
+    // Создаем пульсирующий индикатор, если есть просроченные задачи
     const overdueBadge = boardHasOverdue 
       ? `<div class="absolute top-6 left-16 bg-red-500 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-ping" title="Есть просроченные задачи!"></div>` 
       : '';
