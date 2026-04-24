@@ -83,63 +83,48 @@
     </div>
   </header>
 
-<main class="p-4 sm:p-8 max-w-7xl mx-auto w-full">
+<main class="p-8 max-w-7xl mx-auto w-full">
     
-    <div id="statsBar" class="w-full mb-10 bg-white dark:bg-gray-800/50 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col md:flex-row">
+    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-10 gap-6">
       
-      <div class="flex-1 px-6 py-4 flex items-center gap-4 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        <div class="text-gray-400 dark:text-gray-500">
-          <i data-lucide="folder-kanban" class="w-5 h-5"></i>
-        </div>
+      <div class="flex flex-col gap-4">
         <div>
-          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Проекты</div>
-          <div id="statTotalBoards" class="text-xl font-bold text-gray-900 dark:text-white leading-none">0</div>
+          <h2 class="text-3xl font-bold tracking-tight mb-1 text-gray-900 dark:text-white">Рабочие пространства</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выберите проект или создайте новый</p>
+        </div>
+        
+        <div id="statsBar" class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm mt-1">
+          
+          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
+            <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
+          
+          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
+            <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
+          
+          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <i data-lucide="clock" class="w-4 h-4 text-red-400 dark:text-red-500/80"></i>
+            <span>Дедлайнов: <span id="statOverdueTasks" class="font-bold text-red-500">0</span></span>
+          </div>
+          
+          <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+            <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
+            <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
+
         </div>
       </div>
 
-      <div class="flex-1 px-6 py-4 flex items-center gap-4 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        <div class="text-gray-400 dark:text-gray-500">
-          <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Всего задач</div>
-          <div id="statTotalTasks" class="text-xl font-bold text-gray-900 dark:text-white leading-none">0</div>
-        </div>
-      </div>
-
-      <div class="flex-1 px-6 py-4 flex items-center gap-4 border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        <div class="text-red-400/80 dark:text-red-500/70">
-          <i data-lucide="clock" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Дедлайны</div>
-          <div id="statOverdueTasks" class="text-xl font-bold text-gray-900 dark:text-white leading-none">0</div>
-        </div>
-      </div>
-
-      <div class="flex-1 px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        <div class="text-gray-400 dark:text-gray-500">
-          <i data-lucide="users" class="w-5 h-5"></i>
-        </div>
-        <div>
-          <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Команда</div>
-          <div id="statTotalMembers" class="text-xl font-bold text-gray-900 dark:text-white leading-none">0</div>
-        </div>
-      </div>
-
-    </div>
-
-    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-end mb-6 gap-4">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight mb-1 text-gray-900 dark:text-white">Рабочие пространства</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Выберите проект или создайте новый</p>
-      </div>
-      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 active:scale-95 transition-all whitespace-nowrap shrink-0 mt-1">
         <i data-lucide="plus" class="w-4 h-4"></i> Создать доску
       </button>
+
     </div>
     
-    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Загрузка проектов...</div>
     </div>
   </main>
