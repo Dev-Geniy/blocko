@@ -1,14 +1,14 @@
 // ========================================== 
 // 1. КЛЮЧИ И НАСТРОЙКИ FIREBASE
 // ==========================================
-const firebaseConfig = { 
-  apiKey : "AIzaSyD9qC7dTYFeuy7JwKAiCDwq1jFdVwSSzPY" , 
-  authDomain : "blocko-pro.firebaseapp.com" , 
-  projectId : "blocko-pro" , 
-  storageBucket : "blocko-pro.firebasestorage.app" , 
-  messagingSenderId : "624610548711" , 
-  appId : "1:624610548711:web:338aa1cb69a887447b7b42" , 
-  measurementId : "G-YQTHGKRLJJ" 
+const firebaseConfig = {
+  apiKey: "AIzaSyD9qC7dTYFeuy7JwKAiCDwq1jFdVwSSzPY",
+  authDomain: "blocko-pro.firebaseapp.com",
+  projectId: "blocko-pro",
+  storageBucket: "blocko-pro.firebasestorage.app",
+  messagingSenderId: "624610548711",
+  appId: "1:624610548711:web:338aa1cb69a887447b7b42",
+  measurementId: "G-YQTHGKRLJJ"
 };
 
 // ==========================================
@@ -48,36 +48,3 @@ const AVAILABLE_TAGS = [
   { id: 'urgent', name: 'Urgent', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
   { id: 'design', name: 'Design', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' }
 ];
-
-// ==========================================
-// 5. SAAS МОДЕЛЬ И ТАРИФЫ
-// ==========================================
-const USER_PLANS = {
-  FREE: {
-    name: "Free",
-    maxBoards: 2,
-    maxCols: 3,
-    maxMembers: 3,
-    chatCooldown: 60, // секунды
-    features: ["Online Mode"]
-  },
-  FREELANCER: {
-    name: "Freelancer",
-    maxBoards: 15,
-    maxCols: 99,
-    maxMembers: 10,
-    chatCooldown: 5,
-    features: ["Online Mode", "Offline Mode"]
-  },
-  PRO: {
-    name: "Professional",
-    maxBoards: 999,
-    maxCols: 99,
-    maxMembers: 99,
-    chatCooldown: 0,
-    features: ["All Modes", "AI Priority", "Analytics"]
-  }
-};
-
-// Текущий план пользователя (в будущем будет браться из профиля Firebase)
-let currentPlan = USER_PLANS.FREE;
