@@ -109,31 +109,43 @@
     </div>
   </main>
 
-  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md py-4 px-8">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+<footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md py-4 px-8">
+    <div class="max-w-7xl mx-auto flex flex-col gap-4">
       
-      <div class="flex items-center gap-6">
-        <div class="flex items-center gap-2">
-          <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
-          <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
+            <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
+            <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 opacity-70"></i>
+            <span>Дедлайны: <span id="statOverdueTasks" class="font-bold text-gray-900 dark:text-white transition-colors duration-300">0</span></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
+            <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
-          <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
-        </div>
-        <div class="flex items-center gap-2">
-          <i data-lucide="clock" class="w-4 h-4 opacity-70"></i>
-          <span>Дедлайны: <span id="statOverdueTasks" class="font-bold text-gray-900 dark:text-white transition-colors duration-300">0</span></span>
-        </div>
-        <div class="flex items-center gap-2">
-          <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
-          <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
-        </div>
+        
+        <div class="text-xs opacity-50 font-bold tracking-widest hidden sm:block">BLOCKO PRO</div>
       </div>
-      
-      <div class="text-xs opacity-50">Blocko Pro © 2026</div>
+
+      <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 pt-3 border-t border-gray-200/50 dark:border-gray-800/50">
+        <a href="#" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Прайс</a>
+        <a href="#" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">API</a>
+        <a href="#" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Партнёрская программа</a>
+        <a href="#" class="text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">Другие наши проекты</a>
+        <span class="text-[11px] text-gray-300 dark:text-gray-600 ml-auto hidden md:inline">© 2026 Все права защищены</span>
+      </div>
+
     </div>
   </footer>
+  
 </div>
 
 <script>
