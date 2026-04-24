@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Мои задачи - Blocko Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .deadline-urgent { border-color: #ef4444 !important; background: rgba(239, 68, 68, 0.05); }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors">
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Персональный Дашборд</h1>
+      <p class="text-xs text-indigo-500 font-bold uppercase tracking-widest mt-0.5">Все задачи, где вы отмечены</p>
+    </div>
+  </div>
+</header>
+
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  <div id="tasksGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="col-span-full py-20 text-center animate-pulse text-gray-400 font-medium">Сбор данных со всех воркспейсов...</div>
+  </div>
+</main>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  lucide.createIcons();
+  let currentUser = null;
+
+  auth.onAuthStateChanged(user => {
+    if (user) { currentUser = user; loadAllMyTasks(); } 
+    else { window.location.href = 'index.html'; }
+  });
+
+  async function loadAllMyTasks() {
+    const grid = document.getElementById('tasksGrid');
+    let myTasks = [];
+
+    try {
+      // Ищем все доски, где пользователь является участником
+      const boardsSnapshot = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
+      
+      boardsSnapshot.forEach(doc => {
+        const board = doc.data();
+        const boardId = doc.id;
+        
+        board.columns.forEach(col => {
+          if (col.cards) {
+            col.cards.forEach(card => {
+              // Критерий: карта не в архиве и имеет тег с именем пользователя
+              const hasMyTag = card.tags && card.tags.some(tId => {
+                 const boardTag = (board.tags || []).find(bt => bt.id === tId);
+                 return boardTag && boardTag.name === currentUser.displayName;
+              });
+
+              if (!card.archived && hasMyTag) {
+                myTasks.push({ ...card, boardTitle: board.title, colName: col.name, boardId: boardId });
+              }
+            });
+          }
+        });
+      });
+
+      // Сортировка по дедлайну
+      myTasks.sort((a, b) => {
+        if (!a.dueDate) return 1; if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+
+      renderTasks(myTasks);
+    } catch (e) { grid.innerHTML = '<div class="col-span-full text-center text-red-500">Ошибка загрузки.</div>'; }
+  }
+
+  function renderTasks(tasks) {
+    const grid = document.getElementById('tasksGrid');
+    if (tasks.length === 0) {
+      grid.innerHTML = '<div class="col-span-full py-20 text-center text-gray-500">Задач для вас пока нет. Отдыхайте! ☕</div>';
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    grid.innerHTML = tasks.map(card => {
+      const isOverdue = card.dueDate && card.dueDate < today;
+      const dateText = card.dueDate ? new Date(card.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Без срока';
+      
+      let checklistStatus = '';
+      if (card.checklist && card.checklist.length > 0) {
+        const done = card.checklist.filter(i => i.isCompleted).length;
+        const percent = Math.round((done / card.checklist.length) * 100);
+        checklistStatus = `<div class="mt-4"><div class="flex justify-between text-[10px] mb-1 font-bold"><span>Прогресс</span><span>${percent}%</span></div><div class="w-full h-1 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden"><div class="bg-indigo-500 h-full" style="width:${percent}%"></div></div></div>`;
+      }
+
+      return `
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] shadow-sm relative group flex flex-col h-full ${isOverdue ? 'deadline-urgent' : ''}">
+          <div class="flex justify-between items-start mb-4">
+            <span class="text-[10px] font-bold px-2 py-1 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-lg uppercase tracking-wider">${card.boardTitle}</span>
+            <div class="flex items-center gap-1 text-[10px] font-bold ${isOverdue ? 'text-red-500' : 'text-gray-400'}">
+              <i data-lucide="clock" class="w-3 h-3"></i> ${dateText}
+            </div>
+          </div>
+          
+          <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white">${card.title}</h3>
+          <p class="text-xs text-gray-500 line-clamp-2 mb-4">${card.description || 'Нет описания'}</p>
+          
+          <div class="mt-auto">
+            ${checklistStatus}
+            <div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <span class="text-[10px] font-bold text-gray-400 uppercase">${card.colName}</span>
+              <a href="board.html?b=${card.boardId}" class="text-[10px] font-bold text-indigo-500 hover:underline">Перейти к доске →</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    lucide.createIcons();
+  }
+</script>
+</body>
+</html>
