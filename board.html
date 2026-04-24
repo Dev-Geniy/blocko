@@ -13,7 +13,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="config.js"></script> <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="config.js"></script> 
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -54,7 +55,7 @@
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col overflow-hidden transition-colors duration-300">
 
-<header class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md flex justify-between items-center z-20">
+<header class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md flex justify-between items-center z-20 relative">
   <div class="flex items-center gap-3">
     <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
       <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -81,19 +82,19 @@
   </div>
 </header>
 
-<div class="flex flex-1 overflow-hidden">
-  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing">
+<div class="flex flex-1 overflow-hidden relative">
+  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full">
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
 
-  <aside id="chatSidebar" class="w-80 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col transition-all duration-300 transform translate-x-full hidden z-10 shadow-2xl">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+  <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-30 shadow-2xl">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
-      <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
+      <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 text-sm flex flex-col"></div>
-    <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+    <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
+    <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50">
+      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
     </div>
   </aside>
 </div>
@@ -201,8 +202,6 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
-// МЫ УДАЛИЛИ ОТСЮДА IMGBB_KEY И AVAILABLE_TAGS, ТАК КАК ОНИ УЖЕ ЕСТЬ В CONFIG.JS
-
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let columns = [], sortableInstances = [];
@@ -214,9 +213,7 @@ let selectedColColor = 'default', activeTags = [], pendingImageFile = null;
 // ==========================================
 auth.onAuthStateChanged((user) => {
   if (user) {
-    // На случай, если у Google-аккаунта нет аватарки (чтобы не было пустой картинки)
     const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
-    
     currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
     document.getElementById('commentMyAvatar').src = currentUser.avatar;
     
@@ -242,15 +239,14 @@ function loadBoard() {
 
   docRef.onSnapshot((doc) => { 
     if (doc.exists) { 
-      document.getElementById('boardTitleHeader').innerText = doc.data().title; // Обновляем заголовок онлайн
+      document.getElementById('boardTitleHeader').innerText = doc.data().title;
       columns = doc.data().columns || []; 
       render(); 
     } else {
-      window.location.href = 'index.html'; // Если удалили доску - выкидываем юзеров на главную
+      window.location.href = 'index.html';
     }
   });
 
-  // Подписка на чат (Real-time)
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст. Напиши первым!</div>' : '';
@@ -258,20 +254,20 @@ function loadBoard() {
       const msg = doc.data(), isMe = msg.user.id === currentUser.id;
       const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
       chatBox.innerHTML += `
-        <div class="flex gap-2 ${isMe ? 'flex-row-reverse' : ''}">
-          <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800" />
+        <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
+          <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm border border-gray-100 dark:border-gray-800 flex-shrink-0" />
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
-            <span class="text-[10px] text-gray-500 font-medium mb-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-            <div class="${isMe ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-100 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+            <div class="${isMe ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20' : 'bg-gray-100 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
           </div>
         </div>
       `;
     });
-    chatBox.scrollTop = chatBox.scrollHeight;
+    // Прокрутка чата после обновления (с микро-задержкой для надежности)
+    setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
   });
 }
 
-// ФУНКЦИЯ ПЕРЕИМЕНОВАНИЯ
 function renameBoard() {
   const currentTitle = document.getElementById('boardTitleHeader').innerText;
   const newTitle = prompt("Новое название проекта:", currentTitle);
@@ -286,14 +282,18 @@ function persist() { db.collection("boards").doc(BOARD_ID).update({ columns }); 
 // UI ЭКШЕНЫ
 // ==========================================
 function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
-function toggleChat() { document.getElementById('chatSidebar').classList.toggle('hidden'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
+
+function toggleChat() { 
+  // Исправленная логика без скрытия дисплея, работает на транслейтах
+  document.getElementById('chatSidebar').classList.toggle('translate-x-full'); 
+}
+
 function sendChatMessage() {
   const text = document.getElementById('chatInput').value.trim();
   if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
   document.getElementById('chatInput').value = '';
 }
 
-// Плавное открытие/закрытие модалок
 function toggleModal(modalId, show) {
   const el = document.getElementById(modalId);
   if (show) { el.classList.remove('hidden'); setTimeout(() => el.classList.remove('opacity-0'), 10); } 
@@ -372,7 +372,6 @@ function openEditModal(colId, cardId = null) {
 }
 function closeEditModal() { toggleModal('editCardModal', false); }
 
-// Обработка Drag & Drop для зоны загрузки картинки
 const dropzone = document.getElementById('dropzoneLabel');
 dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); };
 dropzone.ondragleave = (e) => { e.preventDefault(); dropzone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); };
