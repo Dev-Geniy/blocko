@@ -45,7 +45,6 @@
     
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-    
     @keyframes deadline-pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     .deadline-overdue { border-color: #ef4444 !important; animation: deadline-pulse 2s infinite; }
   </style>
@@ -825,11 +824,14 @@ function render() {
 
       return `
         <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
+          
           ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+          
           ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border border-gray-100 dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
           <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
+          
           <div class="flex justify-between items-end mt-3">
             <div class="flex gap-2 items-center text-gray-400">
               ${dueDateHtml}
@@ -838,7 +840,8 @@ function render() {
             </div>
             ${authorAvatar}
           </div>
-        </div>`;
+        </div>
+      `;
     }).join('');
     
     wrap.innerHTML = `
@@ -847,6 +850,7 @@ function render() {
         ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
       </div>
       <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">${cardsHtml}</div>
+      
       ${isViewer ? '' : `<div class="p-3 pt-0"><button onclick="openEditModal(${col.id})" class="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Добавить карточку</button></div>`}
     `;
     board.appendChild(wrap);
