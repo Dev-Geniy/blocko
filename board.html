@@ -347,18 +347,17 @@ function updateBoardData(updates) {
   }
 }
 
+let isFirstChatLoad = true;
+
 function ensureUserTag(data) {
-  // Защита: если имя пустое, ставим 'User', чтобы Firebase не выдал ошибку undefined
   const userTagName = currentUser.name || "User"; 
   const currentTags = data.tags || getBoardTags();
-  
   if (!currentTags.some(t => t.name === userTagName)) {
       const newTag = { 
           id: 'tag_user_' + currentUser.id, 
           name: userTagName, 
           color: 'bg-indigo-500 text-white border-indigo-600'
       };
-      
       const updatedTags = [...currentTags, newTag];
       if (isLocalBoard) {
          updateBoardData({ tags: updatedTags });
@@ -388,96 +387,108 @@ function loadBoard() {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
-    docRef.get().then(doc => {
+    // УБРАЛИ ЖЕСТКИЙ .get() И РЕДИРЕКТ. Теперь только реалтайм прослушивание!
+    docRef.onSnapshot((doc) => {
       if (doc.exists) {
         let data = doc.data();
         let updates = {};
-        let users = data.users || {};
-        let members = data.members || []; // Защита от отсутствующего массива
         let needsUpdate = false;
 
-        if (!users[currentUser.id]) {
-           users[currentUser.id] = { 
-               name: currentUser.name || "User", // Защита от undefined
+        if (!data.users || !data.users[currentUser.id]) {
+           updates[`users.${currentUser.id}`] = { 
+               name: currentUser.name || "User", 
                avatar: currentUser.avatar || "", 
                role: data.owner === currentUser.id ? 'owner' : 'editor' 
            };
-           updates.users = users;
            needsUpdate = true;
         }
         
-        if (!members.includes(currentUser.id)) {
+        if (!data.members || !data.members.includes(currentUser.id)) {
             updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
             needsUpdate = true;
         }
         
         if (needsUpdate) {
-           docRef.update(updates).then(() => startSnapshotListener(docRef)).catch(err => {
-               console.error("Ошибка при обновлении пользователя:", err);
-               // Запускаем слушатель доски даже если апдейт юзера не прошел!
-               startSnapshotListener(docRef); 
-           });
-        } else {
-           startSnapshotListener(docRef);
+           docRef.update(updates).catch(console.error);
         }
-      } else { 
-        alert("Доска не найдена или удалена!"); window.location.href = 'index.html'; 
-      }
-    }).catch(e => {
-        // УБРАН РЕДИРЕКТ, ИЗ-ЗА КОТОРОГО ТЕБЯ ВЫКИДЫВАЛО
-        console.error("Критическая ошибка доступа:", e);
-        alert("Ошибка сети или доступа. Проверьте консоль браузера (F12).");
-    });
-
-    let isFirstChatLoad = true;
-    
-    docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
-      const chatBox = document.getElementById("chatMessages");
-      
-      if (isFirstChatLoad) {
-        chatBox.innerHTML = snapshot.empty ? '<div id="emptyChatMsg" class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
-        snapshot.forEach(doc => renderSingleMessage(doc.data(), chatBox));
-        isFirstChatLoad = false;
-        setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+        
+        boardData = data;
+        ensureUserTag(boardData);
+        processBoardData(boardData);
+        renderMembersSidebar();
+        
+        // Инициализируем чат только один раз
+        if (isFirstChatLoad) {
+           initChatListener(docRef);
+        }
       } else {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            document.getElementById('emptyChatMsg')?.remove(); 
-            const msg = change.doc.data();
-            renderSingleMessage(msg, chatBox);
-            
-            const isMe = msg.user.id === currentUser.id;
-            const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
-            
-            if (!isMe && !isChatOpen) {
-              const badge = document.getElementById('chatBadge');
-              let count = parseInt(badge.innerText) || 0;
-              count++;
-              badge.innerText = count > 99 ? '99+' : count;
-              badge.classList.remove('hidden');
-              
-              showSystemToast(
-                `💬 Новое сообщение: ${msg.user.name || 'Аноним'}`, 
-                msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 
-                'message-square', 
-                'text-blue-500', 
-                'bg-blue-50 dark:bg-blue-900/30'
-              );
-            }
-            
-            if (isChatOpen || isMe) {
-              setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-            }
-          }
-        });
+        // ВМЕСТО РЕДИРЕКТА ПОКАЗЫВАЕМ СООБЩЕНИЕ ПРЯМО НА ДОСКЕ
+        document.getElementById('boardTitleHeader').innerText = "Синхронизация...";
+        document.getElementById('board').innerHTML = `
+          <div class="w-full text-center py-20 flex flex-col items-center">
+            <div class="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-full flex items-center justify-center mb-4">
+              <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Получаем данные...</h2>
+            <p class="text-gray-500 text-sm mb-6 max-w-md">Если вы только что создали проект, Firebase нужно полсекунды на синхронизацию. Если загрузка идет долго, возможно, доска удалена.</p>
+            <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95">Вернуться назад</button>
+          </div>
+        `;
+        lucide.createIcons();
       }
     }, (error) => {
-        console.error("Ошибка инициализации чата:", error);
+        console.error("Ошибка Firebase:", error);
     });
   }
 }
 
-// Вспомогательная функция для рендера одного сообщения (теперь она снаружи)
+// Отдельная функция прослушивания чата
+function initChatListener(docRef) {
+  docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
+    const chatBox = document.getElementById("chatMessages");
+    
+    if (isFirstChatLoad) {
+      chatBox.innerHTML = snapshot.empty ? '<div id="emptyChatMsg" class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
+      snapshot.forEach(doc => renderSingleMessage(doc.data(), chatBox));
+      isFirstChatLoad = false;
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+    } else {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          document.getElementById('emptyChatMsg')?.remove(); 
+          const msg = change.doc.data();
+          renderSingleMessage(msg, chatBox);
+          
+          const isMe = msg.user.id === currentUser.id;
+          const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
+          
+          // Логика счетчика и уведомлений
+          if (!isMe && !isChatOpen) {
+            const badge = document.getElementById('chatBadge');
+            let count = parseInt(badge.innerText) || 0;
+            count++;
+            badge.innerText = count > 99 ? '99+' : count;
+            badge.classList.remove('hidden');
+            
+            showSystemToast(
+              `💬 Новое сообщение: ${msg.user.name || 'Аноним'}`, 
+              msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 
+              'message-square', 
+              'text-blue-500', 
+              'bg-blue-50 dark:bg-blue-900/30'
+            );
+          }
+          
+          if (isChatOpen || isMe) {
+            setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+          }
+        }
+      });
+    }
+  });
+}
+
+// Рендер одиночного сообщения
 function renderSingleMessage(msg, container) {
   const isMe = msg.user.id === currentUser.id;
   const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
