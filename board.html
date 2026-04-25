@@ -123,11 +123,11 @@
     </div>
     <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
     <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex gap-2 items-center">
-      <label class="cursor-pointer p-3 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0" title="Прикрепить файл (<1MB)">
+      <label class="cursor-pointer p-3 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0" title="Прикрепить файл">
         <i data-lucide="paperclip" class="w-5 h-5"></i>
         <input type="file" class="hidden" onchange="handleChatAttachment(event)" />
       </label>
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Написать..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
       <button onclick="sendChatMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors flex-shrink-0"><i data-lucide="send" class="w-5 h-5"></i></button>
     </div>
   </aside>
@@ -280,6 +280,38 @@
   </div>
 </div>
 
+<div id="fileTypeModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center">
+    <button onclick="closeFileTypeModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+    <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
+      <i data-lucide="file-up" class="w-8 h-8"></i>
+    </div>
+    
+    <h2 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Отправка документа</h2>
+    <p class="text-sm text-gray-500 mb-6">Выберите режим хранения для этого файла.</p>
+    
+    <div class="flex flex-col gap-3">
+      <button onclick="confirmFileUpload('catbox')" class="p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-gray-50 dark:bg-gray-800/50">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="hard-drive" class="w-5 h-5"></i></div>
+        <div>
+          <div class="font-bold text-gray-900 dark:text-white text-sm">Хранить вечно</div>
+          <div class="text-[10px] text-gray-500 mt-0.5">До 200 МБ. Файл будет доступен всегда (Catbox).</div>
+        </div>
+      </button>
+
+      <button onclick="confirmFileUpload('fileio')" class="p-4 border border-orange-200 dark:border-orange-900/50 hover:border-orange-400 dark:hover:border-orange-500 rounded-xl flex items-center gap-4 group transition-all text-left bg-orange-50/50 dark:bg-orange-900/10 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-orange-500/0 via-orange-500/5 to-orange-500/0 opacity-0 group-hover:opacity-100 animate-pulse transition-opacity"></div>
+        <div class="p-2 bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400 rounded-lg group-hover:scale-110 transition-transform relative z-10"><i data-lucide="flame" class="w-5 h-5"></i></div>
+        <div class="relative z-10">
+          <div class="font-bold text-gray-900 dark:text-white text-sm">Сжечь после прочтения</div>
+          <div class="text-[10px] text-gray-500 mt-0.5">До 100 МБ. Уничтожается после 1-го скачивания.</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+  
 <div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
   <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30">
     <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i>
@@ -487,6 +519,102 @@ function initChatListener(docRef) {
   });
 }
 
+let pendingChatFile = null;
+
+// Главная функция: проверяет картинка это или файл
+function handleChatAttachment(e) {
+  if (isLocalBoard) {
+     alert("Вложения файлов не работают в офлайн-режиме.");
+     e.target.value = '';
+     return;
+  }
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = ''; // Сбрасываем инпут
+  
+  if (file.type.startsWith('image/')) {
+     uploadImageToImgbb(file); // Картинки грузим сразу без модалок
+  } else {
+     pendingChatFile = file; // Сохраняем файл и открываем окно выбора
+     const el = document.getElementById('fileTypeModal');
+     el.classList.remove('hidden');
+     setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
+}
+
+function closeFileTypeModal() {
+  const el = document.getElementById('fileTypeModal');
+  el.classList.add('opacity-0');
+  setTimeout(() => { el.classList.add('hidden'); pendingChatFile = null; }, 200);
+}
+
+// Загрузка только картинок
+async function uploadImageToImgbb(file) {
+  const chatBox = document.getElementById("chatMessages");
+  const tempId = 'load_' + Date.now();
+  chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка изображения...</div>`;
+  chatBox.scrollTop = chatBox.scrollHeight;
+  try {
+    const fd = new FormData(); fd.append('image', file);
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd });
+    const data = await res.json();
+    if (data.success) {
+      await db.collection("boards").doc(BOARD_ID).collection("chat").add({
+        text: "", attachment: { type: 'image', url: data.data.url, name: file.name },
+        user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } else throw new Error("Ошибка загрузки");
+  } catch (err) {
+    showSystemToast('Ошибка', err.message, 'alert-circle', 'text-red-500', 'bg-red-50');
+  } finally {
+    document.getElementById(tempId)?.remove();
+  }
+}
+
+// Загрузка документов по выбору юзера
+async function confirmFileUpload(service) {
+  if (!pendingChatFile) return;
+  const file = pendingChatFile;
+  closeFileTypeModal();
+
+  const chatBox = document.getElementById("chatMessages");
+  const tempId = 'load_' + Date.now();
+  chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Отправка файла...</div>`;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  try {
+    let attachmentUrl = '';
+    
+    if (service === 'catbox') {
+      const fd = new FormData();
+      fd.append('reqtype', 'fileupload');
+      fd.append('fileToUpload', file);
+      const res = await fetch('https://catbox.moe/user/api.php', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error("Сервер блокирует прямую загрузку, попробуйте 'Одноразовый файл'.");
+      attachmentUrl = await res.text();
+    } else if (service === 'fileio') {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('https://file.io', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.success) attachmentUrl = data.link;
+      else throw new Error("Сбой серверов File.io");
+    }
+
+    await db.collection("boards").doc(BOARD_ID).collection("chat").add({
+      text: "", 
+      attachment: { type: 'file', url: attachmentUrl, name: file.name, size: (file.size/1024).toFixed(1)+' KB', service: service },
+      user: currentUser, 
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    showSystemToast('Ошибка сети', err.message, 'alert-circle', 'text-red-500', 'bg-red-50');
+  } finally {
+    document.getElementById(tempId)?.remove();
+  }
+}
+
+// Умный рендер сообщений (С поддержкой Огненных бейджиков)
 function renderSingleMessage(msg, container) {
   const isMe = msg.user.id === currentUser.id;
   const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
@@ -496,14 +624,19 @@ function renderSingleMessage(msg, container) {
     if (msg.attachment.type === 'image') {
       attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
     } else {
+      const isFileIo = msg.attachment.service === 'fileio';
+      const fileIcon = isFileIo ? 'flame' : 'file';
+      const fileColor = isFileIo ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
+      const badgeHtml = isFileIo ? `<span class="text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded ml-2">Сгорит после скачивания</span>` : '';
+      
       attachHtml = `
         <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'}">
-          <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg"><i data-lucide="file" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></div>
+          <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
           <div class="flex-1 min-w-0 flex flex-col">
-            <span class="text-xs font-bold truncate ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${msg.attachment.name}</span>
+            <div class="flex items-center"><span class="text-xs font-bold truncate ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${msg.attachment.name}</span>${badgeHtml}</div>
             <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
           </div>
-          <a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>
+          <a href="${msg.attachment.url}" target="_blank" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>
         </div>`;
     }
   }
@@ -511,7 +644,7 @@ function renderSingleMessage(msg, container) {
   const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
 
   container.innerHTML += `
-    <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'}">
+    <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-2">
       <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
       <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
         <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
@@ -1061,6 +1194,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'editCardModal') closeEditModal();
   if (e.target.id === 'colModal') closeColModal();
   if (e.target.id === 'quickAddModal') closeQuickAdd();
+  if (e.target.id === 'fileTypeModal') closeFileTypeModal();
 });
 
 let toastTimeout;
@@ -1094,6 +1228,7 @@ document.addEventListener('keydown', (e) => {
     if (typeof closeEditModal === 'function') closeEditModal();
     if (typeof closeColModal === 'function') closeColModal();
     if (typeof closeQuickAdd === 'function') closeQuickAdd();
+    if (typeof closeFileTypeModal === 'function') closeFileTypeModal();
     if (typeof closeOtherSidebars === 'function') closeOtherSidebars('none');
   }
 });
