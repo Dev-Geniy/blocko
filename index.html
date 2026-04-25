@@ -160,7 +160,7 @@
     </div>
   </div>
 
-  <!-- модалка -->
+  <!-- модалка вход по id -->
   <div id="joinBoardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity px-4">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700">
       <button onclick="closeJoinModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -178,6 +178,28 @@
     
       <button onclick="confirmJoinBoard()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
         <i data-lucide="log-in" class="w-4 h-4"></i> Присоединиться
+      </button>
+    </div>
+  </div>
+
+  <!-- модалка для бекап -->
+  <div id="backupModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity px-4">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center">
+      <button onclick="closeBackupModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+      <div class="mx-auto w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 border border-emerald-100 dark:border-emerald-800 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+        <i data-lucide="hard-drive-download" class="w-10 h-10"></i>
+      </div>
+    
+      <h2 class="text-2xl font-bold mb-3 text-gray-900 dark:text-white">Резервная копия</h2>
+    
+      <p class="text-sm text-gray-500 mb-8 leading-relaxed">
+        Этот проект имеет статус <b class="text-emerald-500">"Офлайн"</b> и хранится только в памяти вашего текущего браузера. <br><br>
+        Скачайте этот файл, чтобы не потерять данные при очистке кэша, или чтобы перенести проект на другое устройство через кнопку "Загрузить".
+      </p>
+    
+      <button id="executeBackupBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white py-4 rounded-2xl text-lg font-bold flex justify-center items-center gap-3 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all">
+        <i data-lucide="download" class="w-6 h-6"></i> Скачать файл
       </button>
     </div>
   </div>
@@ -413,19 +435,37 @@ async function confirmCreateBoard() {
 }
 
 // Импорт / Экспорт локальных досок
+let pendingBackupId = null;
+
 function exportLocalBoard(id) {
-  const localBoards = getLocalBoards();
-  const data = localBoards[id];
-  if(!data) return;
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
-  const el = document.createElement('a');
-  el.setAttribute("href", dataStr);
-  el.setAttribute("download", `blocko_backup_${data.title}.json`);
-  document.body.appendChild(el);
-  el.click();
-  el.remove();
+  pendingBackupId = id;
+  document.getElementById('backupModal').classList.remove('hidden');
 }
 
+function closeBackupModal() {
+  document.getElementById('backupModal').classList.add('hidden');
+  pendingBackupId = null;
+}
+
+// Привязываем скачивание к большой кнопке в модалке
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('executeBackupBtn').addEventListener('click', () => {
+    if(!pendingBackupId) return;
+    const localBoards = getLocalBoards();
+    const data = localBoards[pendingBackupId];
+    if(!data) return;
+    
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    const el = document.createElement('a');
+    el.setAttribute("href", dataStr);
+    el.setAttribute("download", `blocko_backup_${data.title}.json`);
+    document.body.appendChild(el);
+    el.click();
+    el.remove();
+    
+    closeBackupModal();
+  });
+});
 function importLocalBoard(event) {
   const file = event.target.files[0];
   if (!file) return;
