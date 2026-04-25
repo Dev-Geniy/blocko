@@ -267,7 +267,7 @@ function highlightText(text, query) {
 
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
-let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_'); // Флаг гибридного режима
+let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
 let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
@@ -285,7 +285,6 @@ auth.onAuthStateChanged((user) => {
   }
 });
 
-// ГИБРИДНЫЙ UPDATE DATA
 function updateBoardData(updates) {
   if (isLocalBoard) {
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
@@ -299,49 +298,79 @@ function updateBoardData(updates) {
   }
 }
 
+function ensureUserTag(data) {
+  // АВТО-ТЕГ: Проверяем наличие персонального тега
+  const userTagName = currentUser.name;
+  const currentTags = data.tags || getBoardTags();
+  if (!currentTags.some(t => t.name === userTagName)) {
+      const newTag = { 
+          id: 'tag_user_' + currentUser.id, 
+          name: userTagName, 
+          color: 'bg-indigo-500 text-white border-indigo-600'
+      };
+      
+      const updatedTags = [...currentTags, newTag];
+      // Важно: обновляем без зацикливания
+      if (isLocalBoard) {
+         updateBoardData({ tags: updatedTags });
+      } else {
+         db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags });
+      }
+  }
+}
+
 function loadBoard() {
-  // Настройка UI для Офлайн доски
   if (isLocalBoard) {
     document.getElementById('localBadge').classList.remove('hidden');
     document.getElementById('shareLinkContainer').style.display = 'none';
     document.getElementById('btnTeam').style.display = 'none';
     document.getElementById('btnChat').style.display = 'none';
-    document.getElementById('viewChatContainer').style.display = 'none'; // Убираем чат из просмотра
+    document.getElementById('viewChatContainer').style.display = 'none';
     
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     if (localBoards[BOARD_ID]) {
       boardData = localBoards[BOARD_ID];
+      ensureUserTag(boardData);
       processBoardData(boardData);
     } else {
       alert("Локальная доска не найдена!"); window.location.href = 'index.html';
     }
   } else {
-    // Стандартная онлайн загрузка
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
+    // Сначала гарантируем, что пользователь есть в БД, затем запускаем Snapshot
     docRef.get().then(doc => {
       if (doc.exists) {
         let data = doc.data();
         let updates = {};
         let users = data.users || {};
+        let needsUpdate = false;
+
         if (!users[currentUser.id]) {
            users[currentUser.id] = { name: currentUser.name, avatar: currentUser.avatar, role: data.owner === currentUser.id ? 'owner' : 'editor' };
            updates.users = users;
+           needsUpdate = true;
         }
-        if (!data.members.includes(currentUser.id)) updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
-        if (Object.keys(updates).length > 0) docRef.update(updates);
-      } else { alert("Доска не найдена!"); window.location.href = 'index.html'; }
-    });
-
-    docRef.onSnapshot((doc) => { 
-      if (doc.exists) { 
-        boardData = doc.data();
-        processBoardData(boardData);
-        renderMembersSidebar();
+        if (!data.members.includes(currentUser.id)) {
+            updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
+            needsUpdate = true;
+        }
+        
+        if (needsUpdate) {
+           return docRef.update(updates).then(() => startSnapshotListener(docRef));
+        } else {
+           startSnapshotListener(docRef);
+        }
+      } else { 
+        alert("Доска не найдена!"); window.location.href = 'index.html'; 
       }
+    }).catch(e => {
+        console.error("Ошибка прав:", e);
+        window.location.href = 'index.html';
     });
 
+    // Логика чата остается без изменений
     docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
       const chatBox = document.getElementById("chatMessages");
       chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
@@ -353,7 +382,7 @@ function loadBoard() {
             <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
             <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
               <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-              <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+              <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
             </div>
           </div>
         `;
@@ -361,6 +390,18 @@ function loadBoard() {
       setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
     });
   }
+}
+
+// Вынесено в отдельную функцию, чтобы избежать Race Condition
+function startSnapshotListener(docRef) {
+    docRef.onSnapshot((doc) => { 
+      if (doc.exists) { 
+        boardData = doc.data();
+        ensureUserTag(boardData); // Проверяем авто-тег при каждом обновлении
+        processBoardData(boardData);
+        renderMembersSidebar();
+      }
+    });
 }
 
 function processBoardData(data) {
@@ -371,6 +412,8 @@ function processBoardData(data) {
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
   } else { document.body.style.backgroundImage = 'none'; }
+  
+  // Важно: если колонок нет (чистая доска), используем пустой массив, чтобы не сломать render
   columns = data.columns || []; 
   updateTagFilterDropdown();
   render(); 
@@ -422,7 +465,7 @@ function renderMembersSidebar() {
     let roleSelect = '';
     if (isOwner && user.role !== 'owner') {
       roleSelect = `
-        <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border rounded-lg p-1.5 outline-none cursor-pointer">
+        <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer">
           <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Редактор</option>
           <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Читатель</option>
         </select>
@@ -431,7 +474,7 @@ function renderMembersSidebar() {
       roleSelect = `<span class="text-xs text-gray-400 font-medium px-2">${user.role === 'editor' ? 'Редактор' : 'Читатель'}</span>`;
     }
     return `
-      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border">
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
         <img src="${user.avatar}" class="w-10 h-10 rounded-full bg-gray-200 shadow-sm" />
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-0.5"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '(Вы)' : ''}</span></div>
@@ -482,7 +525,7 @@ function renderCommentsView() {
         <div class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">${c.text}</div>
       </div>
     </div>
-  `).join('') : '<div class="text-gray-400 text-center py-4 bg-gray-50 rounded-xl">Нет комментариев</div>';
+  `).join('') : '<div class="text-gray-400 text-center py-4 bg-gray-50 dark:bg-gray-900/30 rounded-xl">Нет комментариев</div>';
 }
 function addCommentFromView() {
   if(isLocalBoard) return;
@@ -522,9 +565,9 @@ function openEditModal(colId, cardId = null) {
 function closeEditModal() { toggleModal('editCardModal', false); }
 
 const dropzone = document.getElementById('dropzoneLabel');
-dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('border-blue-500', 'bg-blue-50'); };
-dropzone.ondragleave = (e) => { e.preventDefault(); dropzone.classList.remove('border-blue-500', 'bg-blue-50'); };
-dropzone.ondrop = (e) => { e.preventDefault(); dropzone.classList.remove('border-blue-500', 'bg-blue-50'); handleImageSelection(e.dataTransfer.files[0]); };
+dropzone.ondragover = (e) => { e.preventDefault(); dropzone.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); };
+dropzone.ondragleave = (e) => { e.preventDefault(); dropzone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); };
+dropzone.ondrop = (e) => { e.preventDefault(); dropzone.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20'); handleImageSelection(e.dataTransfer.files[0]); };
 document.getElementById('editImage').addEventListener('change', e => handleImageSelection(e.target.files[0]));
 
 function handleImageSelection(file) {
@@ -581,12 +624,12 @@ function renderChecklistEdit() {
   progressText.innerText = `${percent}%`; progressBar.style.width = `${percent}%`;
   progressBar.className = percent === 100 ? 'bg-green-500 h-full transition-all duration-300' : 'bg-blue-500 h-full transition-all duration-300';
   container.innerHTML = activeChecklist.map((item, index) => `
-    <div class="flex items-center justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border shadow-sm">
+    <div class="flex items-center justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
       <label class="flex items-center gap-3 cursor-pointer flex-1 px-2">
         <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistItemEdit(${index})" class="w-4 h-4 text-blue-600 rounded border-gray-300" />
         <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}">${item.text}</span>
       </label>
-      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+      <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
     </div>
   `).join('');
   lucide.createIcons();
@@ -606,12 +649,12 @@ function renderChecklistView() {
   const percent = Math.round((doneCount / viewingCard.checklist.length) * 100);
   const colorClass = percent === 100 ? 'bg-green-500' : 'bg-blue-500';
   let html = `
-    <div class="mb-2 flex items-center justify-between"><h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="check-square" class="w-4 h-4 text-blue-500"></i> Чек-лист подзадач</h3><span class="text-xs font-bold text-gray-500">${percent}%</span></div>
+    <div class="mb-2 flex items-center justify-between"><h3 class="text-sm font-bold flex items-center gap-2 text-gray-900 dark:text-white"><i data-lucide="check-square" class="w-4 h-4 text-blue-500"></i> Чек-лист подзадач</h3><span class="text-xs font-bold text-gray-500">${percent}%</span></div>
     <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-4"><div class="${colorClass} h-full transition-all" style="width: ${percent}%"></div></div>
     <div class="space-y-2">
   `;
   html += viewingCard.checklist.map((item, index) => `
-    <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border">
+    <label class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl cursor-pointer border border-gray-100 dark:border-gray-800">
       <input type="checkbox" ${item.isCompleted ? 'checked' : ''} onchange="toggleChecklistView(${index})" class="w-5 h-5 text-blue-600 rounded border-gray-300" />
       <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'}">${item.text}</span>
     </label>
@@ -636,12 +679,21 @@ function render() {
   const addColBtn = document.getElementById('addColumnBtn');
   if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
   
+  // Безопасный рендеринг: если колонок нет, мы ничего не рисуем, но и не падаем
+  if (!columns || columns.length === 0) {
+      board.innerHTML = `<div class="w-full text-center py-20 text-gray-400 font-medium">Создайте свою первую колонку!</div>`;
+      return;
+  }
+
   columns.forEach(col => {
     const colorStyle = BOARD_UI_COLORS[col.color] || BOARD_UI_COLORS['default'];
     const wrap = document.createElement('div'); wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
-    const filteredCards = col.cards.filter(card => {
+    // Безопасный доступ к карточкам (если col.cards undefined)
+    const safeCards = col.cards || [];
+
+    const filteredCards = safeCards.filter(card => {
       const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
       const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
       return matchesSearch && matchesTag && !card.archived; 
@@ -663,7 +715,7 @@ function render() {
       }
       let dueDateHtml = '';
       if (c.dueDate) {
-        const bgColors = isOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
+        const bgColors = isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
         const formattedDate = new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
         dueDateHtml = `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${bgColors}"><i data-lucide="clock" class="w-3 h-3"></i> ${formattedDate}</div>`;
       }
@@ -675,8 +727,8 @@ function render() {
 
       return `
         <div data-id="${c.id}" onclick="openViewModal(${col.id}, ${c.id})" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500 transition-all group relative select-none">
-          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white p-1.5 rounded-lg border shadow-sm z-10"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
-          ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border pointer-events-none" />` : ''}
+          ${isViewer ? '' : `<button onclick="openEditModal(${col.id}, ${c.id}); event.stopPropagation();" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>`}
+          ${c.image ? `<img src="${c.image}" loading="lazy" class="mb-3 rounded-lg w-full h-32 object-cover border dark:border-gray-700/50 pointer-events-none" />` : ''}
           ${tagsHtml}
           <div class="font-bold text-sm leading-snug pr-8 mb-3 text-gray-900 dark:text-white">${displayTitle}</div>
           ${checklistHtml}
@@ -689,12 +741,12 @@ function render() {
     }).join('');
     
     wrap.innerHTML = `
-      <div class="p-4 border-b border-gray-200/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
-        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div><h2 class="font-bold text-sm dark:text-white">${col.name}</h2><span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 border-gray-200/50">${col.cards.length}</span></div>
-        ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
+      <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none">
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div><h2 class="font-bold text-sm text-gray-900 dark:text-white">${col.name}</h2><span class="text-xs font-bold px-2 py-0.5 rounded-full border bg-white/50 dark:bg-black/20 text-gray-600 dark:text-gray-400 border-gray-200/50 dark:border-gray-700/50">${safeCards.length}</span></div>
+        ${isViewer ? '' : `<button onclick="openColModal(${col.id})" class="text-gray-400 hover:text-blue-500 p-1 rounded transition-colors"><i data-lucide="more-horizontal" class="w-5 h-5"></i></button>`}
       </div>
       <div id="cards-${col.id}" ${isViewer ? '' : `ondblclick="quickAddCard(${col.id})"`} class="p-3 flex-1 overflow-y-auto hide-scroll space-y-3 min-h-[50px] ${isViewer ? '' : 'cursor-pointer'}">${cardsHtml}</div>
-      ${isViewer ? '' : `<div class="p-3 pt-0"><button onclick="openEditModal(${col.id})" class="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:bg-white/50 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Добавить карточку</button></div>`}
+      ${isViewer ? '' : `<div class="p-3 pt-0"><button onclick="openEditModal(${col.id})" class="w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors"><i data-lucide="plus" class="w-4 h-4"></i> Добавить карточку</button></div>`}
     `;
     board.appendChild(wrap);
     
@@ -724,7 +776,12 @@ function confirmQuickAdd() {
   if (!title || !quickAddTargetColId) return;
   const newCard = { id: Date.now(), title, description, tags: ['tag_urg'], comments: [], author: currentUser, dueDate: "" };
   const col = columns.find(c => c.id === quickAddTargetColId);
-  if (col) { col.cards.push(newCard); persist(); } closeQuickAdd();
+  if (col) { 
+      if(!col.cards) col.cards = [];
+      col.cards.push(newCard); 
+      persist(); 
+  } 
+  closeQuickAdd();
 }
 
 document.getElementById('boardBgUpload').addEventListener('change', async (e) => {
@@ -756,13 +813,13 @@ function renderSettingsTags() {
   const isOwnerOrEditor = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role !== 'viewer' : true;
   form.style.display = (isOwnerOrEditor || isLocalBoard) ? 'block' : 'none';
   list.innerHTML = getBoardTags().map(t => `
-    <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border">
+    <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
       <span class="px-3 py-1 rounded-lg text-xs font-bold border ${t.color}">${t.name}</span>
       ${(isOwnerOrEditor || isLocalBoard) ? `<button onclick="deleteCustomTag('${t.id}')" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
     </div>
   `).join('');
   document.getElementById('newTagColorPicker').innerHTML = TAG_PALETTE.map(c => `
-    <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
+    <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
   `).join(''); lucide.createIcons();
 }
 
@@ -775,7 +832,7 @@ function deleteCustomTag(tagId) {
   if (!confirm("Удалить тег со всех карточек?")) return;
   updateBoardData({ tags: getBoardTags().filter(t => t.id !== tagId) });
   columns = columns.map(col => {
-    return { ...col, cards: col.cards.map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
+    return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
   }); persist();
 }
   
