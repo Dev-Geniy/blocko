@@ -469,7 +469,18 @@ function renameBoard() {
 }
   
 function persist() { updateBoardData({ columns }); }
-function copyShareLink() { navigator.clipboard.writeText(window.location.href); alert("Ссылка скопирована!"); }
+  
+function copyShareLink() { 
+  navigator.clipboard.writeText(window.location.href); 
+  showSystemToast(
+    'Ссылка-приглашение скопирована!', 
+    'Отправьте её команде. Для входа потребуется авторизация Google.', 
+    'link', 
+    'text-indigo-500', 
+    'bg-indigo-50 dark:bg-indigo-900/30'
+  );
+}
+  
 function handleSearchAndFilter() { render(); }
 
 function updateTagFilterDropdown() {
