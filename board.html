@@ -349,6 +349,8 @@ function updateBoardData(updates) {
 
 let isFirstChatLoad = true;
 
+let isFirstChatLoad = true;
+
 function ensureUserTag(data) {
   const userTagName = currentUser.name || "User"; 
   const currentTags = data.tags || getBoardTags();
@@ -387,7 +389,7 @@ function loadBoard() {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
-    // УБРАЛИ ЖЕСТКИЙ .get() И РЕДИРЕКТ. Теперь только реалтайм прослушивание!
+    // БРОНЕБОЙНЫЙ СЛУШАТЕЛЬ ДОСКИ
     docRef.onSnapshot((doc) => {
       if (doc.exists) {
         let data = doc.data();
@@ -408,21 +410,16 @@ function loadBoard() {
             needsUpdate = true;
         }
         
-        if (needsUpdate) {
-           docRef.update(updates).catch(console.error);
-        }
+        if (needsUpdate) { docRef.update(updates).catch(console.error); }
         
         boardData = data;
         ensureUserTag(boardData);
         processBoardData(boardData);
         renderMembersSidebar();
         
-        // Инициализируем чат только один раз
-        if (isFirstChatLoad) {
-           initChatListener(docRef);
-        }
+        if (isFirstChatLoad) initChatListener(docRef);
       } else {
-        // ВМЕСТО РЕДИРЕКТА ПОКАЗЫВАЕМ СООБЩЕНИЕ ПРЯМО НА ДОСКЕ
+        // Красивое состояние загрузки вместо пустого экрана
         document.getElementById('boardTitleHeader').innerText = "Синхронизация...";
         document.getElementById('board').innerHTML = `
           <div class="w-full text-center py-20 flex flex-col items-center">
@@ -430,19 +427,17 @@ function loadBoard() {
               <i data-lucide="loader-2" class="w-8 h-8 animate-spin"></i>
             </div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Получаем данные...</h2>
-            <p class="text-gray-500 text-sm mb-6 max-w-md">Если вы только что создали проект, Firebase нужно полсекунды на синхронизацию. Если загрузка идет долго, возможно, доска удалена.</p>
+            <p class="text-gray-500 text-sm mb-6 max-w-md">Секундочку, синхронизируем данные с сервером.</p>
             <button onclick="window.location.href='index.html'" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-sm font-bold transition-all active:scale-95">Вернуться назад</button>
           </div>
         `;
         lucide.createIcons();
       }
-    }, (error) => {
-        console.error("Ошибка Firebase:", error);
-    });
+    }, (error) => { console.error("Ошибка Firebase:", error); });
   }
 }
 
-// Отдельная функция прослушивания чата
+// Отдельная функция чата
 function initChatListener(docRef) {
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
@@ -462,33 +457,23 @@ function initChatListener(docRef) {
           const isMe = msg.user.id === currentUser.id;
           const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
           
-          // Логика счетчика и уведомлений
           if (!isMe && !isChatOpen) {
             const badge = document.getElementById('chatBadge');
-            let count = parseInt(badge.innerText) || 0;
-            count++;
-            badge.innerText = count > 99 ? '99+' : count;
-            badge.classList.remove('hidden');
+            if(badge) {
+                let count = parseInt(badge.innerText) || 0; count++;
+                badge.innerText = count > 99 ? '99+' : count;
+                badge.classList.remove('hidden');
+            }
             
-            showSystemToast(
-              `💬 Новое сообщение: ${msg.user.name || 'Аноним'}`, 
-              msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 
-              'message-square', 
-              'text-blue-500', 
-              'bg-blue-50 dark:bg-blue-900/30'
-            );
+            showSystemToast(`💬 Сообщение: ${msg.user.name || 'Команда'}`, msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 'message-square', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
           }
-          
-          if (isChatOpen || isMe) {
-            setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-          }
+          if (isChatOpen || isMe) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
         }
       });
     }
   });
 }
 
-// Рендер одиночного сообщения
 function renderSingleMessage(msg, container) {
   const isMe = msg.user.id === currentUser.id;
   const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
