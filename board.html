@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FlowBoard - Рабочая область</title>
   
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -16,9 +14,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script> 
-  
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
@@ -129,9 +124,6 @@
           <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
         </label>
         <div id="bgUploadStatus" class="text-xs font-bold text-blue-500 text-center mt-2 h-4"></div>
-        
-        <button onclick="setRandomBackground(event)" class="mt-4 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl text-sm font-bold transition-all shadow-md active:scale-95">Случайный фон 🎲</button>
-
         <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон</button>
       </div>
 
@@ -267,6 +259,7 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
+// --- ВОССТАНОВЛЕННЫЕ КРИТИЧЕСКИЕ КОНСТАНТЫ НАСТРОЕК ---
 const BOARD_UI_COLORS = {
   'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
   'blue': { hex: '#3b82f6', border: 'border-blue-200 dark:border-blue-800' },
@@ -296,6 +289,7 @@ const TAG_PALETTE = [
 ];
 
 let newTagSelectedColor = TAG_PALETTE[0];
+// -------------------------------------------------------------
 
 function highlightText(text, query) {
   if (!query) return text;
@@ -305,7 +299,7 @@ function highlightText(text, query) {
 
 let currentUser = null;
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
-let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_'); 
+let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
 let activeTags = [], pendingImageFile = null, activeChecklist = [];
@@ -362,7 +356,7 @@ function loadBoard() {
     document.getElementById('shareLinkContainer').style.display = 'none';
     document.getElementById('btnTeam').style.display = 'none';
     document.getElementById('btnChat').style.display = 'none';
-    document.getElementById('viewChatContainer').style.display = 'none'; 
+    document.getElementById('viewChatContainer').style.display = 'none';
     
     const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
     if (localBoards[BOARD_ID]) {
@@ -374,10 +368,6 @@ function loadBoard() {
     }
   } else {
     document.getElementById('shareUrlText').innerText = window.location.href;
-    
-    // ГЕНЕРАЦИЯ QR КОДА ТОЛЬКО ДЛЯ ОНЛАЙН ДОСОК
-    setTimeout(addQRCode, 1000);
-
     const docRef = db.collection("boards").doc(BOARD_ID);
     
     docRef.get().then(doc => {
@@ -435,7 +425,7 @@ function startSnapshotListener(docRef) {
     docRef.onSnapshot((doc) => { 
       if (doc.exists) { 
         boardData = doc.data();
-        ensureUserTag(boardData); 
+        ensureUserTag(boardData);
         processBoardData(boardData);
         renderMembersSidebar();
       }
@@ -698,15 +688,10 @@ function renderChecklistView() {
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
 }
-
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
   columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
   persist(); renderChecklistView(); 
-  
-  // ВЫЗОВ КОНФЕТТИ
-  const allDone = viewingCard.checklist.every(item => item.isCompleted);
-  if(viewingCard.checklist[index].isCompleted && allDone) fireConfetti();
 }
 
 function render() {
@@ -824,36 +809,77 @@ function confirmQuickAdd() {
   closeQuickAdd();
 }
 
-function fireConfetti() {
-  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#3b82f6', '#10b981', '#f59e0b'] });
+document.getElementById('boardBgUpload').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if(!file) return;
+  const statusEl = document.getElementById('bgUploadStatus'); statusEl.innerText = 'Загрузка обоев...';
+  try {
+    const fd = new FormData(); fd.append('image', file); 
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd }); 
+    const data = await res.json(); 
+    if(data.success) { updateBoardData({ background: data.data.url }); statusEl.innerText = 'Готово! 🎉'; setTimeout(() => statusEl.innerText = '', 3000); } 
+    else { statusEl.innerText = 'Ошибка загрузки :('; }
+  } catch(err) { statusEl.innerText = 'Ошибка соединения'; } e.target.value = '';
+});
+
+function resetBoardBackground() {
+  if(isLocalBoard) { const local = JSON.parse(localStorage.getItem('blocko_local_boards')); delete local[BOARD_ID].background; localStorage.setItem('blocko_local_boards', JSON.stringify(local)); boardData = local[BOARD_ID]; processBoardData(boardData); }
+  else { db.collection("boards").doc(BOARD_ID).update({ background: firebase.firestore.FieldValue.delete() }); }
 }
 
-function addQRCode() {
-  const shareUrl = window.location.href;
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shareUrl)}`;
-  const container = document.getElementById('shareLinkContainer');
-  if(!document.getElementById('qrCodeImg') && container) {
-    const img = document.createElement('img');
-    img.id = 'qrCodeImg'; img.src = qrUrl; 
-    img.className = 'w-8 h-8 ml-2 rounded shadow-sm hidden md:block hover:scale-[3] transform origin-top-right transition-transform duration-300 bg-white p-1 z-50 cursor-pointer';
-    container.appendChild(img);
-  }
+const mainScroll = document.getElementById('mainScroll'); let isDown=false, startX, scrollLeft;
+mainScroll.addEventListener('mousedown', e => { if(e.target.closest('.card-item') || e.target.closest('button')) return; isDown=true; mainScroll.style.cursor='grabbing'; startX=e.pageX-mainScroll.offsetLeft; scrollLeft=mainScroll.scrollLeft; });
+mainScroll.addEventListener('mouseleave', () => { isDown=false; mainScroll.style.cursor='grab'; });
+mainScroll.addEventListener('mouseup', () => { isDown=false; mainScroll.style.cursor='grab'; });
+mainScroll.addEventListener('mousemove', e => { if(!isDown) return; e.preventDefault(); mainScroll.scrollLeft=scrollLeft-(e.pageX-mainScroll.offsetLeft-startX); });
+
+function getBoardTags() { return boardData.tags && boardData.tags.length > 0 ? boardData.tags : DEFAULT_BOARD_TAGS; }
+function renderSettingsTags() {
+  const list = document.getElementById('settingsTagsList'); const form = document.getElementById('newTagForm');
+  const isOwnerOrEditor = boardData.users && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role !== 'viewer' : true;
+  form.style.display = (isOwnerOrEditor || isLocalBoard) ? 'block' : 'none';
+  list.innerHTML = getBoardTags().map(t => `
+    <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
+      <span class="px-3 py-1 rounded-lg text-xs font-bold border ${t.color}">${t.name}</span>
+      ${(isOwnerOrEditor || isLocalBoard) ? `<button onclick="deleteCustomTag('${t.id}')" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+    </div>
+  `).join('');
+  document.getElementById('newTagColorPicker').innerHTML = TAG_PALETTE.map(c => `
+    <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
+  `).join(''); lucide.createIcons();
 }
 
-function setRandomBackground(event) {
-  const btn = event.currentTarget;
-  const oldText = btn.innerText;
-  btn.innerText = 'Загружаю магию... ⏳';
-  const url = `https://picsum.photos/1920/1080?random=${Date.now()}`;
+function addNewCustomTag() {
+  const name = document.getElementById('newTagName').value.trim(); if (!name) return;
+  const updatedTags = [...getBoardTags(), { id: 'tag_' + Date.now(), name, color: newTagSelectedColor }];
+  updateBoardData({ tags: updatedTags }); document.getElementById('newTagName').value = '';
+}
+function deleteCustomTag(tagId) {
+  if (!confirm("Удалить тег со всех карточек?")) return;
+  updateBoardData({ tags: getBoardTags().filter(t => t.id !== tagId) });
+  columns = columns.map(col => {
+    return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
+  }); persist();
+}
   
-  const img = new Image();
-  img.onload = () => {
-    updateBoardData({ background: url });
-    btn.innerText = oldText;
-  };
-  img.src = url;
+async function generateAIDescription() {
+  const title = document.getElementById('editTitle').value; const textarea = document.getElementById('editDescription'); const btn = document.getElementById('aiGenBtn');
+  if (!title) return alert("Напишите название задачи.");
+  const ogBtn = btn.innerHTML; btn.disabled = true; btn.innerHTML = 'Думаю...';
+  try {
+    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(`Составь план для: "${title}". Markdown чекбоксы.`)}?model=openai`);
+    textarea.value = await response.text();
+  } catch (err) { alert("Ошибка AI."); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
 }
 
+async function generateAIQuickDescription() {
+  const title = document.getElementById('quickAddInput').value; const textarea = document.getElementById('quickAddDesc'); const btn = document.getElementById('aiQuickGenBtn');
+  if (!title) return alert("Введите заголовок");
+  const ogBtn = btn.innerHTML; btn.disabled = true; btn.innerHTML = '...';
+  try {
+    const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(`Краткий план (3 пункта): "${title}"`)}?model=openai`);
+    textarea.value = await response.text();
+  } catch (err) { alert("Ошибка AI"); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
+}
 </script>
 </body>
 </html>
