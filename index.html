@@ -141,10 +141,28 @@ function loginWithGoogle() { auth.signInWithPopup(googleProvider); }
 function logout() { auth.signOut(); }
 
 function subscribeToBoards(userId) {
-  db.collection("boards").where("members", "array-contains", userId).orderBy("createdAt", "desc")
+  const grid = document.getElementById('boardsGrid');
+  
+  // Добавляем обработку ошибок (второй аргумент в onSnapshot)
+  db.collection("boards")
+    .where("members", "array-contains", userId)
+    .orderBy("createdAt", "desc")
     .onSnapshot((snapshot) => {
       allBoards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       renderBoardsGrid();
+    }, (error) => {
+      console.error("Критическая ошибка базы:", error);
+      
+      // Если ошибка в индексе, мы выведем понятный текст
+      if (error.code === 'failed-precondition') {
+        grid.innerHTML = `
+          <div class="col-span-full p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-2xl text-center">
+            <p class="text-amber-700 dark:text-amber-400 font-bold">Нужна настройка базы данных</p>
+            <p class="text-sm opacity-80">Откройте консоль браузера (F12) и нажмите на синюю ссылку для создания индекса.</p>
+          </div>`;
+      } else {
+        grid.innerHTML = `<div class="col-span-full text-center text-red-500">Ошибка: ${error.message}</div>`;
+      }
     });
 }
 
