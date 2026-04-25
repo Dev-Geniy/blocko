@@ -615,9 +615,11 @@ function shareVia(platform) {
 
 function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
 
-// Закрытие модалок по клику на фон
+// Закрытие модалок по клику на затемненный фон
 window.addEventListener('click', (e) => {
   if (e.target.id === 'createBoardModal') closeCreateModal();
+  if (e.target.id === 'joinBoardModal') closeJoinModal();
+  if (e.target.id === 'backupModal') closeBackupModal();
 });
 
 let toastTimeout;
