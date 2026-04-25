@@ -969,6 +969,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'editCardModal') closeEditModal();
   if (e.target.id === 'colModal') closeColModal();
   if (e.target.id === 'quickAddModal') closeQuickAdd();
+  if (typeof closeOtherSidebars === 'function') closeOtherSidebars('none');
 });
 
 let toastTimeout;
@@ -994,6 +995,17 @@ function showSystemToast(title, desc, iconName, iconColor, bgColor) {
     toast.classList.add('translate-y-24', 'opacity-0');
   }, 5000);
 }
+
+// 1. Закрытие окон на клавишу Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (typeof closeViewModal === 'function') closeViewModal();
+    if (typeof closeEditModal === 'function') closeEditModal();
+    if (typeof closeColModal === 'function') closeColModal();
+    if (typeof closeQuickAdd === 'function') closeQuickAdd();
+    if (typeof closeOtherSidebars === 'function') closeOtherSidebars('none');
+  }
+});
 </script>
 </body>
 </html>
