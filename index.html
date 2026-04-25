@@ -507,6 +507,11 @@ function shareVia(platform) {
 }
 
 function toggleTheme() { document.documentElement.classList.toggle('dark'); localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); }
+
+// Закрытие модалок по клику на фон
+window.addEventListener('click', (e) => {
+  if (e.target.id === 'createBoardModal') closeCreateModal();
+});
 </script>
 </body>
 </html>
