@@ -556,26 +556,29 @@ function renderSingleMessage(msg, container, msgId) {
     if (msg.attachment.type === 'image') {
       attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
     } else {
-      // Проверка на истечение времени (1 или 7 дней)
       const isExpired = msg.attachment.expiresAt && Date.now() > msg.attachment.expiresAt;
       
       if (isExpired) {
-         attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">⏳ Срок хранения файла истек</div>`;
+         attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-full overflow-hidden">⏳ Срок хранения файла истек</div>`;
       } else {
           const isBurn = msg.attachment.retention === 'burn';
           const fileIcon = isBurn ? 'flame' : 'file';
           const fileColor = isBurn ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
-          const badgeHtml = isBurn ? `<span class="text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded ml-2">1 скачивание</span>` : '';
+          // Добавили flex-shrink-0, чтобы бейджик не сжимался
+          const badgeHtml = isBurn ? `<span class="flex-shrink-0 text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded">1 скачивание</span>` : '';
           
           const downloadBtn = isBurn 
-            ? `<button onclick="downloadAndBurn('${msgId}', '${msg.attachment.name}', '${msg.attachment.url}')" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
-            : `<a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
+            ? `<button onclick="downloadAndBurn('${msgId}', '${msg.attachment.name}', '${msg.attachment.url}')" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
+            : `<a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
 
           attachHtml = `
-            <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'}">
-              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
+            <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'} w-full overflow-hidden">
+              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
               <div class="flex-1 min-w-0 flex flex-col">
-                <div class="flex items-center"><span class="text-xs font-bold truncate ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${msg.attachment.name}</span>${badgeHtml}</div>
+                <div class="flex items-center gap-2 w-full">
+                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${msg.attachment.name}">${msg.attachment.name}</span>
+                  ${badgeHtml}
+                </div>
                 <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
               </div>
               ${downloadBtn}
@@ -589,7 +592,7 @@ function renderSingleMessage(msg, container, msgId) {
   container.innerHTML += `
     <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-2">
       <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
-      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
+      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%] w-full">
         <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
         ${textHtml}
         ${attachHtml}
