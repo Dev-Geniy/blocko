@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FlowBoard - Рабочая область</title>
   
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
@@ -14,6 +16,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script> 
+  
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
@@ -124,7 +129,10 @@
           <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
         </label>
         <div id="bgUploadStatus" class="text-xs font-bold text-blue-500 text-center mt-2 h-4"></div>
-        <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон</button>
+        
+        <button onclick="setRandomBackground(event)" class="mt-4 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl text-sm font-bold transition-all shadow-md active:scale-95">Случайный фон 🎲</button>
+        
+        <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон на стандартный</button>
       </div>
 
       <div>
@@ -259,38 +267,6 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
-// --- ВОССТАНОВЛЕННЫЕ КРИТИЧЕСКИЕ КОНСТАНТЫ НАСТРОЕК ---
-const BOARD_UI_COLORS = {
-  'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
-  'blue': { hex: '#3b82f6', border: 'border-blue-200 dark:border-blue-800' },
-  'green': { hex: '#10b981', border: 'border-emerald-200 dark:border-emerald-800' },
-  'red': { hex: '#ef4444', border: 'border-red-200 dark:border-red-800' },
-  'amber': { hex: '#f59e0b', border: 'border-amber-200 dark:border-amber-800' },
-  'purple': { hex: '#8b5cf6', border: 'border-purple-200 dark:border-purple-800' }
-};
-
-const DEFAULT_BOARD_TAGS = [
-  { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
-  { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
-  { id: 'tag_urg', name: 'Срочно', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
-  { id: 'tag_des', name: 'Дизайн', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
-  { id: 'tag_back', name: 'Бэкенд', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
-  { id: 'tag_test', name: 'Тестирование', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
-];
-
-const TAG_PALETTE = [
-  'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800',
-  'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800',
-  'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-  'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-  'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800',
-  'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400 border-pink-200 dark:border-pink-800',
-  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700'
-];
-
-let newTagSelectedColor = TAG_PALETTE[0];
-// -------------------------------------------------------------
-
 function highlightText(text, query) {
   if (!query) return text;
   const regex = new RegExp(`(${query})`, 'gi');
@@ -302,8 +278,7 @@ let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
-let activeTags = [], pendingImageFile = null, activeChecklist = [];
-let selectedColColor = 'default';
+let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
 let boardData = {};
   
 auth.onAuthStateChanged((user) => {
@@ -340,7 +315,6 @@ function ensureUserTag(data) {
           name: userTagName, 
           color: 'bg-indigo-500 text-white border-indigo-600'
       };
-      
       const updatedTags = [...currentTags, newTag];
       if (isLocalBoard) {
          updateBoardData({ tags: updatedTags });
@@ -368,6 +342,10 @@ function loadBoard() {
     }
   } else {
     document.getElementById('shareUrlText').innerText = window.location.href;
+    
+    // ВЫЗОВ QR КОДА
+    setTimeout(addQRCode, 1000);
+    
     const docRef = db.collection("boards").doc(BOARD_ID);
     
     docRef.get().then(doc => {
@@ -688,10 +666,15 @@ function renderChecklistView() {
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
 }
+
+// === КОНФЕТТИ И ОБНОВЛЕНИЕ ЧЕКЛИСТА ===
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
   columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
   persist(); renderChecklistView(); 
+  
+  const allDone = viewingCard.checklist.every(item => item.isCompleted);
+  if(viewingCard.checklist[index].isCompleted && allDone) fireConfetti();
 }
 
 function render() {
@@ -879,6 +862,38 @@ async function generateAIQuickDescription() {
     const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(`Краткий план (3 пункта): "${title}"`)}?model=openai`);
     textarea.value = await response.text();
   } catch (err) { alert("Ошибка AI"); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
+}
+
+// === НОВЫЕ ФУНКЦИИ: КОНФЕТТИ, QR, ФОН ===
+
+function fireConfetti() {
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#3b82f6', '#10b981', '#f59e0b'] });
+}
+
+function addQRCode() {
+  const shareUrl = window.location.href;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shareUrl)}`;
+  const container = document.getElementById('shareLinkContainer');
+  if(!document.getElementById('qrCodeImg') && container) {
+    const img = document.createElement('img');
+    img.id = 'qrCodeImg'; img.src = qrUrl; 
+    img.className = 'w-8 h-8 ml-2 rounded shadow-sm hidden md:block hover:scale-[3] transform origin-top-right transition-transform duration-300 bg-white p-1 z-50';
+    container.appendChild(img);
+  }
+}
+
+function setRandomBackground(event) {
+  const btn = event.currentTarget;
+  const oldText = btn.innerText;
+  btn.innerText = 'Загружаю магию... ⏳';
+  const url = `https://picsum.photos/1920/1080?random=${Date.now()}`;
+  
+  const img = new Image();
+  img.onload = () => {
+    updateBoardData({ background: url });
+    btn.innerText = oldText;
+  };
+  img.src = url;
 }
 </script>
 </body>
