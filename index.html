@@ -242,7 +242,7 @@ function renderBoardsGrid() {
     return indexA - indexB;
   });
 
-  const filtered = sortedBoards.filter(b => b.title.toLowerCase().includes(query));
+  const filtered = sortedBoards.filter(b => (b.title || 'Без названия').toLowerCase().includes(query));
   
   if(document.getElementById('statTotalBoards')) {
       document.getElementById('statTotalBoards').innerText = combinedBoards.length;
