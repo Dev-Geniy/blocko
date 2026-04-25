@@ -85,6 +85,7 @@
     </button>
     <button id="btnChat" onclick="toggleChat()" class="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors shadow-sm relative" title="Чат">
       <i data-lucide="message-square" class="w-4 h-4"></i>
+      <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
     </button>
     <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
       <i data-lucide="plus" class="w-4 h-4"></i> Колонку
@@ -415,25 +416,67 @@ function loadBoard() {
         window.location.href = 'index.html';
     });
 
+    let isFirstChatLoad = true;
+    
     docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
       const chatBox = document.getElementById("chatMessages");
-      chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
-      snapshot.forEach(doc => {
-        const msg = doc.data(), isMe = msg.user.id === currentUser.id;
-        const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-        chatBox.innerHTML += `
-          <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : ''}">
-            <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
-            <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
-              <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-              <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
-            </div>
-          </div>
-        `;
-      });
-      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+      
+      // При первой загрузке просто рендерим всё без уведомлений
+      if (isFirstChatLoad) {
+        chatBox.innerHTML = snapshot.empty ? '<div id="emptyChatMsg" class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
+        snapshot.forEach(doc => renderSingleMessage(doc.data(), chatBox));
+        isFirstChatLoad = false;
+        setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+      } else {
+        // Слушаем ТОЛЬКО новые добавленные сообщения
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            document.getElementById('emptyChatMsg')?.remove(); // Убираем надпись "Чат пуст"
+            const msg = change.doc.data();
+            renderSingleMessage(msg, chatBox);
+            
+            const isMe = msg.user.id === currentUser.id;
+            const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
+            
+            // Если сообщение чужое и чат закрыт -> Показываем Push и увеличиваем счетчик
+            if (!isMe && !isChatOpen) {
+              const badge = document.getElementById('chatBadge');
+              let count = parseInt(badge.innerText) || 0;
+              count++;
+              badge.innerText = count > 99 ? '99+' : count;
+              badge.classList.remove('hidden');
+              
+              showSystemToast(
+                `💬 Новое сообщение: ${msg.user.name}`, 
+                msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 
+                'message-square', 
+                'text-blue-500', 
+                'bg-blue-50 dark:bg-blue-900/30'
+              );
+            }
+            
+            // Скроллим вниз, если чат открыт или пишу я
+            if (isChatOpen || isMe) {
+              setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
+            }
+          }
+        });
+      }
     });
-  }
+
+    // Вспомогательная функция для рендера одного сообщения (добавь её прямо после loadBoard)
+    function renderSingleMessage(msg, container) {
+      const isMe = msg.user.id === currentUser.id;
+      const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+      container.innerHTML += `
+        <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'}">
+          <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
+          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
+            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+            <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+          </div>
+        </div>
+      `;
 }
 
 function startSnapshotListener(docRef) {
@@ -494,7 +537,22 @@ function updateTagFilterDropdown() {
   if ([...select.options].some(o => o.value === savedValue)) select.value = savedValue;
 }
 
-function toggleChat() { closeOtherSidebars('chatSidebar'); document.getElementById('chatSidebar').classList.toggle('translate-x-full'); }
+function toggleChat() { 
+  closeOtherSidebars('chatSidebar'); 
+  const sidebar = document.getElementById('chatSidebar');
+  sidebar.classList.toggle('translate-x-full'); 
+  
+  // Если чат открыли - прячем и обнуляем бейдж
+  if (!sidebar.classList.contains('translate-x-full')) {
+    const badge = document.getElementById('chatBadge');
+    badge.classList.add('hidden');
+    badge.innerText = '0';
+    // Прокручиваем вниз при открытии
+    const chatBox = document.getElementById("chatMessages");
+    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
+  }
+}
+  
 function toggleSettings() { closeOtherSidebars('settingsSidebar'); document.getElementById('settingsSidebar').classList.toggle('translate-x-full'); }
 function toggleMembers() { closeOtherSidebars('membersSidebar'); document.getElementById('membersSidebar').classList.toggle('translate-x-full'); }
 function closeOtherSidebars(excludeId) { ['chatSidebar', 'settingsSidebar', 'membersSidebar'].forEach(id => { if (id !== excludeId) document.getElementById(id).classList.add('translate-x-full'); }); }
