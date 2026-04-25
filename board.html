@@ -259,6 +259,38 @@
 if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
 lucide.createIcons();
 
+// --- ВОССТАНОВЛЕННЫЕ КРИТИЧЕСКИЕ КОНСТАНТЫ НАСТРОЕК ---
+const BOARD_UI_COLORS = {
+  'default': { hex: '#94a3b8', border: 'border-gray-200 dark:border-gray-700' },
+  'blue': { hex: '#3b82f6', border: 'border-blue-200 dark:border-blue-800' },
+  'green': { hex: '#10b981', border: 'border-emerald-200 dark:border-emerald-800' },
+  'red': { hex: '#ef4444', border: 'border-red-200 dark:border-red-800' },
+  'amber': { hex: '#f59e0b', border: 'border-amber-200 dark:border-amber-800' },
+  'purple': { hex: '#8b5cf6', border: 'border-purple-200 dark:border-purple-800' }
+};
+
+const DEFAULT_BOARD_TAGS = [
+  { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
+  { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
+  { id: 'tag_urg', name: 'Срочно', color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+  { id: 'tag_des', name: 'Дизайн', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800' },
+  { id: 'tag_back', name: 'Бэкенд', color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+  { id: 'tag_test', name: 'Тестирование', color: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800' }
+];
+
+const TAG_PALETTE = [
+  'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800',
+  'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+  'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+  'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
+  'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800',
+  'bg-pink-100 text-pink-600 dark:bg-pink-900/40 dark:text-pink-400 border-pink-200 dark:border-pink-800',
+  'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+];
+
+let newTagSelectedColor = TAG_PALETTE[0];
+// -------------------------------------------------------------
+
 function highlightText(text, query) {
   if (!query) return text;
   const regex = new RegExp(`(${query})`, 'gi');
@@ -270,7 +302,8 @@ let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
 let currentColumn = null, editingCard = null, viewingCard = null, editingColId = null;
-let selectedColColor = 'default', activeTags = [], pendingImageFile = null, activeChecklist = [];
+let activeTags = [], pendingImageFile = null, activeChecklist = [];
+let selectedColColor = 'default';
 let boardData = {};
   
 auth.onAuthStateChanged((user) => {
@@ -299,7 +332,6 @@ function updateBoardData(updates) {
 }
 
 function ensureUserTag(data) {
-  // АВТО-ТЕГ: Проверяем наличие персонального тега
   const userTagName = currentUser.name;
   const currentTags = data.tags || getBoardTags();
   if (!currentTags.some(t => t.name === userTagName)) {
@@ -310,7 +342,6 @@ function ensureUserTag(data) {
       };
       
       const updatedTags = [...currentTags, newTag];
-      // Важно: обновляем без зацикливания
       if (isLocalBoard) {
          updateBoardData({ tags: updatedTags });
       } else {
@@ -339,7 +370,6 @@ function loadBoard() {
     document.getElementById('shareUrlText').innerText = window.location.href;
     const docRef = db.collection("boards").doc(BOARD_ID);
     
-    // Сначала гарантируем, что пользователь есть в БД, затем запускаем Snapshot
     docRef.get().then(doc => {
       if (doc.exists) {
         let data = doc.data();
@@ -370,7 +400,6 @@ function loadBoard() {
         window.location.href = 'index.html';
     });
 
-    // Логика чата остается без изменений
     docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
       const chatBox = document.getElementById("chatMessages");
       chatBox.innerHTML = snapshot.empty ? '<div class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
@@ -392,12 +421,11 @@ function loadBoard() {
   }
 }
 
-// Вынесено в отдельную функцию, чтобы избежать Race Condition
 function startSnapshotListener(docRef) {
     docRef.onSnapshot((doc) => { 
       if (doc.exists) { 
         boardData = doc.data();
-        ensureUserTag(boardData); // Проверяем авто-тег при каждом обновлении
+        ensureUserTag(boardData);
         processBoardData(boardData);
         renderMembersSidebar();
       }
@@ -413,7 +441,6 @@ function processBoardData(data) {
     document.body.style.backgroundAttachment = 'fixed';
   } else { document.body.style.backgroundImage = 'none'; }
   
-  // Важно: если колонок нет (чистая доска), используем пустой массив, чтобы не сломать render
   columns = data.columns || []; 
   updateTagFilterDropdown();
   render(); 
@@ -679,7 +706,6 @@ function render() {
   const addColBtn = document.getElementById('addColumnBtn');
   if (addColBtn) addColBtn.style.display = isViewer ? 'none' : 'flex';
   
-  // Безопасный рендеринг: если колонок нет, мы ничего не рисуем, но и не падаем
   if (!columns || columns.length === 0) {
       board.innerHTML = `<div class="w-full text-center py-20 text-gray-400 font-medium">Создайте свою первую колонку!</div>`;
       return;
@@ -690,7 +716,6 @@ function render() {
     const wrap = document.createElement('div'); wrap.dataset.id = col.id; 
     wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
     
-    // Безопасный доступ к карточкам (если col.cards undefined)
     const safeCards = col.cards || [];
 
     const filteredCards = safeCards.filter(card => {
