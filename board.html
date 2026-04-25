@@ -881,6 +881,14 @@ async function generateAIQuickDescription() {
     textarea.value = await response.text();
   } catch (err) { alert("Ошибка AI"); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
 }
+
+// Закрытие модалок по клику на фон
+window.addEventListener('click', (e) => {
+  if (e.target.id === 'viewCardModal') closeViewModal();
+  if (e.target.id === 'editCardModal') closeEditModal();
+  if (e.target.id === 'colModal') closeColModal();
+  if (e.target.id === 'quickAddModal') closeQuickAdd();
+});
 </script>
 </body>
 </html>
