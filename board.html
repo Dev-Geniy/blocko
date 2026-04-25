@@ -9,6 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
@@ -138,18 +139,24 @@
       <button onclick="toggleSettings()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     
-    <div class="flex-1 overflow-y-auto p-6 space-y-8">
-      <div>
+<div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
-        <label class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-32 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
-          <div id="bgDropzoneText" class="flex flex-col items-center">
-            <div class="p-3 bg-white dark:bg-gray-800 rounded-full shadow-sm mb-2 group-hover:scale-110 transition-transform"><i data-lucide="image" class="w-5 h-5 text-blue-500"></i></div>
-            <span class="text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors">Загрузить фон</span>
-          </div>
-          <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
-        </label>
-        <div id="bgUploadStatus" class="text-xs font-bold text-blue-500 text-center mt-2 h-4"></div>
-        <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон</button>
+        <div class="flex gap-3 mb-2">
+          <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-24 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+            <div id="bgDropzoneText" class="flex flex-col items-center">
+              <i data-lucide="upload-cloud" class="w-6 h-6 text-blue-500 mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 group-hover:text-blue-500 transition-colors">Свой файл</span>
+            </div>
+            <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
+          </label>
+          
+          <button onclick="setRandomBackground()" class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-2xl cursor-pointer h-24 transition-all group bg-gray-50/50 dark:bg-gray-900/30">
+            <i data-lucide="shuffle" class="w-6 h-6 text-purple-500 mb-1 group-hover:scale-110 transition-transform"></i>
+            <span class="text-[10px] font-bold text-gray-600 dark:text-gray-400 group-hover:text-purple-500 transition-colors">Случайный</span>
+          </button>
+        </div>
+        <div id="bgUploadStatus" class="text-[10px] font-bold text-blue-500 text-center h-4 mb-2 transition-all"></div>
+        <button onclick="resetBoardBackground()" class="w-full py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-bold transition-colors">Сбросить фон</button>
       </div>
 
       <div>
@@ -318,6 +325,21 @@
           <div class="text-[10px] text-gray-500 mt-0.5">Максимальный срок. Удаляется через неделю.</div>
         </div>
       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Конфети -->
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+      <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
+    </div>
+    <h2 id="confirmTitle" class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Подтверждение</h2>
+    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed">Вы уверены?</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 py-3.5 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
+      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all">Удалить</button>
     </div>
   </div>
 </div>
@@ -860,7 +882,20 @@ function addColumn(){ columns.push({ id: Date.now(), name: "Новая коло�
 function openColModal(id){ editingColId = id; const col = columns.find(c => c.id === id); selectedColColor = col.color || 'default'; document.getElementById('colNameInput').value = col.name; renderColorPicker(); toggleModal('colModal', true); }
 function closeColModal(){ toggleModal('colModal', false); }
 function saveColumn() { columns = columns.map(c => c.id === editingColId ? {...c, name: document.getElementById('colNameInput').value, color: selectedColColor} : c); persist(); closeColModal(); }
-function deleteColumn() { columns = columns.filter(c => c.id !== editingColId); persist(); closeColModal(); }
+
+function deleteColumn() { 
+  openConfirmModal('Удалить колонку?', 'Все задачи внутри колонки также будут удалены навсегда!', 'Удалить', true, () => {
+    columns = columns.filter(c => c.id !== editingColId); 
+    persist(); closeColModal(); 
+  });
+}
+
+function toggleChecklistItemEdit(index) { 
+  activeChecklist[index].isCompleted = !activeChecklist[index].isCompleted; 
+  if (activeChecklist[index].isCompleted) fireConfetti(); // Вызываем конфетти
+  renderChecklistEdit(); 
+}
+
 function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
 
 function openEditModal(colId, cardId = null) {
@@ -924,12 +959,18 @@ const cardObj = {
   persist(); closeEditModal();
 }
   
-function deleteCard() { columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.filter(c => c.id !== editingCard.id); return col; }); persist(); closeEditModal(); }
-
+function deleteCard() { 
+  openConfirmModal('Удалить навсегда?', 'Карточка будет удалена без возможности восстановления.', 'Удалить', true, () => {
+    columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.filter(c => c.id !== editingCard.id); return col; }); 
+    persist(); closeEditModal(); 
+  });
+}
+  
 function archiveCard() {
-  if(!confirm("Перенести задачу в архив?")) return;
-  columns = columns.map(col => { if(col.id === currentColumn) { col.cards = col.cards.map(c => c.id === editingCard.id ? {...c, archived: true} : c); } return col; });
-  persist(); closeEditModal(); 
+  openConfirmModal('В архив?', 'Задача исчезнет с доски, но будет сохранена в Архиве проекта.', 'В архив', false, () => {
+    columns = columns.map(col => { if(col.id === currentColumn) { col.cards = col.cards.map(c => c.id === editingCard.id ? {...c, archived: true} : c); } return col; });
+    persist(); closeEditModal(); 
+  });
 }
 
 function renderChecklistEdit() {
@@ -979,8 +1020,10 @@ function renderChecklistView() {
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
 }
+
 function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
+  if (viewingCard.checklist[index].isCompleted) fireConfetti(); // Вызываем конфетти
   columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
   persist(); renderChecklistView(); 
 }
@@ -1151,12 +1194,16 @@ function addNewCustomTag() {
   const updatedTags = [...getBoardTags(), { id: 'tag_' + Date.now(), name, color: newTagSelectedColor }];
   updateBoardData({ tags: updatedTags }); document.getElementById('newTagName').value = '';
 }
+
+// Замена системных окон на кастомные для удаления
 function deleteCustomTag(tagId) {
-  if (!confirm("Удалить тег со всех карточек?")) return;
-  updateBoardData({ tags: getBoardTags().filter(t => t.id !== tagId) });
-  columns = columns.map(col => {
-    return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
-  }); persist();
+  openConfirmModal('Удалить тег?', 'Этот тег будет навсегда удален со всех карточек в этом проекте.', 'Удалить тег', true, () => {
+    updateBoardData({ tags: getBoardTags().filter(t => t.id !== tagId) });
+    columns = columns.map(col => {
+      return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
+    }); 
+    persist();
+  });
 }
   
 async function generateAIDescription() {
@@ -1188,6 +1235,7 @@ window.addEventListener('click', (e) => {
   if (e.target.id === 'colModal') closeColModal();
   if (e.target.id === 'quickAddModal') closeQuickAdd();
   if (e.target.id === 'fileTypeModal') closeFileTypeModal();
+  if (e.target.id === 'customConfirmModal') closeConfirmModal();
 });
 
 let toastTimeout;
@@ -1222,12 +1270,82 @@ document.addEventListener('keydown', (e) => {
     if (typeof closeColModal === 'function') closeColModal();
     if (typeof closeQuickAdd === 'function') closeQuickAdd();
     if (typeof closeFileTypeModal === 'function') closeFileTypeModal();
+    if (typeof closeConfirmModal === 'function') closeConfirmModal();
     if (typeof closeOtherSidebars === 'function') closeOtherSidebars('none');
   }
 });
 
 // моб меню
 function toggleMobileMenu() { document.getElementById('mobileMenuDropdown').classList.toggle('hidden'); }
+
+// --- ЛОГИКА КАСТОМНЫХ ПОДТВЕРЖДЕНИЙ ---
+let confirmCallback = null;
+
+function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+  document.getElementById('confirmTitle').innerText = title;
+  document.getElementById('confirmDesc').innerText = desc;
+  
+  const iconBg = document.getElementById('confirmIconBg');
+  const icon = document.getElementById('confirmIcon');
+  const btn = document.getElementById('confirmBtnAction');
+  
+  if (isDanger) {
+    iconBg.className = "mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+    icon.setAttribute('data-lucide', 'trash-2');
+    btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+  } else {
+    iconBg.className = "mx-auto w-16 h-16 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+    icon.setAttribute('data-lucide', 'alert-circle');
+    btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-400 rounded-xl shadow-lg shadow-amber-500/25 active:scale-95 transition-all";
+  }
+  btn.innerText = confirmText;
+  lucide.createIcons();
+  confirmCallback = callback;
+  
+  const modal = document.getElementById('customConfirmModal');
+  const content = document.getElementById('confirmModalContent');
+  modal.classList.remove('hidden');
+  setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+}
+
+function closeConfirmModal() {
+  const modal = document.getElementById('customConfirmModal');
+  const content = document.getElementById('confirmModalContent');
+  modal.classList.add('opacity-0');
+  content.classList.remove('scale-100'); content.classList.add('scale-95');
+  setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+}
+
+function executeConfirm() {
+  if (confirmCallback) confirmCallback();
+  closeConfirmModal();
+}
+
+// --- ЛОГИКА ЭПИЧНЫХ КОНФЕТТИ ---
+function fireConfetti() {
+  confetti({
+    particleCount: 150,
+    spread: 100,
+    origin: { y: 0 }, // Выстрел сверху экрана
+    zIndex: 9999, // Поверх всех модалок
+    colors: ['#3b82f6', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6']
+  });
+}
+
+// --- СЛУЧАЙНЫЙ ФОН ---
+async function setRandomBackground() {
+  const statusEl = document.getElementById('bgUploadStatus');
+  statusEl.innerText = 'Ищем красоту... ✨';
+  try {
+    // Берем красивую картинку с размытием
+    const randomUrl = `https://picsum.photos/1920/1080?random=${Date.now()}&blur=2`;
+    updateBoardData({ background: randomUrl });
+    statusEl.innerText = 'Обои обновлены!';
+    setTimeout(() => statusEl.innerText = '', 3000);
+  } catch(e) {
+    statusEl.innerText = 'Ошибка загрузки';
+  }
+}
 </script>
 </body>
 </html>
