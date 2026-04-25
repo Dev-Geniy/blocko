@@ -7,6 +7,7 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -24,7 +25,10 @@
     
     @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
     .loading-pulse { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-    .cursor-copy { cursor: copy; }
+    
+    /* Стили для перетаскивания */
+    .sortable-ghost { opacity: 0.4; transform: scale(0.95); }
+    .sortable-drag { cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
   </style>
 
   <script>
@@ -34,15 +38,18 @@
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
 <div id="authScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
-  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800">
-    <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl text-white">
+  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800 relative overflow-hidden">
+    <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+    <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    
+    <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl text-white relative z-10">
       <i data-lucide="layers" class="w-12 h-12"></i>
     </div>
-    <h1 class="text-4xl font-bold mb-3 tracking-tight">Blocko <span class="text-blue-500">Pro</span></h1>
-    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium">Рабочее пространство будущего</p>
+    <h1 class="text-4xl font-bold mb-3 tracking-tight relative z-10">Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span></h1>
+    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium relative z-10">Рабочее пространство будущего</p>
     
-    <button id="loginBtn" onclick="loginWithGoogle()" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 group shadow-sm">
-      <svg class="w-6 h-6" viewBox="0 0 24 24">
+    <button id="loginBtn" onclick="loginWithGoogle()" class="relative z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 group shadow-sm hover:shadow-md">
+      <svg class="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -56,7 +63,7 @@
 <div id="dashboardScreen" class="hidden flex-col h-screen w-full overflow-y-auto">
   <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
     <div class="flex items-center gap-3">
-      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white">
+      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20">
         <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
       </div>
       <h1 class="text-2xl font-bold tracking-tight">Blocko</h1>
@@ -65,15 +72,15 @@
     <div class="flex items-center gap-5">
       <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
-        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск или ID..." class="bg-transparent outline-none text-sm w-48 dark:text-white" />
+        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white" />
       </div>
 
-      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 border border-indigo-100 dark:border-indigo-800/50 shadow-sm font-bold text-sm">
+      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 border border-indigo-100 dark:border-indigo-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
         <i data-lucide="layout-list" class="w-4 h-4"></i>
-        <span class="hidden lg:inline">Все мои задачи</span>
+        <span class="hidden lg:inline">Мои задачи</span>
       </a>
       
-      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-600 dark:text-gray-400">
+      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-600 dark:text-gray-400 transition-colors">
         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
         <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
       </button>
@@ -81,7 +88,7 @@
       <div class="flex items-center gap-3 pl-5 border-l border-gray-200 dark:border-gray-800">
         <div class="text-right hidden sm:block">
           <div id="dashUserName" class="text-sm font-bold">User</div>
-          <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-500">Выйти</button>
+          <button onclick="logout()" class="text-xs text-gray-500 hover:text-red-500 transition-colors">Выйти</button>
         </div>
         <img id="dashAvatar" src="" class="w-11 h-11 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" />
       </div>
@@ -89,29 +96,70 @@
   </header>
 
   <main class="p-8 max-w-7xl mx-auto w-full flex-1">
-    <div class="flex justify-between items-end mb-8">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
       <div>
         <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400">С возвращением! Выберите проект.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Перетаскивайте карточки, чтобы изменить их порядок.</p>
       </div>
-      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-        <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
-      </button>
+      <div class="flex gap-3 w-full md:w-auto">
+        <button onclick="promptJoinById()" class="flex-1 md:flex-none bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-white px-5 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-all">
+          <i data-lucide="user-plus" class="w-5 h-5 text-blue-500"></i> Войти по ID
+        </button>
+        <button onclick="createNewBoard()" class="flex-1 md:flex-none bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+          <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
+        </button>
+      </div>
     </div>
     
-    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Синхронизация...</div>
+    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
+      <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Синхронизация с базой...</div>
     </div>
   </main>
 
-  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 py-4 px-8">
-    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-medium text-gray-500">
-      <div class="flex items-center gap-6">
-        <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
-        <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
-        <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 pt-8 pb-6 px-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col lg:flex-row justify-between items-center gap-8 mb-8">
+        
+        <div class="flex flex-col items-center lg:items-start gap-3">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Пригласите коллег и друзей:</span>
+          <div class="flex gap-3">
+            <a href="#" onclick="shareVia('telegram')" class="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl hover:scale-110 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all shadow-sm" title="Telegram">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+            </a>
+            <a href="#" onclick="shareVia('viber')" class="p-2.5 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-xl hover:scale-110 hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-all shadow-sm" title="Viber">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M21.314 8.784c-.033-1.354-.537-2.607-1.421-3.529-1.042-1.082-2.482-1.688-4.054-1.71h-.08c-1.411 0-2.738.508-3.738 1.43-1.033.951-1.603 2.274-1.603 3.725 0 1.341.488 2.593 1.373 3.528 1.044 1.083 2.483 1.689 4.055 1.71h.08c1.41 0 2.737-.508 3.737-1.43 1.034-.95 1.604-2.273 1.604-3.724zM16.142 5.09c1.036 0 2.01.402 2.742 1.133.732.732 1.135 1.706 1.135 2.742 0 1.035-.403 2.01-1.135 2.741-.732.733-1.706 1.135-2.742 1.135h-.08c-1.036 0-2.01-.402-2.742-1.133-.732-.732-1.135-1.706-1.135-2.742 0-1.035.403-2.01 1.135-2.741.732-.733 1.706-1.135 2.742-1.135h.08zm-8.871 6.8c.033 1.354.537 2.607 1.421 3.529 1.042 1.082 2.482 1.688 4.054 1.71h.08c1.411 0 2.738-.508 3.738-1.43 1.033-.951 1.603-2.274 1.603-3.725 0-1.341-.488-2.593-1.373-3.528-1.044-1.083-2.483-1.689-4.055-1.71h-.08c-1.41 0-2.737.508-3.737 1.43-1.034.95-1.604 2.273-1.604 3.724z"/></svg>
+            </a>
+            <a href="#" onclick="shareVia('whatsapp')" class="p-2.5 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-xl hover:scale-110 hover:bg-green-100 dark:hover:bg-green-900/40 transition-all shadow-sm" title="WhatsApp">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.012 2c-5.506 0-9.989 4.478-9.99 9.984a9.964 9.964 0 0 0 1.333 4.976L2 22l5.176-1.357a9.92 9.92 0 0 0 4.836 1.252h.004c5.505 0 9.99-4.478 9.991-9.984 0-2.668-1.038-5.176-2.923-7.06A9.929 9.929 0 0 0 12.012 2zm0 18.246h-.003a8.293 8.293 0 0 1-4.225-1.155l-.303-.18-3.14.823.839-3.064-.198-.314a8.274 8.274 0 0 1-1.272-4.41c.002-4.57 3.72-8.287 8.295-8.287 2.215 0 4.295.862 5.86 2.428s2.427 3.645 2.426 5.86c-.001 4.568-3.718 8.285-8.29 8.285zm4.551-6.223c-.25-.125-1.478-.73-1.708-.813-.23-.084-.398-.125-.565.125-.168.25-.648.813-.794.98-.147.167-.294.188-.543.063-.25-.125-1.055-.389-2.01-1.242-.743-.663-1.244-1.482-1.39-1.733-.147-.25-.015-.385.11-.51.112-.112.25-.292.374-.438.125-.146.167-.25.25-.417.083-.167.042-.313-.021-.438-.063-.125-.565-1.365-.774-1.868-.203-.49-.41-.424-.565-.432l-.481-.01c-.168 0-.439.063-.668.313-.23.25-.88 .86-.88 2.094s.901 2.427 1.026 2.594c.125.167 1.768 2.698 4.28 3.782.598.258 1.065.412 1.428.528.601.191 1.149.164 1.58.1.481-.072 1.478-.604 1.687-1.188.21-.583.21-1.083.147-1.188-.063-.105-.23-.167-.48-.292z"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="flex flex-col items-center lg:items-start gap-3">
+          <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">Поделитесь в соцсетях:</span>
+          <div class="flex gap-3">
+            <a href="#" onclick="shareVia('facebook')" class="p-2.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-xl hover:scale-110 transition-all shadow-sm" title="Facebook">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="#" onclick="shareVia('twitter')" class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-xl hover:scale-110 transition-all shadow-sm" title="X (Twitter)">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <a href="#" onclick="shareVia('linkedin')" class="p-2.5 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-xl hover:scale-110 transition-all shadow-sm" title="LinkedIn">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </a>
+          </div>
+        </div>
+        
       </div>
-      <div>Blocko Pro © 2026</div>
+
+      <div class="flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-500 pt-6 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex items-center gap-6">
+          <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
+          <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+        <div class="font-mono">Blocko Pro © 2026</div>
+      </div>
     </div>
   </footer>
 </div>
@@ -119,6 +167,9 @@
 <script>
 let currentUser = null;
 let allBoards = [];
+// Загружаем сохраненный порядок ID из LocalStorage
+let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
+let sortableInstance = null;
 
 auth.onAuthStateChanged((user) => {
   const authScreen = document.getElementById('authScreen');
@@ -143,7 +194,6 @@ function logout() { auth.signOut(); }
 function subscribeToBoards(userId) {
   const grid = document.getElementById('boardsGrid');
   
-  // Добавляем обработку ошибок (второй аргумент в onSnapshot)
   db.collection("boards")
     .where("members", "array-contains", userId)
     .orderBy("createdAt", "desc")
@@ -152,16 +202,12 @@ function subscribeToBoards(userId) {
       renderBoardsGrid();
     }, (error) => {
       console.error("Критическая ошибка базы:", error);
-      
-      // Если ошибка в индексе, мы выведем понятный текст
       if (error.code === 'failed-precondition') {
         grid.innerHTML = `
           <div class="col-span-full p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-2xl text-center">
-            <p class="text-amber-700 dark:text-amber-400 font-bold">Нужна настройка базы данных</p>
-            <p class="text-sm opacity-80">Откройте консоль браузера (F12) и нажмите на синюю ссылку для создания индекса.</p>
+            <p class="text-amber-700 dark:text-amber-400 font-bold">Нужна настройка индексов Firebase</p>
+            <p class="text-sm opacity-80">Откройте консоль браузера (F12) и перейдите по ссылке для создания.</p>
           </div>`;
-      } else {
-        grid.innerHTML = `<div class="col-span-full text-center text-red-500">Ошибка: ${error.message}</div>`;
       }
     });
 }
@@ -169,7 +215,17 @@ function subscribeToBoards(userId) {
 function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
   const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
-  const filtered = allBoards.filter(b => b.title.toLowerCase().includes(query));
+  
+  // 1. Сортируем доски согласно сохраненному порядку в LocalStorage
+  let sortedBoards = [...allBoards].sort((a, b) => {
+    let indexA = savedBoardOrder.indexOf(a.id);
+    let indexB = savedBoardOrder.indexOf(b.id);
+    if (indexA === -1) indexA = 999999; // Новые доски падают в конец
+    if (indexB === -1) indexB = 999999;
+    return indexA - indexB;
+  });
+
+  const filtered = sortedBoards.filter(b => b.title.toLowerCase().includes(query));
   
   // Обновление статистики
   if(document.getElementById('statTotalBoards')) {
@@ -180,30 +236,64 @@ function renderBoardsGrid() {
   }
 
   if (filtered.length === 0 && query !== '') {
-    grid.innerHTML = `<div class="col-span-full py-10 text-center"><button onclick="joinBoardById('${query}')" class="bg-blue-600 text-white px-4 py-2 rounded-xl">Найти проект по ID: ${query}</button></div>`;
+    grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены. Воспользуйтесь кнопкой "Войти по ID".</div>`;
     return;
   }
 
   grid.innerHTML = filtered.map(data => `
-    <div onclick="window.location.href='board.html?b=${data.id}'" class="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-500 transition-all shadow-sm cursor-pointer relative overflow-hidden flex flex-col h-full">
-      <div class="flex justify-between items-start mb-4">
-        <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl"><i data-lucide="kanban-square" class="w-6 h-6"></i></div>
-        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-           <button onclick="event.stopPropagation(); copyBoardId('${data.id}')" class="p-2 hover:text-blue-500"><i data-lucide="copy" class="w-4 h-4"></i></button>
-           ${data.owner === currentUser.id ? `<button onclick="event.stopPropagation(); deleteBoard('${data.id}')" class="p-2 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+    <div data-id="${data.id}" onclick="window.location.href='board.html?b=${data.id}'" class="group bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 cursor-grab active:cursor-grabbing relative overflow-hidden flex flex-col h-full">
+      
+      <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+      
+      <div class="flex justify-between items-start mb-6">
+        <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform shadow-sm border border-blue-100/50 dark:border-blue-800/30"><i data-lucide="kanban-square" class="w-6 h-6"></i></div>
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-900 p-1 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+           ${data.owner === currentUser.id ? `<button onclick="event.stopPropagation(); deleteBoard('${data.id}')" class="p-1.5 text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500 rounded-lg transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
         </div>
       </div>
-      <h3 class="text-xl font-bold mb-1 line-clamp-1">${data.title}</h3>
-      <p class="text-xs text-gray-400 mb-4 font-mono">${data.id}</p>
-      <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-        <span class="text-[10px] font-bold text-gray-400 uppercase">Участников: ${data.members?.length || 0}</span>
+
+      <h3 class="text-xl font-bold mb-2 line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">${data.title}</h3>
+      
+      <div class="flex items-center gap-1.5 mb-6">
+        <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono bg-gray-100 dark:bg-gray-900/50 px-2 py-1.5 rounded-md border border-gray-200/50 dark:border-gray-700/50 select-text cursor-text" onclick="event.stopPropagation()">${data.id}</span>
+        
+        <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="p-1.5 bg-gray-100 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-gray-200/50 dark:border-gray-700/50 text-gray-400 hover:text-blue-500 rounded-md transition-all" title="Скопировать ID">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+        </button>
+        
+        <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="p-1.5 bg-gray-100 dark:bg-gray-900/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 border border-gray-200/50 dark:border-gray-700/50 text-gray-400 hover:text-indigo-500 rounded-md transition-all" title="Скопировать ссылку-приглашение">
+          <i data-lucide="link" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div class="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700/50 flex justify-between items-end">
+        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Команда</span>
         <div class="flex -space-x-2">
-           ${(data.members || []).slice(0,3).map(m => `<div class="w-7 h-7 rounded-full bg-gray-200 border-2 border-white dark:border-gray-800"></div>`).join('')}
+           ${(data.members || []).slice(0,4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" />`).join('')}
+           ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300 shadow-sm">+${data.members.length - 4}</div>` : ''}
         </div>
       </div>
     </div>
   `).join('');
+  
   lucide.createIcons();
+
+  // 2. Инициализация Sortable.js для Drag and Drop
+  if (sortableInstance) sortableInstance.destroy();
+  
+  sortableInstance = new Sortable(grid, {
+    animation: 200,
+    ghostClass: 'sortable-ghost',
+    dragClass: 'sortable-drag',
+    delay: 150, // Небольшая задержка, чтобы отличать клик от перетаскивания
+    delayOnTouchOnly: true,
+    onEnd: function () {
+      // Сохраняем новый порядок после перетаскивания
+      const items = grid.querySelectorAll('[data-id]');
+      savedBoardOrder = Array.from(items).map(el => el.getAttribute('data-id'));
+      localStorage.setItem('blocko_boards_order', JSON.stringify(savedBoardOrder));
+    }
+  });
 }
 
 async function createNewBoard() {
@@ -229,25 +319,88 @@ async function createNewBoard() {
   } catch (e) { alert("Ошибка доступа к базе!"); }
 }
 
+// Новая функция: Запрос ID через модальное окно (Prompt)
+function promptJoinById() {
+  const id = prompt("Введите ID проекта (комбинация букв и цифр):");
+  if (id && id.trim() !== '') {
+    joinBoardById(id.trim());
+  }
+}
+
 async function joinBoardById(id) {
   try {
     const docRef = db.collection("boards").doc(id);
     const doc = await docRef.get();
     if (doc.exists) {
+      const data = doc.data();
+      if (data.members && data.members.includes(currentUser.id)) {
+        alert("Вы уже в этом проекте!");
+        return;
+      }
       await docRef.update({
         members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
         [`users.${currentUser.id}`]: { name: currentUser.name, avatar: currentUser.avatar, role: 'editor' }
       });
       window.location.href = `board.html?b=${id}`;
-    } else { alert("ID не найден"); }
-  } catch (e) { alert("Ошибка доступа"); }
+    } else { 
+      alert("Доска с таким ID не найдена. Проверьте правильность."); 
+    }
+  } catch (e) { 
+    alert("Ошибка доступа или неверный ID."); 
+  }
 }
 
-function copyBoardId(id) { navigator.clipboard.writeText(id); alert("ID скопирован!"); }
-function deleteBoard(id) { if(confirm("Удалить проект?")) db.collection("boards").doc(id).delete(); }
+function copyBoardId(btnElement, id) { 
+  navigator.clipboard.writeText(id); 
+  showToastFeedback(btnElement, 'check', 'text-green-500');
+}
+
+function copyBoardLink(btnElement, id) {
+  const url = window.location.origin + window.location.pathname.replace('index.html', '') + 'board.html?b=' + id;
+  navigator.clipboard.writeText(url);
+  showToastFeedback(btnElement, 'check', 'text-green-500');
+}
+
+// Визуальный фидбэк для кнопок копирования
+function showToastFeedback(el, iconName, colorClass) {
+  const originalHtml = el.innerHTML;
+  el.innerHTML = `<i data-lucide="${iconName}" class="w-3.5 h-3.5 ${colorClass}"></i>`;
+  lucide.createIcons();
+  setTimeout(() => {
+    el.innerHTML = originalHtml;
+    lucide.createIcons();
+  }, 2000);
+}
+
+function deleteBoard(id) { if(confirm("Удалить проект навсегда?")) db.collection("boards").doc(id).delete(); }
+
 function toggleTheme() { 
   document.documentElement.classList.toggle('dark'); 
   localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+}
+
+function generateAvatarById(uid) {
+  const colors = ['3b82f6', '10b981', 'f59e0b', 'f43f5e', '8b5cf6'];
+  const colorIndex = uid.charCodeAt(0) % colors.length;
+  return `https://ui-avatars.com/api/?name=${uid.substr(0,2)}&background=${colors[colorIndex]}&color=fff&font-size=0.4`;
+}
+
+// Функция для шеринга в соцсетях
+function shareVia(platform) {
+  const appUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+  const text = encodeURIComponent("Присоединяйтесь ко мне в Blocko Pro — мощном рабочем пространстве для команд!");
+  let shareUrl = '';
+
+  switch(platform) {
+    case 'telegram': shareUrl = `https://t.me/share/url?url=${appUrl}&text=${text}`; break;
+    case 'viber': shareUrl = `viber://forward?text=${text} ${appUrl}`; break;
+    case 'whatsapp': shareUrl = `https://wa.me/?text=${text} ${appUrl}`; break;
+    case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${appUrl}`; break;
+    case 'twitter': shareUrl = `https://twitter.com/intent/tweet?url=${appUrl}&text=${text}`; break;
+    case 'linkedin': shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${appUrl}`; break;
+  }
+  
+  if(shareUrl) window.open(shareUrl, '_blank', 'width=600,height=400');
 }
 </script>
 </body>
