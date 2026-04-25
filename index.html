@@ -532,11 +532,33 @@ async function joinBoardById(id) {
   } catch (e) { alert("Ошибка доступа."); }
 }
 
-function copyBoardId(btn, id) { navigator.clipboard.writeText(id); showToastFeedback(btn, 'check', 'text-green-500'); }
+function copyBoardId(btn, id) { 
+  navigator.clipboard.writeText(id); 
+  if(btn) showToastFeedback(btn, 'check', 'text-green-500'); 
+  
+  showSystemToast(
+    'ID скопирован!', 
+    'Отправьте этот код коллеге. Ему нужно будет нажать "Войти по ID" на главной странице.', 
+    'copy', 
+    'text-blue-500', 
+    'bg-blue-50 dark:bg-blue-900/30'
+  );
+}
+  
 function copyBoardLink(btn, id) {
   const url = window.location.origin + window.location.pathname.replace('index.html', '') + 'board.html?b=' + id;
-  navigator.clipboard.writeText(url); showToastFeedback(btn, 'check', 'text-green-500');
+  navigator.clipboard.writeText(url); 
+  if(btn) showToastFeedback(btn, 'check', 'text-green-500');
+  
+  showSystemToast(
+    'Ссылка скопирована!', 
+    'Пользователь должен быть авторизован в Blocko Pro, чтобы ссылка сработала.', 
+    'link', 
+    'text-indigo-500', 
+    'bg-indigo-50 dark:bg-indigo-900/30'
+  );
 }
+  
 function showToastFeedback(el, icon, color) {
   const og = el.innerHTML; el.innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 ${color}"></i>`; lucide.createIcons();
   setTimeout(() => { el.innerHTML = og; lucide.createIcons(); }, 2000);
