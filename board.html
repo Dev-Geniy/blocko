@@ -13,7 +13,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="config.js"></script> 
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
@@ -124,6 +125,7 @@
           <input type="file" id="boardBgUpload" class="hidden" accept="image/*" />
         </label>
         <div id="bgUploadStatus" class="text-xs font-bold text-blue-500 text-center mt-2 h-4"></div>
+        <button onclick="setRandomBackground(event)" class="mt-4 w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-400 hover:to-pink-400 text-white rounded-xl text-sm font-bold transition-all shadow-md active:scale-95">Случайный фон 🎲</button>
         <button onclick="resetBoardBackground()" class="mt-4 w-full py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-xl text-sm font-bold transition-colors">Сбросить фон</button>
       </div>
 
@@ -368,6 +370,7 @@ function loadBoard() {
     }
   } else {
     document.getElementById('shareUrlText').innerText = window.location.href;
+    setTimeout(addQRCode, 1000);
     const docRef = db.collection("boards").doc(BOARD_ID);
     
     docRef.get().then(doc => {
@@ -692,6 +695,9 @@ function toggleChecklistView(index) {
   viewingCard.checklist[index].isCompleted = !viewingCard.checklist[index].isCompleted;
   columns = columns.map(col => { if(col.id === currentColumn) col.cards = col.cards.map(c => c.id === viewingCard.id ? viewingCard : c); return col; });
   persist(); renderChecklistView(); 
+  // Проверяем, все ли галочки нажаты
+  const allDone = viewingCard.checklist.every(item => item.isCompleted);
+  if(viewingCard.checklist[index].isCompleted && allDone) fireConfetti();
 }
 
 function render() {
@@ -880,16 +886,40 @@ async function generateAIQuickDescription() {
     textarea.value = await response.text();
   } catch (err) { alert("Ошибка AI"); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
 }
-</script>
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-<script>
-// Добавь этот вызов в функцию toggleChecklistView, когда percent === 100
+// Конфети для чеклиста
 function fireConfetti() {
   confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#3b82f6', '#10b981', '#f59e0b'] });
 }
-// Пример: при клике на шапку Blocko для теста
-document.querySelector('h1').addEventListener('click', fireConfetti);
+
+// Логика создания QR
+  function addQRCode() {
+  const shareUrl = window.location.href;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(shareUrl)}`;
+  const container = document.getElementById('shareLinkContainer');
+  if(!document.getElementById('qrCodeImg') && container) {
+    const img = document.createElement('img');
+    img.id = 'qrCodeImg'; img.src = qrUrl; 
+    // Дизайн: маленький квадратик, который при наведении увеличивается в 3 раза
+    img.className = 'w-8 h-8 ml-2 rounded shadow-sm hidden md:block hover:scale-[3] transform origin-top-right transition-transform duration-300 bg-white p-1 z-50';
+    container.appendChild(img);
+  }
+}
+
+// Случайный фон
+function setRandomBackground(event) {
+  const btn = event.currentTarget;
+  const oldText = btn.innerText;
+  btn.innerText = 'Загружаю магию... ⏳'; // Текст пока картинка качается
+  const url = `https://picsum.photos/1920/1080?random=${Date.now()}`;
+  
+  const img = new Image();
+  img.onload = () => {
+    updateBoardData({ background: url }); // Сохраняем фон в базу
+    btn.innerText = oldText; // Возвращаем текст кнопки
+  };
+  img.src = url;
+}
 </script>
 </body>
 </html>
