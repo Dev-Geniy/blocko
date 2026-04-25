@@ -122,8 +122,13 @@
       <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
-    <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50">
-      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Сообщение..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+    <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex gap-2 items-center">
+      <label class="cursor-pointer p-3 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0" title="Прикрепить файл (<1MB)">
+        <i data-lucide="paperclip" class="w-5 h-5"></i>
+        <input type="file" class="hidden" onchange="handleChatAttachment(event)" />
+      </label>
+      <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Написать..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
+      <button onclick="sendChatMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors flex-shrink-0"><i data-lucide="send" class="w-5 h-5"></i></button>
     </div>
   </aside>
   
@@ -485,15 +490,85 @@ function initChatListener(docRef) {
 function renderSingleMessage(msg, container) {
   const isMe = msg.user.id === currentUser.id;
   const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+  
+  let attachHtml = '';
+  if (msg.attachment) {
+    if (msg.attachment.type === 'image') {
+      attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
+    } else {
+      attachHtml = `
+        <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'}">
+          <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg"><i data-lucide="file" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></div>
+          <div class="flex-1 min-w-0 flex flex-col">
+            <span class="text-xs font-bold truncate ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}">${msg.attachment.name}</span>
+            <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
+          </div>
+          <a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>
+        </div>`;
+    }
+  }
+
+  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
+
   container.innerHTML += `
     <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'}">
       <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
       <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
         <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-        <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+        ${textHtml}
+        ${attachHtml}
       </div>
     </div>
   `;
+  lucide.createIcons();
+}
+
+async function handleChatAttachment(e) {
+  if (isLocalBoard) {
+     alert("Вложения файлов не работают в офлайн-режиме.");
+     e.target.value = '';
+     return;
+  }
+  
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+
+  const chatBox = document.getElementById("chatMessages");
+  const tempId = 'load_' + Date.now();
+  chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка файла...</div>`;
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  try {
+    let attachment = null;
+    if (file.type.startsWith('image/')) {
+      const fd = new FormData(); fd.append('image', file);
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd });
+      const data = await res.json();
+      if (data.success) attachment = { type: 'image', url: data.data.url, name: file.name };
+      else throw new Error("Ошибка ImgBB");
+    } else {
+      if (file.size > 1024 * 1024) throw new Error("Файл слишком большой! Максимум 1MB для Firestore.");
+      const base64 = await new Promise((resolve, reject) => {
+         const reader = new FileReader();
+         reader.readAsDataURL(file);
+         reader.onload = () => resolve(reader.result);
+         reader.onerror = error => reject(error);
+      });
+      attachment = { type: 'file', url: base64, name: file.name, size: (file.size/1024).toFixed(1)+' KB' };
+    }
+
+    await db.collection("boards").doc(BOARD_ID).collection("chat").add({
+      text: "", // Текст пустой, отправляем только файл
+      attachment: attachment,
+      user: currentUser,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    showSystemToast('Ошибка', err.message || 'Сбой загрузки файла', 'alert-circle', 'text-red-500', 'bg-red-50');
+  } finally {
+    document.getElementById(tempId)?.remove();
+  }
 }
 
 function processBoardData(data) {
