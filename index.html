@@ -234,7 +234,7 @@ function renderBoardsGrid() {
   const localBoardsArr = Object.values(localBoardsObj);
   const combinedBoards = [...onlineBoards, ...localBoardsArr];
 
-  // Безопасная сортировка (защита от сломанного массива)
+  // Безопасная сортировка
   let safeBoardOrder = Array.isArray(savedBoardOrder) ? savedBoardOrder : [];
   
   let sortedBoards = combinedBoards.sort((a, b) => {
@@ -245,7 +245,6 @@ function renderBoardsGrid() {
     return indexA - indexB;
   });
 
-  // БРОНЕБОЙНЫЙ ФИЛЬТР: спасает от досок без названия
   const filtered = sortedBoards.filter(b => (b.title || 'Без названия').toLowerCase().includes(query));
   
   if(document.getElementById('statTotalBoards')) {
@@ -255,8 +254,10 @@ function renderBoardsGrid() {
       document.getElementById('statTotalTasks').innerText = tasksCount;
   }
 
+  // ИСПРАВЛЕНИЕ БАГА С ИКОНКАМИ: добавляем lucide.createIcons() перед return
   if (filtered.length === 0) {
     grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены. Создайте новый или загрузите.</div>`;
+    lucide.createIcons(); 
     return;
   }
 
@@ -277,6 +278,18 @@ function renderBoardsGrid() {
       </button>
     `;
 
+    // --- НОВЫЙ БЛОК: Логика кнопок внутри карточки (Архив, Удалить, Выйти) ---
+    let cardActions = `<button onclick="event.stopPropagation(); window.location.href='archive.html?b=${data.id}'" class="p-1.5 text-gray-400 hover:bg-amber-50 hover:text-amber-500 rounded-lg transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
+
+    if (isLocal || data.owner === currentUser.id) {
+        // Владелец или локальная база -> Удалить
+        cardActions += `<button onclick="event.stopPropagation(); deleteBoard('${data.id}', ${isLocal})" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+    } else {
+        // Не владелец -> Покинуть проект (Дверь)
+        cardActions += `<button onclick="event.stopPropagation(); leaveBoard('${data.id}')" class="p-1.5 text-gray-400 hover:bg-orange-50 hover:text-orange-500 rounded-lg transition-colors" title="Покинуть проект"><i data-lucide="log-out" class="w-4 h-4"></i></button>`;
+    }
+    // -------------------------------------------------------------------------
+
     return `
     <div data-id="${data.id}" onclick="window.location.href='board.html?b=${data.id}'" class="group bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 cursor-grab active:cursor-grabbing relative overflow-hidden flex flex-col h-full">
       ${isLocal ? `<span class="absolute top-4 right-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-1 rounded-md flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ОФЛАЙН</span>` : ''}
@@ -285,7 +298,7 @@ function renderBoardsGrid() {
       <div class="flex justify-between items-start mb-4">
         <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 text-blue-500 rounded-2xl shadow-sm border border-blue-100/50"><i data-lucide="kanban-square" class="w-6 h-6"></i></div>
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-900 p-1 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-           ${(isLocal || data.owner === currentUser.id) ? `<button onclick="event.stopPropagation(); deleteBoard('${data.id}', ${isLocal})" class="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+           ${cardActions}
         </div>
       </div>
 
@@ -429,6 +442,27 @@ function copyBoardLink(btn, id) {
 function showToastFeedback(el, icon, color) {
   const og = el.innerHTML; el.innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 ${color}"></i>`; lucide.createIcons();
   setTimeout(() => { el.innerHTML = og; lucide.createIcons(); }, 2000);
+}
+
+// Функция: Покинуть чужую доску
+async function leaveBoard(id) {
+  if(!confirm("Вы уверены, что хотите покинуть этот проект?")) return;
+  
+  try {
+    const docRef = db.collection("boards").doc(id);
+    
+    // Удаляем свой ID из массива members и свой объект из словаря users
+    await docRef.update({
+      members: firebase.firestore.FieldValue.arrayRemove(currentUser.id),
+      [`users.${currentUser.id}`]: firebase.firestore.FieldValue.delete()
+    });
+    
+    // Firebase onSnapshot автоматически обновит сетку проектов, 
+    // так как мы больше не находимся в массиве members этой доски
+  } catch (error) {
+    console.error("Ошибка выхода из проекта:", error);
+    alert("Произошла ошибка при выходе из проекта.");
+  }
 }
 
 function deleteBoard(id, isLocal) { 
