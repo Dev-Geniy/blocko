@@ -68,6 +68,11 @@
         <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white placeholder-gray-400 pr-6" />
       </div>
 
+      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm group">
+        <i data-lucide="layout-list" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+        <span class="text-sm font-bold hidden lg:inline">Все мои задачи</span>
+      </a>
+      
       <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400">
         <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
         <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
@@ -132,6 +137,7 @@ lucide.createIcons();
 let currentUser = null;
 let allBoards = [];
 
+// === Авторизация и запуск подписки ===
 auth.onAuthStateChanged((user) => {
   const authScreen = document.getElementById('authScreen');
   const dashScreen = document.getElementById('dashboardScreen');
@@ -149,7 +155,8 @@ auth.onAuthStateChanged((user) => {
     document.getElementById('dashAvatar').src = currentUser.avatar;
     document.getElementById('dashUserName').innerText = currentUser.name;
     
-    loadBoards();
+    // ВМЕСТО loadBoards запускаем подписку на базу данных
+    subscribeToBoards(user.uid);
   } else {
     authScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
     dashScreen.classList.add('hidden');
@@ -167,14 +174,24 @@ function generateAvatarById(uid) {
   return `https://ui-avatars.com/api/?name=${uid.substr(0,2)}&background=${colors[colorIndex]}&color=fff&font-size=0.4`;
 }
 
-function loadBoards() {
+// === Связка базы данных с интерфейсом ===
+function subscribeToBoards(userId) {
   db.collection("boards")
-    .where("members", "array-contains", currentUser.id)
-    .onSnapshot(snapshot => {
-      allBoards = []; 
-      snapshot.forEach(doc => { allBoards.push({ id: doc.id, ...doc.data() }); });
-      allBoards.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+    .where("members", "array-contains", userId)
+    .orderBy("createdAt", "desc")
+    .onSnapshot((snapshot) => {
+      // Записываем данные из базы в наш массив
+      allBoards = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log("Данные обновлены, проектов:", allBoards.length);
+      
+      // Вызываем твою функцию отрисовки, которая создаст карточки на экране
       renderBoardsGrid();
+    }, (error) => {
+      console.error("Ошибка Firestore:", error);
     });
 }
 
@@ -351,8 +368,15 @@ function leaveBoard(event, boardId) {
   }
 }
 
+// === НАЧАЛО БЛОКА: Создание новой доски ===
 async function createNewBoard() {
   const title = prompt("Введите название нового проекта:") || "Новый проект";
+  
+  if (!currentUser) {
+    alert("Ошибка: пользователь не авторизован");
+    return;
+  }
+
   const newBoard = {
     title: title,
     owner: currentUser.id,
@@ -364,8 +388,18 @@ async function createNewBoard() {
     ],
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
-  const docRef = await db.collection("boards").add(newBoard);
-  window.location.href = `board.html?b=${docRef.id}`;
+
+  try {
+    // Ждем, пока Firestore подтвердит запись
+    const docRef = await db.collection("boards").add(newBoard);
+    console.log("Доска успешно создана с ID:", docRef.id);
+    
+    // Переходим на страницу доски только ПОСЛЕ успешного сохранения
+    window.location.href = `board.html?b=${docRef.id}`;
+  } catch (error) {
+    console.error("Ошибка при создании доски:", error);
+    alert("Не удалось сохранить проект в базе данных. Проверьте соединение или правила доступа.");
+  }
 }
 
 function toggleTheme() { 
