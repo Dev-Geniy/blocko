@@ -235,6 +235,17 @@
   </footer>
 </div>
 
+<!-- Пуш уведомление -->
+<div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30">
+    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+  </div>
+  <div>
+    <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4>
+    <p id="toastDesc" class="text-xs text-gray-500 leading-relaxed">Описание</p>
+  </div>
+</div>
+  
 <script>
 let currentUser = null;
 let onlineBoards = [];
@@ -586,6 +597,30 @@ function toggleTheme() { document.documentElement.classList.toggle('dark'); loca
 window.addEventListener('click', (e) => {
   if (e.target.id === 'createBoardModal') closeCreateModal();
 });
+
+let toastTimeout;
+function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+  const toast = document.getElementById('globalToast');
+  
+  document.getElementById('toastTitle').innerText = title;
+  document.getElementById('toastDesc').innerText = desc;
+  
+  const iconEl = document.getElementById('toastIcon');
+  iconEl.setAttribute('data-lucide', iconName);
+  iconEl.className = `w-5 h-5 ${iconColor}`;
+  
+  document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+  lucide.createIcons();
+
+  // Показываем
+  toast.classList.remove('translate-y-24', 'opacity-0');
+  
+  // Прячем через 5 секунд (сбрасывая таймер, если кликнули быстро несколько раз)
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    toast.classList.add('translate-y-24', 'opacity-0');
+  }, 5000);
+}
 </script>
 </body>
 </html>
