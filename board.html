@@ -881,5 +881,15 @@ async function generateAIQuickDescription() {
   } catch (err) { alert("Ошибка AI"); } finally { btn.disabled = false; btn.innerHTML = ogBtn; }
 }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+// Добавь этот вызов в функцию toggleChecklistView, когда percent === 100
+function fireConfetti() {
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#3b82f6', '#10b981', '#f59e0b'] });
+}
+// Пример: при клике на шапку Blocko для теста
+document.querySelector('h1').addEventListener('click', fireConfetti);
+</script>
 </body>
 </html>
