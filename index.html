@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  
   <script src="config.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -32,17 +33,23 @@
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
 
 <div id="authScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
-  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800">
+  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800 transform transition-transform scale-100">
     <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl shadow-blue-500/30 text-white">
       <i data-lucide="layers" class="w-12 h-12"></i>
     </div>
     <h1 class="text-4xl font-bold mb-3 tracking-tight">Blocko <span class="text-blue-500">Pro</span></h1>
-    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium">Ваше рабочее пространство</p>
+    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium">Ваше рабочее пространство в реальном времени</p>
     
     <button id="loginBtn" onclick="loginWithGoogle()" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-lg text-gray-900 dark:text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 group">
-      <svg class="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <svg class="w-6 h-6 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
       Войти через Google
     </button>
+    <div id="authLoading" class="hidden mt-4 text-sm font-medium text-gray-500 loading-pulse">Инициализация среды...</div>
   </div>
 </div>
 
@@ -55,129 +62,350 @@
       <h1 class="text-2xl font-bold tracking-tight">Blocko</h1>
     </div>
     
-    <div class="flex items-center gap-3">
-      <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-5">
+      <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors group relative">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
-        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск..." class="bg-transparent outline-none text-sm w-32 dark:text-white" />
+        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white placeholder-gray-400 pr-6" />
       </div>
-      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+
+      <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 transition-all border border-indigo-100 dark:border-indigo-800/50 shadow-sm group">
+        <i data-lucide="layout-list" class="w-4 h-4 group-hover:scale-110 transition-transform"></i>
+        <span class="text-sm font-bold hidden lg:inline">Все мои задачи</span>
+      </a>
+      
+      <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400">
+        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+        <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
       </button>
-      <div class="flex items-center gap-3 pl-3 border-l border-gray-200 dark:border-gray-800">
-        <img id="dashAvatar" src="" class="w-9 h-9 rounded-full bg-gray-200" />
+      
+      <div class="flex items-center gap-3 pl-5 border-l border-gray-200 dark:border-gray-800">
+        <div class="text-right hidden sm:block">
+          <div id="dashUserName" class="text-sm font-bold leading-tight">User</div>
+          <button onclick="logout()" class="text-xs font-medium text-gray-500 hover:text-red-500 transition-colors">Выйти</button>
+        </div>
+        <img id="dashAvatar" src="" class="w-11 h-11 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" />
       </div>
     </div>
   </header>
 
-  <main class="p-8 max-w-7xl mx-auto w-full flex-1">
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
     <div class="flex justify-between items-end mb-8">
       <div>
-        <h2 class="text-3xl font-bold mb-1">Рабочие пространства</h2>
-        <p class="text-sm text-gray-500">Управляйте своими проектами</p>
+        <h2 class="text-3xl font-bold tracking-tight mb-1">Рабочие пространства</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выберите проект или создайте новый</p>
       </div>
-      <div class="flex gap-3">
-        <button onclick="joinBoard()" class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 transition-all">
-          <i data-lucide="link" class="w-5 h-5"></i> Присоединиться
-        </button>
-        <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-          <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
-        </button>
-      </div>
+      <button onclick="createNewBoard()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+        <i data-lucide="plus" class="w-5 h-5"></i> Создать доску
+      </button>
     </div>
     
-    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="col-span-full py-20 text-center loading-pulse text-gray-400">Загрузка проектов...</div>
+    <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div class="col-span-full py-20 text-center loading-pulse text-gray-400 font-medium">Загрузка проектов...</div>
     </div>
   </main>
+  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md py-4 px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+      
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-2">
+          <i data-lucide="folder-kanban" class="w-4 h-4 opacity-70"></i>
+          <span>Проектов: <span id="statTotalBoards" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 opacity-70"></i>
+          <span>Задач: <span id="statTotalTasks" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4 opacity-70"></i>
+          <span>Дедлайны: <span id="statOverdueTasks" class="font-bold text-gray-900 dark:text-white transition-colors duration-300">0</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="users" class="w-4 h-4 opacity-70"></i>
+          <span>Команда: <span id="statTotalMembers" class="font-bold text-gray-900 dark:text-white">0</span></span>
+        </div>
+      </div>
+      
+      <div class="text-xs opacity-50">Blocko Pro © 2026</div>
+    </div>
+  </footer>
 </div>
 
 <script>
-  lucide.createIcons();
-  let currentUser = null;
-  let allBoards = [];
+if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+lucide.createIcons();
 
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL };
-      document.getElementById('authScreen').classList.add('hidden');
-      document.getElementById('dashboardScreen').classList.remove('hidden');
-      document.getElementById('dashboardScreen').classList.add('flex');
-      document.getElementById('dashAvatar').src = user.photoURL;
-      subscribeToBoards(user.uid);
-    } else {
-      document.getElementById('authScreen').classList.remove('hidden');
-      document.getElementById('dashboardScreen').classList.add('hidden');
+let currentUser = null;
+let allBoards = [];
+
+// === Авторизация и запуск подписки ===
+auth.onAuthStateChanged((user) => {
+  const authScreen = document.getElementById('authScreen');
+  const dashScreen = document.getElementById('dashboardScreen');
+  
+  if (user) {
+    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
+    currentUser = { id: user.uid, name: user.displayName, avatar: safeAvatar };
+    
+    authScreen.classList.add('opacity-0', 'pointer-events-none');
+    setTimeout(() => authScreen.classList.add('hidden'), 500);
+    
+    dashScreen.classList.remove('hidden');
+    dashScreen.classList.add('flex');
+    
+    document.getElementById('dashAvatar').src = currentUser.avatar;
+    document.getElementById('dashUserName').innerText = currentUser.name;
+    
+    // ВМЕСТО loadBoards запускаем подписку на базу данных
+    subscribeToBoards(user.uid);
+  } else {
+    authScreen.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+    dashScreen.classList.add('hidden');
+  }
+});
+
+function loginWithGoogle() {
+  auth.signInWithPopup(googleProvider).catch(error => alert("Ошибка авторизации."));
+}
+function logout() { auth.signOut(); }
+
+function generateAvatarById(uid) {
+  const colors = ['3b82f6', '10b981', 'f59e0b', 'f43f5e', '8b5cf6'];
+  const colorIndex = uid.charCodeAt(0) % colors.length;
+  return `https://ui-avatars.com/api/?name=${uid.substr(0,2)}&background=${colors[colorIndex]}&color=fff&font-size=0.4`;
+}
+
+// === Связка базы данных с интерфейсом ===
+function subscribeToBoards(userId) {
+  db.collection("boards")
+    .where("members", "array-contains", userId)
+    .orderBy("createdAt", "desc")
+    .onSnapshot((snapshot) => {
+      // Записываем данные из базы в наш массив
+      allBoards = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      console.log("Данные обновлены, проектов:", allBoards.length);
+      
+      // Вызываем твою функцию отрисовки, которая создаст карточки на экране
+      renderBoardsGrid();
+    }, (error) => {
+      console.error("Ошибка Firestore:", error);
+    });
+}
+
+function renderBoardsGrid() {
+  const grid = document.getElementById('boardsGrid');
+  const searchInput = document.getElementById('searchInput');
+  const searchQuery = searchInput?.value.toLowerCase() || '';
+  
+  grid.innerHTML = '';
+  
+  const filteredBoards = allBoards.filter(board => (board.title || '').toLowerCase().includes(searchQuery));
+
+  // --- 1. РАСЧЕТ ОБЩЕЙ СТАТИСТИКИ ---
+  let totalTasks = 0;
+  let overdueTasks = 0;
+  let uniqueMembers = new Set();
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  allBoards.forEach(board => {
+    if (board.members) board.members.forEach(m => uniqueMembers.add(m));
+    if (board.columns) {
+      board.columns.forEach(col => {
+        if (col.cards) {
+          col.cards.forEach(card => {
+            if (!card.archived) {
+              totalTasks++;
+              if (card.dueDate && card.dueDate < todayStr) overdueTasks++;
+            }
+          });
+        }
+      });
     }
   });
 
-  function subscribeToBoards(userId) {
-    db.collection("boards")
-      .where("members", "array-contains", userId)
-      .orderBy("createdAt", "desc")
-      .onSnapshot((snapshot) => {
-        allBoards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderBoardsGrid();
-      });
+  // Обновляем цифры в Футере
+  const statOverdueEl = document.getElementById('statOverdueTasks');
+  
+  if (document.getElementById('statTotalBoards')) {
+    document.getElementById('statTotalBoards').innerText = allBoards.length;
+    document.getElementById('statTotalTasks').innerText = totalTasks;
+    document.getElementById('statTotalMembers').innerText = uniqueMembers.size;
+    
+    // Логика цвета для дедлайнов
+    statOverdueEl.innerText = overdueTasks;
+    if (overdueTasks > 0) {
+      statOverdueEl.classList.remove('text-gray-900', 'dark:text-white');
+      statOverdueEl.classList.add('text-red-500');
+    } else {
+      statOverdueEl.classList.remove('text-red-500');
+      statOverdueEl.classList.add('text-gray-900', 'dark:text-white');
+    }
   }
 
-  function renderBoardsGrid() {
-    const grid = document.getElementById('boardsGrid');
-    const q = document.getElementById('searchInput').value.toLowerCase();
-    grid.innerHTML = '';
+  // --- 2. ПРОВЕРКА ПУСТЫХ СОСТОЯНИЙ ---
+  if (allBoards.length === 0) {
+    grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400">У вас пока нет проектов.</div>`;
+    lucide.createIcons(); return;
+  }
 
-    const filtered = allBoards.filter(b => (b.title || '').toLowerCase().includes(q));
+  if (filteredBoards.length === 0 && searchQuery !== '') {
+    grid.innerHTML = `
+      <div class="col-span-full py-20 text-center bg-gray-100/50 dark:bg-gray-900/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-gray-800">
+        <div class="w-16 h-16 bg-white dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+          <i data-lucide="search-x" class="w-8 h-8"></i>
+        </div>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Проектов с названием "${searchQuery}" не найдено</p>
+        <button onclick="document.getElementById('searchInput').value=''; renderBoardsGrid();" class="text-blue-500 font-bold text-sm hover:underline">Сбросить поиск и показать всё</button>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
 
-    if (filtered.length === 0) {
-      grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-500">Проектов не найдено.</div>`;
-      return;
+  // --- 3. ОТРИСОВКА КАРТОЧЕК ---
+  filteredBoards.forEach(data => {
+    const date = data.createdAt ? new Date(data.createdAt.toMillis()).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) : 'Только что';
+    const isOwner = data.owner === currentUser.id;
+    
+    let tasksCount = 0;
+    let boardHasOverdue = false;
+
+    if (data.columns) { 
+      data.columns.forEach(col => { 
+        if (col.cards) {
+          col.cards.forEach(c => {
+            if (!c.archived) {
+              tasksCount++;
+              if (c.dueDate && c.dueDate < todayStr) boardHasOverdue = true;
+            }
+          });
+        }
+      }); 
     }
 
-    filtered.forEach(board => {
-      grid.innerHTML += `
-        <div onclick="window.location.href='board.html?b=${board.id}'" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 cursor-pointer shadow-sm relative group transition-all">
-          <h3 class="font-bold text-lg mb-2">${board.title}</h3>
-          <div class="flex justify-between items-center text-sm text-gray-400">
-            <span>${(board.members || []).length} участников</span>
-            <button onclick="event.stopPropagation(); deleteBoard('${board.id}')" class="hover:text-red-500">
-               <i data-lucide="trash-2" class="w-4 h-4"></i>
+    // Создаем пульсирующий индикатор, если есть просроченные задачи
+    const overdueBadge = boardHasOverdue 
+      ? `<div class="absolute top-6 left-16 bg-red-500 w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-ping" title="Есть просроченные задачи!"></div>` 
+      : '';
+
+    grid.innerHTML += `
+      <div onclick="window.location.href='board.html?b=${data.id}'" class="group block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 dark:hover:border-blue-500 transition-all shadow-sm hover:shadow-xl hover:-translate-y-1 relative overflow-hidden flex flex-col h-full cursor-pointer">
+        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-blue-500 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        
+        <div class="flex justify-between items-start mb-5">
+          <div class="relative">
+            <div class="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform">
+              <i data-lucide="kanban-square" class="w-6 h-6"></i>
+            </div>
+            ${overdueBadge}
+          </div>
+          
+          <div class="flex items-center gap-1.5 bg-white dark:bg-gray-800 rounded-xl p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity border border-gray-100 dark:border-gray-700 z-10 relative">
+            <button onclick="event.stopPropagation(); window.location.href='archive.html?b=${data.id}'" class="text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 p-2 rounded-lg transition-colors" title="Архив">
+              <i data-lucide="archive" class="w-4 h-4"></i>
             </button>
+
+            <button onclick="event.stopPropagation(); copyBoardLink(event, this, '${data.id}')" class="text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors" title="Ссылка">
+              <i data-lucide="share-2" class="w-4 h-4"></i>
+            </button>
+            
+            ${isOwner 
+              ? `<button onclick="event.stopPropagation(); deleteBoard(event, '${data.id}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-colors" title="Удалить"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` 
+              : `<button onclick="event.stopPropagation(); leaveBoard(event, '${data.id}')" class="text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 p-2 rounded-lg transition-colors" title="Покинуть"><i data-lucide="log-out" class="w-4 h-4"></i></button>`
+            }
           </div>
         </div>
-      `;
-    });
+        
+        <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1 pr-2">${data.title || 'Без названия'}</h3>
+        <div class="text-sm font-medium text-gray-400 dark:text-gray-500 mb-6 flex items-center gap-2">
+          <span>${date}</span>
+          <span class="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
+          <span>${tasksCount} задач</span>
+        </div>
+        
+        <div class="flex justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-700/50 mt-auto">
+          <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Команда</div>
+          <div class="flex -space-x-2">
+            ${data.members.slice(0, 4).map(uid => `<img src="${generateAvatarById(uid)}" class="w-8 h-8 rounded-full border-2 border-white dark:border-gray-800 shadow-sm" />`).join('')}
+            ${data.members.length > 4 ? `<div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 border-2 border-white dark:border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-300 shadow-sm">+${data.members.length - 4}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  lucide.createIcons();
+}
+
+function copyBoardLink(event, btnElement, boardId) {
+  event.stopPropagation();
+  const baseUrl = window.location.href.split('index.html')[0];
+  const url = `${baseUrl}board.html?b=${boardId}`;
+  navigator.clipboard.writeText(url);
+  const icon = btnElement.querySelector('i');
+  icon.setAttribute('data-lucide', 'check');
+  icon.classList.replace('text-gray-400', 'text-green-500');
+  lucide.createIcons();
+  setTimeout(() => {
+    icon.setAttribute('data-lucide', 'share-2');
+    icon.classList.replace('text-green-500', 'text-gray-400');
     lucide.createIcons();
-  }
+  }, 2000);
+}
 
-  async function createNewBoard() {
-    const title = prompt("Название проекта:") || "Новый проект";
-    const ref = await db.collection("boards").add({
-      title,
-      owner: currentUser.id,
-      members: [currentUser.id],
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      columns: [{ id: Date.now(), name: "Бэклог", color: 'default', cards: [] }]
+function deleteBoard(event, boardId) {
+  event.stopPropagation();
+  if(confirm("Удалить проект навсегда?")) db.collection("boards").doc(boardId).delete();
+}
+
+function leaveBoard(event, boardId) {
+  event.stopPropagation();
+  if(confirm("Покинуть проект?")) {
+    db.collection("boards").doc(boardId).update({
+      members: firebase.firestore.FieldValue.arrayRemove(currentUser.id)
     });
-    window.location.href = `board.html?b=${ref.id}`;
+  }
+}
+
+// === НАЧАЛО БЛОКА: Создание новой доски ===
+async function createNewBoard() {
+  const title = prompt("Введите название нового проекта:") || "Новый проект";
+  
+  if (!currentUser) {
+    alert("Ошибка: пользователь не авторизован");
+    return;
   }
 
-  async function joinBoard() {
-    const boardId = prompt("Введите ID проекта:");
-    if (!boardId) return;
-    try {
-      await db.collection("boards").doc(boardId).update({
-        members: firebase.firestore.FieldValue.arrayUnion(currentUser.id)
-      });
-      window.location.href = `board.html?b=${boardId}`;
-    } catch { alert("Ошибка доступа или проект не найден."); }
-  }
+  const newBoard = {
+    title: title,
+    owner: currentUser.id,
+    members: [currentUser.id],
+    columns: [
+      { id: Date.now(), name: "Бэклог", color: 'default', cards: [] },
+      { id: Date.now()+1, name: "В работе", color: 'blue', cards: [] },
+      { id: Date.now()+2, name: "Готово", color: 'green', cards: [] }
+    ],
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
 
-  function deleteBoard(id) {
-    if(confirm("Удалить проект?")) db.collection("boards").doc(id).delete();
+  try {
+    // Ждем, пока Firestore подтвердит запись
+    const docRef = await db.collection("boards").add(newBoard);
+    console.log("Доска успешно создана с ID:", docRef.id);
+    
+    // Переходим на страницу доски только ПОСЛЕ успешного сохранения
+    window.location.href = `board.html?b=${docRef.id}`;
+  } catch (error) {
+    console.error("Ошибка при создании доски:", error);
+    alert("Не удалось сохранить проект в базе данных. Проверьте соединение или правила доступа.");
   }
+}
 
-  function loginWithGoogle() { auth.signInWithPopup(googleProvider); }
-  function logout() { auth.signOut(); }
-  function toggleTheme() { document.documentElement.classList.toggle('dark'); }
+function toggleTheme() { 
+  document.documentElement.classList.toggle('dark'); 
+  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+}
 </script>
 </body>
 </html>
