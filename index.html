@@ -251,14 +251,20 @@ function renderBoardsGrid() {
     lucide.createIcons(); return;
   }
 
-  if (filteredBoards.length === 0 && searchQuery !== '') {
+if (filteredBoards.length === 0 && searchQuery !== '') {
     grid.innerHTML = `
-      <div class="col-span-full py-20 text-center bg-gray-100/50 dark:bg-gray-900/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-gray-800">
+      <div class="col-span-full py-16 text-center bg-gray-100/50 dark:bg-gray-900/20 rounded-[2rem] border border-dashed border-gray-200 dark:border-gray-800">
         <div class="w-16 h-16 bg-white dark:bg-gray-800 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-          <i data-lucide="search-x" class="w-8 h-8"></i>
+          <i data-lucide="search" class="w-8 h-8"></i>
         </div>
-        <p class="text-gray-500 dark:text-gray-400 mb-4">Проектов с названием "${searchQuery}" не найдено</p>
-        <button onclick="document.getElementById('searchInput').value=''; renderBoardsGrid();" class="text-blue-500 font-bold text-sm hover:underline">Сбросить поиск и показать всё</button>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">Среди ваших проектов "${searchQuery}" не найдено.</p>
+        
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button onclick="document.getElementById('searchInput').value=''; renderBoardsGrid();" class="text-gray-500 font-bold text-sm hover:underline px-4 py-2">Сбросить поиск</button>
+          <button onclick="joinBoardById('${searchQuery}')" class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-800/50 border border-blue-100 dark:border-blue-800/50 font-bold text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all active:scale-95 shadow-sm">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Присоединиться по ID
+          </button>
+        </div>
       </div>`;
     lucide.createIcons();
     return;
@@ -319,6 +325,11 @@ function renderBoardsGrid() {
         </div>
         
         <h3 class="text-xl font-bold mb-1 text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors line-clamp-1 pr-2">${data.title || 'Без названия'}</h3>
+        
+        <div onclick="event.stopPropagation(); copyBoardId(event, '${data.id}')" class="inline-flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-md text-[10px] font-mono mb-4 cursor-copy hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors" title="Нажмите, чтобы скопировать ID">
+          <i data-lucide="hash" class="w-3 h-3"></i> ${data.id}
+        </div>
+
         <div class="text-sm font-medium text-gray-400 dark:text-gray-500 mb-6 flex items-center gap-2">
           <span>${date}</span>
           <span class="w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></span>
@@ -368,7 +379,7 @@ function leaveBoard(event, boardId) {
   }
 }
 
-// === НАЧАЛО БЛОКА: Создание новой доски ===
+// Создание новой доски ===
 async function createNewBoard() {
   const title = prompt("Введите название нового проекта:") || "Новый проект";
   
@@ -389,22 +400,87 @@ async function createNewBoard() {
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  try {
-    // Ждем, пока Firestore подтвердит запись
+try {
     const docRef = await db.collection("boards").add(newBoard);
     console.log("Доска успешно создана с ID:", docRef.id);
     
-    // Переходим на страницу доски только ПОСЛЕ успешного сохранения
-    window.location.href = `board.html?b=${docRef.id}`;
+    // Добавим простое уведомление
+    alert("Проект успешно создан! Он появится в вашем списке.");
+    
   } catch (error) {
     console.error("Ошибка при создании доски:", error);
     alert("Не удалось сохранить проект в базе данных. Проверьте соединение или правила доступа.");
-  }
 }
 
 function toggleTheme() { 
   document.documentElement.classList.toggle('dark'); 
   localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); 
+}
+
+// === Новые функции для работы с ID проектов ===
+
+function copyBoardId(event, id) {
+  event.stopPropagation();
+  navigator.clipboard.writeText(id);
+  
+  // Визуальный фидбэк на элементе
+  const el = event.currentTarget;
+  const originalHtml = el.innerHTML;
+  el.innerHTML = `<i data-lucide="check" class="w-3 h-3 text-green-500"></i> Скопировано`;
+  el.classList.add('text-green-500', 'bg-green-50', 'dark:bg-green-900/30');
+  lucide.createIcons();
+  
+  setTimeout(() => {
+    el.innerHTML = originalHtml;
+    el.classList.remove('text-green-500', 'bg-green-50', 'dark:bg-green-900/30');
+    lucide.createIcons();
+  }, 2000);
+}
+
+async function joinBoardById(boardId) {
+  if (!boardId || boardId.trim() === '') return;
+  const id = boardId.trim();
+  
+  try {
+    const docRef = db.collection("boards").doc(id);
+    const doc = await docRef.get();
+    
+    if (doc.exists) {
+      let data = doc.data();
+      
+      // Проверяем, может пользователь уже там
+      if (data.members && data.members.includes(currentUser.id)) {
+        alert("Вы уже являетесь участником этого проекта.");
+        document.getElementById('searchInput').value = '';
+        renderBoardsGrid();
+        return;
+      }
+      
+      // Добавляем пользователя
+      let updates = {};
+      let users = data.users || {};
+      
+      updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
+      users[currentUser.id] = {
+         name: currentUser.name,
+         avatar: currentUser.avatar,
+         role: 'editor' 
+      };
+      updates.users = users;
+      
+      await docRef.update(updates);
+      alert("Вы успешно присоединились к проекту!");
+      
+      // Очищаем поиск, доска сама появится благодаря onSnapshot
+      document.getElementById('searchInput').value = '';
+      
+    } else {
+      alert("Проект с таким ID не найден. Проверьте правильность ввода.");
+    }
+  } catch (error) {
+    console.error("Ошибка при поиске проекта:", error);
+    alert("Ошибка доступа. Убедитесь, что ID верный.");
+  }
 }
 </script>
 </body>
