@@ -55,10 +55,12 @@
 <div id="dashboardScreen" class="hidden flex-col h-screen w-full overflow-y-auto">
   <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
     <div class="flex items-center gap-3 select-none">
-      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
-        <i data-lucide="layers" class="w-5 h-5"></i>
+      <div onclick="openAboutModal()" class="cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20 transition-transform hover:scale-105">
+        <i data-lucide="layers" class="w-6 h-6"></i>
       </div>
-      <h1 class="text-2xl font-bold tracking-tight">Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span></h1>
+      <h1 onclick="openAboutModal()" class="hidden sm:block text-2xl font-bold tracking-tight cursor-pointer hover:opacity-80 transition-opacity">
+        Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
+      </h1>
     </div>
     <div class="flex items-center gap-5">
       <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
@@ -201,6 +203,47 @@
       <button id="executeBackupBtn" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white py-4 rounded-2xl text-lg font-bold flex justify-center items-center gap-3 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all">
         <i data-lucide="download" class="w-6 h-6"></i> Скачать файл
       </button>
+    </div>
+  </div>
+
+  <!-- модалка презентация -->
+  <div id="aboutModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+    <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-2xl shadow-2xl relative border border-gray-200 dark:border-gray-800 overflow-hidden">
+      <button onclick="closeAboutModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+      <div class="absolute -top-20 -left-20 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+      <div class="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+    
+      <div class="relative z-10 flex flex-col items-center text-center">
+         <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl text-white">
+           <i data-lucide="layers" class="w-10 h-10"></i>
+         </div>
+         <h2 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white tracking-tight">Добро пожаловать в Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span></h2>
+       
+         <p class="text-gray-500 dark:text-gray-400 mb-8 leading-relaxed max-w-lg text-sm sm:text-base">
+           Умное рабочее пространство на базе <b class="text-gray-700 dark:text-gray-200">Firebase</b> и <b class="text-gray-700 dark:text-gray-200">AI</b>. Мы избавляем команды от хаоса в задачах, заменяя десятки сложных инструментов одним элегантным и быстрым интерфейсом.
+         </p>
+       
+         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full mb-8 text-left">
+           <div class="p-5 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50">
+             <i data-lucide="zap" class="w-6 h-6 text-blue-500 mb-3"></i>
+             <h4 class="font-bold text-sm mb-1 dark:text-white">Real-Time</h4>
+             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Мгновенная синхронизация карточек, чата и статусов у всей команды.</p>
+           </div>
+           <div class="p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+             <i data-lucide="sparkles" class="w-6 h-6 text-indigo-500 mb-3"></i>
+             <h4 class="font-bold text-sm mb-1 dark:text-white">AI Ассистент</h4>
+             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Генерация смарт-планов и описаний задач с помощью нейросетей в 1 клик.</p>
+           </div>
+           <div class="p-5 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+             <i data-lucide="wifi-off" class="w-6 h-6 text-emerald-500 mb-3"></i>
+             <h4 class="font-bold text-sm mb-1 dark:text-white">Offline First</h4>
+             <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">Создавайте локальные проекты. Они работают без интернета прямо в браузере.</p>
+           </div>
+         </div>
+       
+         <button onclick="closeAboutModal()" class="w-full sm:w-auto px-8 py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all">Приступить к работе</button>
+      </div>
     </div>
   </div>
   
@@ -645,6 +688,28 @@ function showSystemToast(title, desc, iconName, iconColor, bgColor) {
     toast.classList.add('translate-y-24', 'opacity-0');
   }, 5000);
 }
+
+function openAboutModal() {
+  const el = document.getElementById('aboutModal');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.remove('opacity-0'), 10);
+}
+
+function closeAboutModal() {
+  const el = document.getElementById('aboutModal');
+  el.classList.add('opacity-0');
+  setTimeout(() => el.classList.add('hidden'), 300);
+}
+
+// Обновленный слушатель Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.readyState === 'complete') {
+    if (typeof closeAboutModal === 'function') closeAboutModal();
+    if (typeof closeCreateModal === 'function') closeCreateModal();
+    if (typeof closeJoinModal === 'function') closeJoinModal();
+    if (typeof closeBackupModal === 'function') closeBackupModal();
+  }
+});
 </script>
 </body>
 </html>
