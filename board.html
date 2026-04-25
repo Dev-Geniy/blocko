@@ -326,6 +326,9 @@ function updateBoardData(updates) {
       localBoards[BOARD_ID] = { ...localBoards[BOARD_ID], ...updates };
       boardData = localBoards[BOARD_ID];
       localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+      
+      // Мгновенное обновление UI для офлайн режима
+      processBoardData(boardData); 
     }
   } else {
     db.collection("boards").doc(BOARD_ID).update(updates);
