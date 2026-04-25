@@ -229,19 +229,23 @@ function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
   const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
   
-  // Слияние онлайн и локальных досок
-  const localBoardsObj = getLocalBoards();
+  // Безопасное слияние онлайн и локальных досок
+  const localBoardsObj = getLocalBoards() || {};
   const localBoardsArr = Object.values(localBoardsObj);
   const combinedBoards = [...onlineBoards, ...localBoardsArr];
 
+  // Безопасная сортировка (защита от сломанного массива)
+  let safeBoardOrder = Array.isArray(savedBoardOrder) ? savedBoardOrder : [];
+  
   let sortedBoards = combinedBoards.sort((a, b) => {
-    let indexA = savedBoardOrder.indexOf(a.id);
-    let indexB = savedBoardOrder.indexOf(b.id);
+    let indexA = safeBoardOrder.indexOf(a.id);
+    let indexB = safeBoardOrder.indexOf(b.id);
     if (indexA === -1) indexA = 999999; 
     if (indexB === -1) indexB = 999999;
     return indexA - indexB;
   });
 
+  // БРОНЕБОЙНЫЙ ФИЛЬТР: спасает от досок без названия
   const filtered = sortedBoards.filter(b => (b.title || 'Без названия').toLowerCase().includes(query));
   
   if(document.getElementById('statTotalBoards')) {
@@ -257,10 +261,9 @@ function renderBoardsGrid() {
   }
 
   grid.innerHTML = filtered.map(data => {
-    const isLocal = data.id.startsWith('local_');
-    const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner) };
+    const isLocal = data.id && data.id.startsWith('local_');
+    const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner || 'U') };
     
-    // Блок кнопок (зависит от типа доски)
     const actionButtons = isLocal ? `
       <button onclick="event.stopPropagation(); exportLocalBoard('${data.id}')" class="p-1.5 bg-gray-100 dark:bg-gray-900/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 text-gray-400 hover:text-emerald-500 rounded-md transition-all" title="Скачать бэкап">
         <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -286,7 +289,7 @@ function renderBoardsGrid() {
         </div>
       </div>
 
-      <h3 class="text-xl font-bold mb-3 line-clamp-1 group-hover:text-blue-600 transition-colors">${data.title}</h3>
+      <h3 class="text-xl font-bold mb-3 line-clamp-1 group-hover:text-blue-600 transition-colors">${data.title || 'Без названия'}</h3>
       
       <div class="flex items-center gap-2 mb-4 bg-gray-50 dark:bg-gray-900/40 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
          <img src="${ownerInfo.avatar}" class="w-6 h-6 rounded-full border border-white shadow-sm">
