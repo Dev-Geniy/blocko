@@ -421,14 +421,12 @@ function loadBoard() {
     docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
       const chatBox = document.getElementById("chatMessages");
       
-      // При первой загрузке просто рендерим всё без уведомлений
       if (isFirstChatLoad) {
         chatBox.innerHTML = snapshot.empty ? '<div id="emptyChatMsg" class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
         snapshot.forEach(doc => renderSingleMessage(doc.data(), chatBox));
         isFirstChatLoad = false;
         setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
       } else {
-        // Слушаем ТОЛЬКО новые добавленные сообщения
         snapshot.docChanges().forEach((change) => {
           if (change.type === "added") {
             document.getElementById('emptyChatMsg')?.remove(); // Убираем надпись "Чат пуст"
@@ -438,7 +436,6 @@ function loadBoard() {
             const isMe = msg.user.id === currentUser.id;
             const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
             
-            // Если сообщение чужое и чат закрыт -> Показываем Push и увеличиваем счетчик
             if (!isMe && !isChatOpen) {
               const badge = document.getElementById('chatBadge');
               let count = parseInt(badge.innerText) || 0;
@@ -455,7 +452,6 @@ function loadBoard() {
               );
             }
             
-            // Скроллим вниз, если чат открыт или пишу я
             if (isChatOpen || isMe) {
               setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
             }
@@ -463,31 +459,22 @@ function loadBoard() {
         });
       }
     });
-
-    // Вспомогательная функция для рендера одного сообщения (добавь её прямо после loadBoard)
-    function renderSingleMessage(msg, container) {
-      const isMe = msg.user.id === currentUser.id;
-      const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-      container.innerHTML += `
-        <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'}">
-          <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
-          <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
-            <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
-            <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
-          </div>
-        </div>
-      `;
+  }
 }
 
-function startSnapshotListener(docRef) {
-    docRef.onSnapshot((doc) => { 
-      if (doc.exists) { 
-        boardData = doc.data();
-        ensureUserTag(boardData);
-        processBoardData(boardData);
-        renderMembersSidebar();
-      }
-    });
+// Вспомогательная функция для рендера одного сообщения (теперь она снаружи)
+function renderSingleMessage(msg, container) {
+  const isMe = msg.user.id === currentUser.id;
+  const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+  container.innerHTML += `
+    <div class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'}">
+      <img src="${msg.user.avatar}" class="w-8 h-8 rounded-full bg-gray-200 mt-1 shadow-sm flex-shrink-0" />
+      <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[85%]">
+        <span class="text-[10px] text-gray-500 font-medium mb-1 px-1">${isMe ? 'Вы' : msg.user.name} • ${time}</span>
+        <div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-full ${isMe ? 'rounded-tr-sm' : 'rounded-tl-sm'}">${msg.text}</div>
+      </div>
+    </div>
+  `;
 }
 
 function processBoardData(data) {
