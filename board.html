@@ -348,8 +348,10 @@ function updateBoardData(updates) {
 }
 
 function ensureUserTag(data) {
-  const userTagName = currentUser.name;
+  // Защита: если имя пустое, ставим 'User', чтобы Firebase не выдал ошибку undefined
+  const userTagName = currentUser.name || "User"; 
   const currentTags = data.tags || getBoardTags();
+  
   if (!currentTags.some(t => t.name === userTagName)) {
       const newTag = { 
           id: 'tag_user_' + currentUser.id, 
@@ -361,7 +363,7 @@ function ensureUserTag(data) {
       if (isLocalBoard) {
          updateBoardData({ tags: updatedTags });
       } else {
-         db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags });
+         db.collection("boards").doc(BOARD_ID).update({ tags: updatedTags }).catch(e => console.error("Ошибка тега:", e));
       }
   }
 }
@@ -391,29 +393,40 @@ function loadBoard() {
         let data = doc.data();
         let updates = {};
         let users = data.users || {};
+        let members = data.members || []; // Защита от отсутствующего массива
         let needsUpdate = false;
 
         if (!users[currentUser.id]) {
-           users[currentUser.id] = { name: currentUser.name, avatar: currentUser.avatar, role: data.owner === currentUser.id ? 'owner' : 'editor' };
+           users[currentUser.id] = { 
+               name: currentUser.name || "User", // Защита от undefined
+               avatar: currentUser.avatar || "", 
+               role: data.owner === currentUser.id ? 'owner' : 'editor' 
+           };
            updates.users = users;
            needsUpdate = true;
         }
-        if (!data.members.includes(currentUser.id)) {
+        
+        if (!members.includes(currentUser.id)) {
             updates.members = firebase.firestore.FieldValue.arrayUnion(currentUser.id);
             needsUpdate = true;
         }
         
         if (needsUpdate) {
-           return docRef.update(updates).then(() => startSnapshotListener(docRef));
+           docRef.update(updates).then(() => startSnapshotListener(docRef)).catch(err => {
+               console.error("Ошибка при обновлении пользователя:", err);
+               // Запускаем слушатель доски даже если апдейт юзера не прошел!
+               startSnapshotListener(docRef); 
+           });
         } else {
            startSnapshotListener(docRef);
         }
       } else { 
-        alert("Доска не найдена!"); window.location.href = 'index.html'; 
+        alert("Доска не найдена или удалена!"); window.location.href = 'index.html'; 
       }
     }).catch(e => {
-        console.error("Ошибка прав:", e);
-        window.location.href = 'index.html';
+        // УБРАН РЕДИРЕКТ, ИЗ-ЗА КОТОРОГО ТЕБЯ ВЫКИДЫВАЛО
+        console.error("Критическая ошибка доступа:", e);
+        alert("Ошибка сети или доступа. Проверьте консоль браузера (F12).");
     });
 
     let isFirstChatLoad = true;
@@ -429,7 +442,7 @@ function loadBoard() {
       } else {
         snapshot.docChanges().forEach((change) => {
           if (change.type === "added") {
-            document.getElementById('emptyChatMsg')?.remove(); // Убираем надпись "Чат пуст"
+            document.getElementById('emptyChatMsg')?.remove(); 
             const msg = change.doc.data();
             renderSingleMessage(msg, chatBox);
             
@@ -444,7 +457,7 @@ function loadBoard() {
               badge.classList.remove('hidden');
               
               showSystemToast(
-                `💬 Новое сообщение: ${msg.user.name}`, 
+                `💬 Новое сообщение: ${msg.user.name || 'Аноним'}`, 
                 msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text, 
                 'message-square', 
                 'text-blue-500', 
@@ -458,6 +471,8 @@ function loadBoard() {
           }
         });
       }
+    }, (error) => {
+        console.error("Ошибка инициализации чата:", error);
     });
   }
 }
