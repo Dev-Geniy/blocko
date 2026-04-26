@@ -545,7 +545,20 @@ function openCreateModal() { document.getElementById('createBoardModal').classLi
 function closeCreateModal() { document.getElementById('createBoardModal').classList.add('hidden'); }
 
 // --- ЛОГИКА ТАРИФОВ И ЛИМИТОВ ---
-let userPlan = 'free'; // По умолчанию бесплатный тариф
+// Читаем тариф из памяти или ставим Free
+let userPlan = localStorage.getItem('blocko_user_plan') || 'free'; 
+
+function upgradeTo(plan) {
+  showSystemToast('Оформление...', `Связываемся с платежным шлюзом для ${plan.toUpperCase()}`, 'credit-card', 'text-blue-500', 'bg-blue-50');
+  
+  setTimeout(() => {
+    userPlan = plan;
+    localStorage.setItem('blocko_user_plan', plan); // СОХРАНЯЕМ ТАРИФ НА УСТРОЙСТВЕ
+    closePricingModal();
+    showSystemToast('Тариф обновлен! 🎉', `Теперь вам доступен план ${plan.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
+    renderBoardsGrid();
+  }, 2000);
+}
 
 // Открытие модалки тарифов
 function openPricingModal() {
