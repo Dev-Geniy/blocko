@@ -65,8 +65,7 @@
     <div class="flex items-center gap-5">
       <div class="hidden md:flex items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2 border border-gray-200 dark:border-gray-700 focus-within:border-blue-500 transition-colors">
         <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
-        <input id="searchInput" oninput="renderBoardsGrid()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white" />
-      </div>
+          <input id="searchInput" oninput="debouncedRender()" placeholder="Поиск проектов..." class="bg-transparent outline-none text-sm w-48 dark:text-white" />      </div>
       <a href="my-tasks.html" class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 border border-indigo-100 dark:border-indigo-800/50 shadow-sm font-bold text-sm transition-transform hover:scale-105 active:scale-95">
         <i data-lucide="layout-list" class="w-4 h-4"></i><span class="hidden lg:inline">Мои задачи</span>
       </a>
@@ -290,6 +289,17 @@
 </div>
   
 <script>
+// Функция задержки для поиска
+function debounce(func, timeout = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+  };
+}
+// Обернутая функция рендера
+const debouncedRender = debounce(() => renderBoardsGrid());
+  
 let currentUser = null;
 let onlineBoards = [];
 let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
