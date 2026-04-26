@@ -56,20 +56,39 @@
         <span id="localBadge" class="hidden bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md"><i data-lucide="hard-drive" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН</span>
       </div>
       <p class="text-xs text-amber-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1">
-        <i data-lucide="archive" class="w-3 h-3"></i> Хранилище карточек
+        <i data-lucide="archive" class="w-3 h-3"></i> Хранилище карточек <span id="archiveCountBadge"></span>
       </p>
     </div>
   </div>
   
-  <div class="relative hidden sm:block">
-    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-    <input id="archiveSearch" oninput="renderArchive()" placeholder="Поиск в архиве..." class="pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500 transition-shadow w-64 dark:text-white">
+  <div class="flex items-center gap-3 hidden sm:flex">
+    <div class="relative">
+      <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+      <input id="archiveSearch" oninput="renderArchive()" placeholder="Поиск в архиве..." class="pl-9 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-amber-500 transition-shadow w-64 dark:text-white">
+    </div>
+    <button id="btnBurnArchive" onclick="burnArchive()" class="hidden p-2.5 bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-all shadow-sm hover:scale-105" title="Сжечь архив (Удалить всё)">
+      <i data-lucide="flame" class="w-5 h-5"></i>
+    </button>
   </div>
 </header>
 
 <main class="p-8 max-w-7xl mx-auto w-full flex-1">
   <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="col-span-full py-20 text-center text-gray-400 font-medium">Синхронизация с данными...</div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40 hidden md:flex">
+      <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
+      <div class="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-3"></div>
+      <div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full mb-2"></div><div class="h-3 bg-gray-200 dark:bg-gray-800 rounded w-2/3"></div>
+    </div>
   </div>
 </main>
 
@@ -181,18 +200,32 @@
 
   function renderArchive() {
     const grid = document.getElementById('archiveGrid');
+    const burnBtn = document.getElementById('btnBurnArchive');
+    const countBadge = document.getElementById('archiveCountBadge'); // Ищем наш новый бейджик
     const searchQuery = document.getElementById('archiveSearch').value.toLowerCase();
     let archivedCards = [];
     const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
 
+    // Собираем архивные карточки и запоминаем ID их исходных колонок
     currentBoardData.columns.forEach(col => {
       if (col.cards) {
         col.cards.forEach(card => {
-          if (card.archived) archivedCards.push({ ...card, colName: col.name });
+          if (card.archived) archivedCards.push({ ...card, colName: col.name, originColId: col.id });
         });
       }
     });
 
+    // 1. ДИНАМИЧЕСКИЙ СЧЕТЧИК
+    if (countBadge) {
+      countBadge.innerText = archivedCards.length > 0 ? `(${archivedCards.length})` : '';
+    }
+
+    // Управление видимостью кнопки "Сжечь архив"
+    if (burnBtn) {
+      burnBtn.style.display = (archivedCards.length > 0 && isOwner) ? 'flex' : 'none';
+    }
+
+    // Пустое состояние
     if (archivedCards.length === 0) {
       grid.innerHTML = `
         <div class="col-span-full py-24 flex flex-col items-center opacity-70">
@@ -205,6 +238,9 @@
       lucide.createIcons();
       return;
     }
+
+    // 2. СОРТИРОВКА: Сначала новые (LIFO)
+    archivedCards.sort((a, b) => b.id - a.id);
 
     archivedCards = archivedCards.filter(c => 
       c.title.toLowerCase().includes(searchQuery) || 
@@ -230,9 +266,31 @@
           }).join('') + `</div>` 
         : '';
 
+      // 3. МИНИАТЮРА ОБЛОЖКИ (Если есть картинка)
+      const imageHtml = card.image 
+        ? `<img src="${card.image}" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` 
+        : '';
+
+      // 4. ИКОНКИ СТАТИСТИКИ (Чеклисты и комментарии)
+      let checklistHtml = '';
+      if (card.checklist && card.checklist.length > 0) {
+        const done = card.checklist.filter(i => i.isCompleted).length;
+        const total = card.checklist.length;
+        checklistHtml = `<div class="flex items-center gap-1 ${done === total ? 'text-green-500' : 'text-gray-400'}"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> ${done}/${total}</div>`;
+      }
+
+      let commentsHtml = '';
+      if (card.comments && card.comments.length > 0) {
+        commentsHtml = `<div class="flex items-center gap-1 text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${card.comments.length}</div>`;
+      }
+
+      const statsHtml = (checklistHtml || commentsHtml) 
+        ? `<div class="flex gap-3 text-[11px] font-bold mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">${checklistHtml}${commentsHtml}</div>`
+        : '';
+
       const actionsHtml = isOwner 
         ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
-            <button onclick="restoreCard('${card.id}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+            <button onclick="restoreCard('${card.id}', ${card.originColId})" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть на доску
             </button>
             <button onclick="permanentDelete('${card.id}')" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
@@ -246,17 +304,20 @@
           </div>`;
 
       return `
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col hover:border-amber-400 transition-colors">
           <div class="flex justify-between items-start mb-3">
             ${tagsHtml}
-            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap">
+            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">
               ${card.colName}
             </div>
           </div>
           
+          ${imageHtml}
+          
           <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${card.title}</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${cleanDesc}</p>
           
+          ${statsHtml}
           ${actionsHtml}
         </div>
       `;
@@ -265,26 +326,72 @@
     lucide.createIcons();
   }
 
-  function updateBoardData(updates) {
-    if (isLocalBoard) {
-      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-      if (localBoards[BOARD_ID]) {
-        localBoards[BOARD_ID] = { ...localBoards[BOARD_ID], ...updates };
-        currentBoardData = localBoards[BOARD_ID];
-        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-        renderArchive(); 
-      }
-    } else {
-      db.collection("boards").doc(BOARD_ID).update(updates);
-    }
-  }
-
-  function restoreCard(cardId) {
-    openConfirmModal('Вернуть на доску?', 'Карточка появится в своей исходной колонке, и команда снова сможет с ней работать.', 'Восстановить', false, () => {
+  // --- МАССОВОЕ УДАЛЕНИЕ (СЖЕЧЬ АРХИВ) ---
+  function burnArchive() {
+    openConfirmModal('Сжечь архив?', 'Вы уверены? Это действие навсегда удалит все заархивированные карточки из проекта.', 'Сжечь всё', true, () => {
       const updatedColumns = currentBoardData.columns.map(col => {
-        col.cards = col.cards.map(c => c.id == cardId ? { ...c, archived: false } : c);
+        // Оставляем только те карточки, которые НЕ в архиве
+        col.cards = (col.cards || []).filter(c => !c.archived);
         return col;
       });
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Архив очищен', 'Все архивные задачи уничтожены навсегда.', 'flame', 'text-orange-500', 'bg-orange-50');
+    });
+  }
+
+  // --- ВОССТАНОВЛЕНИЕ С ЗАЩИТОЙ ОТ "СИРОТ" ---
+  function restoreCard(cardId, originColId) {
+    openConfirmModal('Вернуть на доску?', 'Карточка будет восстановлена для дальнейшей работы.', 'Восстановить', false, () => {
+      
+      let cardFoundAndRestored = false;
+      let targetCardData = null;
+
+      // 1. Проверяем, существует ли еще исходная колонка и восстанавливаем
+      let updatedColumns = currentBoardData.columns.map(col => {
+        if (col.id === originColId) {
+          col.cards = col.cards.map(c => {
+            if (c.id == cardId) {
+              c.archived = false;
+              cardFoundAndRestored = true;
+            }
+            return c;
+          });
+        } else {
+          // Если колонка не совпадает, но карточка почему-то здесь (защита от сбоев)
+          const found = (col.cards || []).find(c => c.id == cardId);
+          if (found) { targetCardData = found; }
+        }
+        return col;
+      });
+
+      // 2. Если исходная колонка была удалена, карточка становится "Осиротевшей"
+      if (!cardFoundAndRestored && targetCardData) {
+        // Проверяем, есть ли уже колонка "Восстановленные"
+        let recoveryCol = updatedColumns.find(c => c.name === "Восстановленные");
+        
+        targetCardData.archived = false; // Снимаем статус архива
+        
+        if (recoveryCol) {
+          recoveryCol.cards.push(targetCardData);
+        } else {
+          // Создаем колонку-спасатель
+          updatedColumns.push({
+            id: Date.now(),
+            name: "Восстановленные",
+            color: "amber",
+            cards: [targetCardData]
+          });
+        }
+        
+        // Удаляем сироту из старого (неизвестного) места
+        updatedColumns = updatedColumns.map(col => {
+          if (col.name !== "Восстановленные") {
+            col.cards = col.cards.filter(c => c.id != cardId);
+          }
+          return col;
+        });
+      }
+
       updateBoardData({ columns: updatedColumns });
       showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-green-500', 'bg-green-50');
     });
@@ -299,6 +406,20 @@
       updateBoardData({ columns: updatedColumns });
       showSystemToast('Удалено', 'Карточка безвозвратно удалена.', 'trash-2', 'text-red-500', 'bg-red-50');
     });
+  }
+
+  function updateBoardData(updates) {
+    if (isLocalBoard) {
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      if (localBoards[BOARD_ID]) {
+        localBoards[BOARD_ID] = { ...localBoards[BOARD_ID], ...updates };
+        currentBoardData = localBoards[BOARD_ID];
+        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+        renderArchive(); 
+      }
+    } else {
+      db.collection("boards").doc(BOARD_ID).update(updates);
+    }
   }
 
   // --- ЛОГИКА КАСТОМНЫХ ПОДТВЕРЖДЕНИЙ ---
