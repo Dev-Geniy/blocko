@@ -251,37 +251,83 @@
     </div>
   </div>
   
-  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 pt-12 pb-8 px-8">
-    <div class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
-        <div class="flex flex-col gap-4">
-          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Продукт</h4>
-          <nav class="flex flex-col gap-3">
-            <a href="javascript:void(0)" onclick="openPricingModal()" class="text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors">Тарифы</a>
-            <a href="#" class="text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors opacity-50 cursor-not-allowed">Наши продукты</a>
-            <a href="#" class="text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors opacity-50 cursor-not-allowed">Партнёрская программа</a>
-            <a href="#" class="text-sm font-semibold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors opacity-50 cursor-not-allowed">Поддержка</a>
-          </nav>
-        </div>
-
-        <div class="flex flex-col gap-4">
-          <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Мы в сети</h4>
-          <div class="flex gap-3">
-            <a href="#" onclick="shareVia('telegram')" class="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl hover:scale-110 transition-all"><i data-lucide="send" class="w-5 h-5"></i></a>
-            <a href="#" class="p-2.5 bg-gray-50 dark:bg-gray-800 text-gray-500 rounded-xl hover:scale-110 transition-all"><i data-lucide="github" class="w-5 h-5"></i></a>
+  <footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-16 pb-8 px-8 transition-colors duration-300">
+  <div class="max-w-7xl mx-auto">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+      
+      <div class="flex flex-col gap-6">
+        <div class="flex items-center gap-3 select-none">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
+            <i data-lucide="layers" class="w-5 h-5"></i>
           </div>
+          <h1 class="text-xl font-bold tracking-tight">
+            Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
+          </h1>
         </div>
-
-        <div class="lg:col-span-2 flex flex-col justify-end items-end gap-2">
-          <div class="flex items-center gap-6 text-sm">
-            <span class="text-gray-500">Проектов в сети: <b id="statTotalBoards" class="text-gray-900 dark:text-white">0</b></span>
-            <span class="text-gray-500">Активных задач: <b id="statTotalTasks" class="text-gray-900 dark:text-white">0</b></span>
-          </div>
-          <p class="text-[10px] font-mono text-gray-400 mt-2">Blocko Pro Ecosystem © 2026. Все права защищены.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+          Профессиональная экосистема для управления проектами, объединяющая AI и Real-time технологии.
+        </p>
+        <div class="flex gap-3">
+          <a href="#" class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-500 rounded-xl transition-all hover:scale-110 shadow-sm border border-transparent hover:border-blue-200/50"><i data-lucide="github" class="w-5 h-5"></i></a>
+          <a href="#" onclick="shareVia('telegram')" class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-400 rounded-xl transition-all hover:scale-110 shadow-sm border border-transparent hover:border-blue-200/50"><i data-lucide="send" class="w-5 h-5"></i></a>
         </div>
       </div>
+
+      <div class="flex flex-col gap-6">
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Продукт</h4>
+        <nav class="flex flex-col gap-4">
+          <a href="javascript:void(0)" onclick="openPricingModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Тарифы
+          </a>
+          <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
+             <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Наши продукты
+          </a>
+          <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
+             <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Партнерка
+          </a>
+          <a href="#" class="text-sm font-bold text-gray-400 dark:text-gray-600 transition-colors flex items-center gap-3 cursor-not-allowed opacity-50">
+             <div class="w-1.5 h-1.5 rounded-full bg-gray-400"></div> Поддержка
+          </a>
+        </nav>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Пригласить коллег</h4>
+        <div class="flex flex-col gap-4">
+          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Быстрая ссылка для команды:</p>
+          <div class="flex gap-3">
+            <button onclick="shareVia('telegram')" class="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100" title="Telegram"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('whatsapp')" class="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-green-100 dark:border-green-800/50 hover:bg-green-100" title="WhatsApp"><i data-lucide="phone" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('viber')" class="p-3.5 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-purple-100 dark:border-purple-800/50 hover:bg-purple-100" title="Viber"><i data-lucide="message-square" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-6">
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Поделиться в сети</h4>
+        <div class="flex flex-col gap-4">
+          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Расскажите о своем опыте:</p>
+          <div class="flex gap-3">
+            <button onclick="shareVia('twitter')" class="p-3.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl hover:scale-110 transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200" title="X (Twitter)"><i data-lucide="twitter" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('facebook')" class="p-3.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-200 dark:border-blue-800 hover:bg-blue-200" title="Facebook"><i data-lucide="facebook" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('linkedin')" class="p-3.5 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-sky-100 dark:border-sky-800 hover:bg-sky-100" title="LinkedIn"><i data-lucide="linkedin" class="w-5 h-5"></i></button>
+          </div>
+        </div>
+      </div>
+
     </div>
-  </footer>
+
+    <div class="pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-8 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+        <span class="flex items-center gap-2"><i data-lucide="layout" class="w-3 h-3"></i> Проектов: <b id="statTotalBoards" class="text-gray-900 dark:text-white ml-1">0</b></span>
+        <span class="flex items-center gap-2"><i data-lucide="check-square" class="w-3 h-3"></i> Задач: <b id="statTotalTasks" class="text-gray-900 dark:text-white ml-1">0</b></span>
+      </div>
+      <div class="text-[10px] font-mono text-gray-400 tracking-wider">
+        BLOCKO PRO ECOSYSTEM © 2026 • DESIGNED FOR PROFESSIONALS
+      </div>
+    </div>
+  </div>
+</footer>
   </div>
 
   <!-- Пуш уведомление -->
