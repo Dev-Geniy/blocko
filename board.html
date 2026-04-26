@@ -138,13 +138,16 @@
     </div>
   </aside>
   
-  <aside id="settingsSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+<aside id="settingsSidebar" class="fixed right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-[60] shadow-2xl">
+    
+    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50 flex-shrink-0">
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="settings" class="w-4 h-4 text-blue-500"></i> Настройки доски</h3>
       <button onclick="toggleSettings()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 dark:bg-gray-800 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
     
-<div>
+    <div class="flex-1 overflow-y-auto p-6 space-y-8 hide-scroll">
+      
+      <div>
         <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Обои проекта</h4>
         <div class="flex gap-3 mb-2">
           <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-24 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30">
@@ -173,6 +176,7 @@
           <button onclick="addNewCustomTag()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md">Создать тег</button>
         </div>
       </div>
+
     </div>
   </aside>
   
