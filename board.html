@@ -501,6 +501,7 @@ function highlightText(text, query) {
 }
 
 let currentUser = null;
+let userPlan = localStorage.getItem('blocko_user_plan') || 'free';
 let BOARD_ID = new URLSearchParams(window.location.search).get('b');
 let isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
 let columns = [], sortableInstances = [];
@@ -761,6 +762,12 @@ function closeFileTypeModal() {
 
 // Конвертация в Base64 и сохранение с таймером/сжиганием
 async function confirmFileUpload(retentionType) {
+  // ПРОВЕРКА ТАРИФА
+  if (retentionType === 'burn' && userPlan !== 'pro') {
+     closeFileTypeModal();
+     return showSystemToast('Pro Функция', 'Сгорающие (шпионские) файлы доступны только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50');
+  }
+
   if (!pendingChatFile) return;
   const file = pendingChatFile;
   closeFileTypeModal();
@@ -1256,6 +1263,12 @@ function confirmQuickAdd() {
 }
 
 document.getElementById('boardBgUpload').addEventListener('change', async (e) => {
+  // ПРОВЕРКА ТАРИФА
+  if (userPlan === 'free') {
+    e.target.value = '';
+    return showSystemToast('Премиум функция', 'Загрузка своих обоев доступна на тарифах Freelancer и Company.', 'lock', 'text-amber-500', 'bg-amber-50');
+  }
+
   const file = e.target.files[0]; if(!file) return;
   const statusEl = document.getElementById('bgUploadStatus'); statusEl.innerText = 'Загрузка обоев...';
   try {
@@ -1310,9 +1323,32 @@ function deleteCustomTag(tagId) {
     persist();
   });
 }
+
+function checkAILimit() {
+  if (userPlan === 'pro') return true; // Безлимит
+  
+  let aiUsage = JSON.parse(localStorage.getItem('blocko_ai_usage')) || { date: new Date().toDateString(), count: 0 };
+  
+  // Сбрасываем счетчик, если наступил новый день
+  if (aiUsage.date !== new Date().toDateString()) {
+    aiUsage = { date: new Date().toDateString(), count: 0 };
+  }
+  
+  const limit = userPlan === 'freelancer' ? 15 : 3; // Freelancer = 15, Free = 3
+  
+  if (aiUsage.count >= limit) {
+    showSystemToast('Лимит AI исчерпан', `Доступно ${limit} запросов в день на вашем тарифе.`, 'lock', 'text-amber-500', 'bg-amber-50');
+    return false;
+  }
+  
+  aiUsage.count++;
+  localStorage.setItem('blocko_ai_usage', JSON.stringify(aiUsage));
+  return true;
+}
   
 async function generateAIDescription() {
-  const title = document.getElementById('editTitle').value; const textarea = document.getElementById('editDescription'); const btn = document.getElementById('aiGenBtn');
+  if (!checkAILimit()) return;
+  const textarea = document.getElementById('editDescription'); const btn = document.getElementById('aiGenBtn');
   if (!title) return alert("Напишите название задачи.");
   const ogBtn = btn.innerHTML; btn.disabled = true; 
   btn.innerHTML = '<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i> Думаю...'; lucide.createIcons();
@@ -1323,6 +1359,7 @@ async function generateAIDescription() {
 }
 
 async function generateAIQuickDescription() {
+  if (!checkAILimit()) return;
   const title = document.getElementById('quickAddInput').value; const textarea = document.getElementById('quickAddDesc'); const btn = document.getElementById('aiQuickGenBtn');
   if (!title) return alert("Введите заголовок");
   const ogBtn = btn.innerHTML; btn.disabled = true; 
