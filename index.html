@@ -375,7 +375,7 @@ function renderBoardsGrid() {
       document.getElementById('statTotalTasks').innerText = tasksCount;
   }
 
-  // ИСПРАВЛЕНИЕ БАГА С ИКОНКАМИ: добавляем lucide.createIcons() перед return
+  // добавляем lucide.createIcons() перед return
   if (filtered.length === 0) {
     grid.innerHTML = `<div class="col-span-full py-16 text-center text-gray-500">Проекты не найдены. Создайте новый или загрузите.</div>`;
     lucide.createIcons(); 
@@ -399,7 +399,7 @@ function renderBoardsGrid() {
       </button>
     `;
 
-    // --- НОВЫЙ БЛОК: Логика кнопок внутри карточки (Архив, Удалить, Выйти) ---
+    // --- Логика кнопок внутри карточки (Архив, Удалить, Выйти) ---
     let cardActions = `<button onclick="event.stopPropagation(); window.location.href='archive.html?b=${data.id}'" class="p-1.5 text-gray-400 hover:bg-amber-50 hover:text-amber-500 rounded-lg transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
 
     if (isLocal || data.owner === currentUser.id) {
@@ -413,7 +413,7 @@ function renderBoardsGrid() {
 
     return `
     <div data-id="${data.id}" onclick="window.location.href='board.html?b=${data.id}'" class="group bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 p-6 rounded-[2rem] hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-1 cursor-grab active:cursor-grabbing relative overflow-hidden flex flex-col h-full">
-      ${isLocal ? `<span class="absolute top-4 right-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-1 rounded-md flex items-center gap-1"><i data-lucide="hard-drive" class="w-3 h-3"></i> ОФЛАЙН</span>` : ''}
+      ${isLocal ? `<span class="absolute top-4 left-4 z-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-sm"><i data-lucide="hard-drive" class="w-3 h-3"></i> ОФЛАЙН</span>` : ''}
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
       
       <div class="flex justify-between items-start mb-4">
