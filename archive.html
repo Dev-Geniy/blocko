@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Архив проекта - FlowBoard Pro</title>
+  
+  <title>Архив проекта - Blocko Pro</title>
+  <meta name="description" content="Безопасное хранилище удаленных задач. Восстанавливайте или навсегда удаляйте карточки из ваших проектов Blocko.">
+  <meta name="keywords" content="канбан, архив задач, управление проектами, удаленные задачи, blocko pro">
+  <meta name="theme-color" content="#0f172a">
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -19,6 +23,7 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
   </style>
 
   <script>
@@ -29,13 +34,14 @@
 
 <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
   <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="К проектам">
+    <a href="#" onclick="goBackToBoard()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="Вернуться к доске">
       <i data-lucide="arrow-left" class="w-5 h-5"></i>
     </a>
     <div>
       <div class="flex items-center gap-2">
         <h1 id="boardTitle" class="text-xl font-bold tracking-tight">Загрузка...</h1>
         <span id="roleBadge" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200 dark:border-gray-700 text-gray-500"></span>
+        <span id="localBadge" class="hidden bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-md"><i data-lucide="hard-drive" class="w-3 h-3 inline pb-0.5"></i> ОФЛАЙН</span>
       </div>
       <p class="text-xs text-amber-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1">
         <i data-lucide="archive" class="w-3 h-3"></i> Хранилище карточек
@@ -51,19 +57,43 @@
 
 <main class="p-8 max-w-7xl mx-auto w-full flex-1">
   <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <div class="col-span-full py-20 text-center text-gray-400 font-medium">Синхронизация с базой данных...</div>
+    <div class="col-span-full py-20 text-center text-gray-400 font-medium">Синхронизация с данными...</div>
   </div>
 </main>
+
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+      <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
+    </div>
+    <h2 id="confirmTitle" class="text-xl font-bold mb-2 text-gray-900 dark:text-white">Подтверждение</h2>
+    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed">Вы уверены?</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 py-3.5 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-xl transition-colors">Отмена</button>
+      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[100] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30">
+    <i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i>
+  </div>
+  <div>
+    <h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4>
+    <p id="toastDesc" class="text-xs text-gray-500 leading-relaxed">Описание</p>
+  </div>
+</div>
 
 <script>
   if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
   lucide.createIcons();
 
   const BOARD_ID = new URLSearchParams(window.location.search).get('b');
+  const isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
   let currentBoardData = null;
   let currentUser = null;
 
-  // Стандартные теги (если на доске нет кастомных)
   const DEFAULT_BOARD_TAGS = [
     { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
     { id: 'tag_feat', name: 'Фича', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800' },
@@ -82,15 +112,35 @@
     }
   });
 
+  function goBackToBoard() {
+    window.location.href = BOARD_ID ? `board.html?b=${BOARD_ID}` : 'index.html';
+  }
+
   function loadArchive() {
-    db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
-      if (!doc.exists) return window.location.href = 'index.html';
-      
-      currentBoardData = doc.data();
+    if (isLocalBoard) {
+       document.getElementById('localBadge').classList.remove('hidden');
+       const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+       if (localBoards[BOARD_ID]) {
+          currentBoardData = localBoards[BOARD_ID];
+          setupArchiveUI();
+          renderArchive();
+       } else {
+          window.location.href = 'index.html';
+       }
+    } else {
+      db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
+        if (!doc.exists) return window.location.href = 'index.html';
+        currentBoardData = doc.data();
+        setupArchiveUI();
+        renderArchive();
+      });
+    }
+  }
+
+  function setupArchiveUI() {
       document.getElementById('boardTitle').innerText = currentBoardData.title;
       
-      // Устанавливаем бейдж роли
-      const isOwner = currentBoardData.owner === currentUser.uid;
+      const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
       const roleBadge = document.getElementById('roleBadge');
       roleBadge.classList.remove('hidden');
       
@@ -100,19 +150,15 @@
       } else {
         roleBadge.innerHTML = '<i data-lucide="eye" class="w-3 h-3 inline pb-0.5"></i> Участник';
       }
-
-      renderArchive();
-    });
   }
 
-  // Очистка текста от Markdown символов для красивого превью
   function cleanMarkdown(text) {
     if (!text) return 'Нет описания';
     return text
-      .replace(/(\*\*|__)(.*?)\1/g, '$2') // Жирный
-      .replace(/(\*|_)(.*?)\1/g, '$2')    // Курсив
-      .replace(/\[[ x]\] /g, '• ')        // Чекбоксы в маркеры
-      .replace(/#/g, '')                  // Заголовки
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(\*|_)(.*?)\1/g, '$2')
+      .replace(/\[[ x]\] /g, '• ')
+      .replace(/#/g, '')
       .trim();
   }
 
@@ -125,9 +171,8 @@
     const grid = document.getElementById('archiveGrid');
     const searchQuery = document.getElementById('archiveSearch').value.toLowerCase();
     let archivedCards = [];
-    const isOwner = currentBoardData.owner === currentUser.uid;
+    const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
 
-    // Собираем архивные карточки
     currentBoardData.columns.forEach(col => {
       if (col.cards) {
         col.cards.forEach(card => {
@@ -136,7 +181,6 @@
       }
     });
 
-    // Пустое состояние (В архиве вообще ничего нет)
     if (archivedCards.length === 0) {
       grid.innerHTML = `
         <div class="col-span-full py-24 flex flex-col items-center opacity-70">
@@ -150,13 +194,11 @@
       return;
     }
 
-    // Фильтрация по поиску
     archivedCards = archivedCards.filter(c => 
       c.title.toLowerCase().includes(searchQuery) || 
       (c.description && c.description.toLowerCase().includes(searchQuery))
     );
 
-    // Пустое состояние поиска
     if (archivedCards.length === 0 && searchQuery !== '') {
       grid.innerHTML = `
         <div class="col-span-full py-16 text-center">
@@ -165,11 +207,9 @@
       return;
     }
 
-    // Отрисовка сетки
     grid.innerHTML = archivedCards.map(card => {
       const cleanDesc = cleanMarkdown(card.description);
       
-      // Генерация тегов
       const tagsHtml = card.tags && card.tags.length > 0 
         ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + 
           card.tags.map(tId => { 
@@ -178,7 +218,6 @@
           }).join('') + `</div>` 
         : '';
 
-      // Блок кнопок (Зависит от роли)
       const actionsHtml = isOwner 
         ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
             <button onclick="restoreCard('${card.id}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
@@ -214,27 +253,109 @@
     lucide.createIcons();
   }
 
-  function restoreCard(cardId) {
-    if(!confirm("Вернуть карточку на доску? Она появится в своей исходной колонке.")) return;
-    
-    const updatedColumns = currentBoardData.columns.map(col => {
-      col.cards = col.cards.map(c => c.id == cardId ? { ...c, archived: false } : c);
-      return col;
-    });
+  function updateBoardData(updates) {
+    if (isLocalBoard) {
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      if (localBoards[BOARD_ID]) {
+        localBoards[BOARD_ID] = { ...localBoards[BOARD_ID], ...updates };
+        currentBoardData = localBoards[BOARD_ID];
+        localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+        renderArchive(); 
+      }
+    } else {
+      db.collection("boards").doc(BOARD_ID).update(updates);
+    }
+  }
 
-    db.collection("boards").doc(BOARD_ID).update({ columns: updatedColumns });
+  function restoreCard(cardId) {
+    openConfirmModal('Вернуть на доску?', 'Карточка появится в своей исходной колонке, и команда снова сможет с ней работать.', 'Восстановить', false, () => {
+      const updatedColumns = currentBoardData.columns.map(col => {
+        col.cards = col.cards.map(c => c.id == cardId ? { ...c, archived: false } : c);
+        return col;
+      });
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-green-500', 'bg-green-50');
+    });
   }
 
   function permanentDelete(cardId) {
-    if(!confirm("Вы уверены, что хотите удалить карточку навсегда? Это действие невозможно отменить.")) return;
-    
-    const updatedColumns = currentBoardData.columns.map(col => {
-      col.cards = col.cards.filter(c => c.id != cardId);
-      return col;
+    openConfirmModal('Удалить навсегда?', 'Вы уверены? Карточка будет стерта из базы без возможности восстановления.', 'Удалить', true, () => {
+      const updatedColumns = currentBoardData.columns.map(col => {
+        col.cards = col.cards.filter(c => c.id != cardId);
+        return col;
+      });
+      updateBoardData({ columns: updatedColumns });
+      showSystemToast('Удалено', 'Карточка безвозвратно удалена.', 'trash-2', 'text-red-500', 'bg-red-50');
     });
-
-    db.collection("boards").doc(BOARD_ID).update({ columns: updatedColumns });
   }
+
+  // --- ЛОГИКА КАСТОМНЫХ ПОДТВЕРЖДЕНИЙ ---
+  let confirmCallback = null;
+
+  function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+    document.getElementById('confirmTitle').innerText = title;
+    document.getElementById('confirmDesc').innerText = desc;
+    
+    const iconBg = document.getElementById('confirmIconBg');
+    const icon = document.getElementById('confirmIcon');
+    const btn = document.getElementById('confirmBtnAction');
+    
+    if (isDanger) {
+      iconBg.className = "mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+      icon.setAttribute('data-lucide', 'trash-2');
+      btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+    } else {
+      iconBg.className = "mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm";
+      icon.setAttribute('data-lucide', 'refresh-cw');
+      btn.className = "flex-1 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all";
+    }
+    btn.innerText = confirmText;
+    lucide.createIcons();
+    confirmCallback = callback;
+    
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  }
+
+  function closeConfirmModal() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100'); content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+  }
+
+  function executeConfirm() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  }
+
+  let toastTimeout;
+  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+    const toast = document.getElementById('globalToast');
+    document.getElementById('toastTitle').innerText = title;
+    document.getElementById('toastDesc').innerText = desc;
+    
+    const iconEl = document.getElementById('toastIcon');
+    iconEl.setAttribute('data-lucide', iconName);
+    iconEl.className = `w-5 h-5 ${iconColor}`;
+    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+    lucide.createIcons();
+
+    toast.classList.remove('translate-y-24', 'opacity-0');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 5000);
+  }
+
+  window.addEventListener('click', (e) => {
+    if (e.target.id === 'customConfirmModal') closeConfirmModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && typeof closeConfirmModal === 'function') closeConfirmModal();
+  });
 </script>
 </body>
 </html>
