@@ -153,8 +153,8 @@
   </div>
 </div>
 
-<div id="headerWrapper" class="group/header w-full relative z-20 flex flex-col shadow-sm transition-all duration-300">
-  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-20 relative">
+<div id="headerWrapper" class="group/header w-full relative z-[60] flex flex-col shadow-sm transition-all duration-300">
+  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-[60] relative">
     <div class="flex items-center gap-3">
       <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
@@ -540,8 +540,7 @@
   </aside>
 </div>
 
-<div id="editCardModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
+<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
       <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
       <button onclick="closeEditModal()" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -651,8 +650,7 @@
   </div>
 </div>
 
-<div id="colModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">
-  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
+<div id="colModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
     <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
     <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-4 dark:text-white focus:ring-2 focus:ring-blue-500" />
@@ -874,7 +872,7 @@
   </div>
 </div>
 
-<div id="contentViewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
+<div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
   <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
     <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
       <i data-lucide="x" class="w-6 h-6"></i>
@@ -1411,8 +1409,10 @@ function renderSpacesUI() {
    } else {
        subHeaderWrapper.classList.remove('hidden');
        subHeader.classList.remove('hidden'); // Принудительный показ внутренней панели
-       verticalSidebar.classList.add('hidden');
-       verticalSidebar.classList.remove('flex');
+       if(verticalSidebar) {
+           verticalSidebar.classList.add('hidden');
+           verticalSidebar.classList.remove('flex');
+       }
    }
 
    const generateTabs = (isVertical) => boardData.spaces.map(space => {
@@ -1447,13 +1447,17 @@ function renderSpacesUI() {
    }).join('');
 
    if (spacesLayoutMode === 'vertical' && isDesktop) {
-       containerVertical.innerHTML = generateTabs(true);
-       lucide.createIcons({ root: containerVertical });
-       initSpacesSortable(containerVertical);
+       if(containerVertical) {
+           containerVertical.innerHTML = generateTabs(true);
+           lucide.createIcons({ root: containerVertical });
+           initSpacesSortable(containerVertical);
+       }
    } else {
-       containerHorizontal.innerHTML = generateTabs(false);
-       lucide.createIcons({ root: containerHorizontal });
-       initSpacesSortable(containerHorizontal);
+       if(containerHorizontal) {
+           containerHorizontal.innerHTML = generateTabs(false);
+           lucide.createIcons({ root: containerHorizontal });
+           initSpacesSortable(containerHorizontal);
+       }
    }
 }
 
@@ -4321,8 +4325,10 @@ function render() {
         easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
         ghostClass: 'sortable-ghost',
         dragClass: 'sortable-drag',
-        forceFallback: true, // Решает проблему залипания Drag&Drop элементов в Safari/Chrome на iOS
+        forceFallback: true, // Решает проблему залипания Drag&Drop элементов
         fallbackClass: 'sortable-fallback',
+        fallbackOnBody: true, // ЭНТЕРПРАЙЗ: Карточка строго следует за курсором и не обрезается колонкой
+        fallbackTolerance: 5, // ЭНТЕРПРАЙЗ: Защита клика (отлипание при 5px сдвига, возвращает возможность открывать модалки)
         
         // ВЕРНУЛИ КАК БЫЛО: Фикс для карточек разного размера (Аудио над Картинкой)
         invertSwap: true, 
@@ -4454,6 +4460,8 @@ function render() {
       dragClass: 'sortable-drag', 
       forceFallback: true, // Плавный Drag&Drop для мобильных устройств
       fallbackClass: 'sortable-fallback',
+      fallbackOnBody: true, // Идеальное следование за курсором без обрезаний
+      fallbackTolerance: 5, // Защита кликов
       invertSwap: true, 
       swapThreshold: 0.8,
       disabled: isViewer,
