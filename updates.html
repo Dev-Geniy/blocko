@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Хроника обновлений - Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .update-card::before {
+      content: '';
+      position: absolute;
+      left: -25px;
+      top: 24px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid #0f172a;
+      z-index: 10;
+    }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Хроника обновлений</h1>
+      <p class="text-xs text-blue-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Эволюция Blocko Pro
+      </p>
+    </div>
+  </div>
+</header>
+
+<main class="p-8 max-w-4xl mx-auto w-full flex-1">
+  
+  <div class="relative border-l-2 border-gray-200 dark:border-gray-800 ml-4 pl-8 space-y-12">
+
+    <section class="update-card relative">
+      <div class="absolute -left-[45px] top-16 bg-blue-500/10 text-blue-500 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter transform -rotate-90 shadow-sm border border-blue-200/50 dark:border-blue-900/50 z-10">NEW</div>
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">Сегодня</span>
+          <span class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 text-[10px] font-bold rounded-lg border border-blue-100 dark:border-blue-800">PWA & Уведомления</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Полноценное приложение и Push-уведомления</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Blocko Pro стал независимым. Теперь вы можете установить нас как нативное приложение (PWA) на ПК или смартфон. Мы также внедрили фоновый Service Worker для отслеживания дедлайнов.</p>
+        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50">
+          <h4 class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-2 tracking-wider">Ключевые внедрения:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Установка PWA:</b> Нативный опыт без адресной строки браузера и работа вне сети.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Smart Deadlines:</b> Автоматический поиск горящих задач (< 24 часов).</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Push Notifications:</b> Системные уведомления на рабочий стол при критических сроках.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-95">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">12 Мая, 2026</span>
+          <span class="px-3 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-600 text-[10px] font-bold rounded-lg border border-purple-100 dark:border-purple-800">Инструменты Колонок</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Интерактивные опросы и меню «Ещё»</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Мы вышли за рамки простых канбан-карточек. Встречайте новый модуль добавления контента. Теперь команда может проводить голосования прямо внутри рабочих колонок.</p>
+        <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800/50">
+          <h4 class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase mb-2 tracking-wider">Что стало лучше:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Конструктор опросов:</b> Создание голосований с настройкой анонимности ответов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Live-Голосование:</b> Анимированные прогресс-бары, обновляющиеся в реальном времени.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Новое меню:</b> Разделение кнопки добавления с тизерами будущих модулей (Таблицы, Таймеры).</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-95">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">5 Мая, 2026</span>
+          <span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold rounded-lg border border-emerald-100 dark:border-emerald-800">UI/UX & Идентификация</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Глубокая кастомизация профиля и Glass-модалки</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Полный отказ от скучных системных окон браузера (`alert`, `confirm`). Вся экосистема переведена на плавные модальные окна. Профиль пользователя получил масштабный апгрейд.</p>
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+          <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-2 tracking-wider">Что стало лучше:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Глобальный Custom UI:</b> Стильные диалоговые окна подтверждения действий.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Аватары и Рамки:</b> Кастомные фото профиля со светящимися рамками для элитных тарифов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Эффекты артефактов:</b> Анимации пульсации и радужного перелива для аватаров уровня Ambassador.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-90 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">28 Апреля, 2026</span>
+          <span class="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 text-[10px] font-bold rounded-lg border border-amber-100 dark:border-amber-800">Бизнес & Архитектура</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Запуск Партнерской сети с серверным биллингом</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Внедрение полноценной реферальной системы уровня Enterprise. Интеграция геймификации и выдачи постоянных наград за лояльность.</p>
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50">
+          <h4 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Личный кабинет:</b> Статистика регистраций и прозрачный счетчик заработка.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Геймификация:</b> Зал Славы с разблокировкой статусов Friend, Partner, Ambassador.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Recurring:</b> Стабильные автоматические начисления комиссии от рефералов.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-90 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">26 Апреля, 2026</span>
+          <span class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100 dark:border-indigo-800">Архитектура</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Глобальные тарифы и централизация AI</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Проведен масштабный рефакторинг ядра. Все лимиты проектов и настройки нейросетей вынесены в единый конфигурационный файл для мгновенного управления.</p>
+        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+          <h4 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-2 tracking-wider">Что стало лучше:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Унификация:</b> Выделение лимитов (AI, проекты) в единый `config.js`.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Стабильность:</b> Повышена отказоустойчивость платформы за счет обновления ядра.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Масштабирование:</b> Подготовка архитектуры к развертыванию новых подписок.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-85 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">20 Апреля, 2026</span>
+          <span class="px-3 py-1 bg-sky-50 dark:bg-sky-900/30 text-sky-600 text-[10px] font-bold rounded-lg border border-sky-100 dark:border-sky-800">Новая функция</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Персональный дашборд «Мои задачи»</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Больше не нужно прыгать по разным проектам в поисках своих задач. Мы создали единый центр, который собирает все карточки, где вы отмечены тегом, из онлайн и офлайн досок.</p>
+        <div class="p-4 bg-sky-50 dark:bg-sky-900/20 rounded-2xl border border-sky-100 dark:border-sky-800/50">
+          <h4 class="text-xs font-bold text-sky-600 dark:text-sky-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Агрегация:</b> Сбор задач из Cloud и локальных (Offline) проектов в одном месте.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Умная сортировка:</b> Задачи с горящим дедлайном всегда отображаются сверху.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Быстрый переход:</b> Открытие нужного проекта и карточки в один клик.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-85 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">12 Апреля, 2026</span>
+          <span class="px-3 py-1 bg-rose-50 dark:bg-rose-900/30 text-rose-600 text-[10px] font-bold rounded-lg border border-rose-100 dark:border-rose-800">Безопасность & Чат</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Командный чат и «Сгорающие файлы»</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">В каждый проект добавлен боковой модуль чата реального времени. А для передачи конфиденциальных данных мы внедрили технологию файлов "Сжечь после прочтения".</p>
+        <div class="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-2xl border border-rose-100 dark:border-rose-800/50">
+          <h4 class="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Real-time общение:</b> Передача сообщений и изображений прямо внутри колонки.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Контроль данных:</b> Ограничения по времени (1 или 7 дней) для хранения файлов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Сжечь после прочтения:</b> Файлы уничтожаются навсегда после первого скачивания.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">5 Апреля, 2026</span>
+          <span class="px-3 py-1 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-600 text-[10px] font-bold rounded-lg border border-fuchsia-100 dark:border-fuchsia-800">Нейросети</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Умный AI-Ассистент</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Автоматическая генерация планов задач и чек-листов на основе одного заголовка с помощью интеграции OpenAI через Pollinations API.</p>
+        <div class="p-4 bg-fuchsia-50 dark:bg-fuchsia-900/20 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/50">
+          <h4 class="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Smart AI:</b> Бесшовная интеграция с OpenAI для декомпозиции сложных задач.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Markdown-генерация:</b> Мгновенное создание описаний на основе заголовка.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Авто-чеклисты:</b> Нейросеть сама составляет пошаговый план работ.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">28 Марта, 2026</span>
+          <span class="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-bold rounded-lg border border-emerald-100 dark:border-emerald-800">Offline Mode</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Локальные проекты без интернета</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Внедрена система «Device Only». Физический экспорт (бэкап) проектов в .json файл и загрузка на других устройствах.</p>
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800/50">
+          <h4 class="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Приватность:</b> Создание проектов без привязки к серверу (сохранение в браузере).</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Безопасность:</b> Локальное шифрование данных прямо на устройстве.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Мобильность:</b> Выгрузка проекта в JSON-бэкап для переноса.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-70 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">15 Марта, 2026</span>
+          <span class="px-3 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 text-[10px] font-bold rounded-lg border border-amber-100 dark:border-amber-800">Командная работа</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Командный доступ и система ролей</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Вход по секретному ID проекта или через прямую инвайт-ссылку. Роли: Владелец, Редактор и Читатель.</p>
+        <div class="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800/50">
+          <h4 class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Быстрый старт:</b> Добавление коллег по короткой ссылке в один клик.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Защита:</b> Установка пароля на вход в проект.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Управление:</b> Назначение ролей (Владелец, Редактор, безопасный Читатель).</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-70 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">1 Марта, 2026</span>
+          <span class="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-100 dark:border-indigo-800">Релиз Ядра</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Запуск Канбан-движка</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Ядро рабочей области с Drag & Drop на базе Sortable.js. Чек-листы с прогресс-баром, дедлайны, кастомные теги.</p>
+        <div class="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl border border-indigo-100 dark:border-indigo-800/50">
+          <h4 class="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase mb-2 tracking-wider">Возможности:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Эргономика:</b> Высокопроизводительный Drag & Drop колонок и карточек.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Инструменты:</b> Настройка цветных меток, дедлайнов и вложенных чек-листов.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Навигация:</b> Смарт-поиск по всем задачам и фильтрация по тегам.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="update-card relative">
+      <div class="flex flex-col gap-4 bg-white dark:bg-gray-900 p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm opacity-60 hover:opacity-100 transition-opacity">
+        <div class="flex justify-between items-start">
+          <span class="text-xs font-bold text-gray-400">15 Февраля, 2026</span>
+          <span class="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[10px] font-bold rounded-lg border border-gray-200 dark:border-gray-700">Альфа-версия</span>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white">Рождение Blocko Pro</h3>
+        <p class="text-sm text-gray-500 leading-relaxed">Закладка фундамента проекта. Интеграция с Firebase Firestore для хранения данных. Безопасный вход через Google.</p>
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+          <h4 class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase mb-2 tracking-wider">Основы заложены:</h4>
+          <ul class="text-xs text-gray-600 dark:text-gray-300 space-y-2">
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Надежность:</b> Firebase Firestore для мгновенной синхронизации.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Авторизация:</b> Простая и надежная аутентификация через Google.</span></li>
+            <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500 flex-shrink-0"></i> <span><b>Дизайн:</b> Современный UI с поддержкой темной темы.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="py-20 text-center">
+    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-bold text-gray-400 uppercase tracking-widest border border-gray-200 dark:border-gray-700">
+      <i data-lucide="terminal" class="w-3 h-3"></i> Конец истории на сегодня
+    </div>
+  </div>
+</main>
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  lucide.createIcons();
+</script>
+</body>
+</html>

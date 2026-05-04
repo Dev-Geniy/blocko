@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Вам подарок! — Blocko Pro</title>
+
+  <!-- Фавикон и SEO -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f43f5e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 12 20 22 4 22 4 12'/><rect width='20' height='5' x='2' y='7'/><line x1='12' x2='12' y1='22' y2='7'/><path d='M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z'/><path d='M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; }
+    .glass-panel { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+    .animate-float { animation: float 4s ease-in-out infinite; }
+    
+    /* ЭНТЕРПРАЙЗ: Физика летящих частиц */
+    @keyframes float-up {
+      0% { transform: translateY(100vh) scale(var(--scale)) rotate(0deg); opacity: 0; }
+      10% { opacity: var(--opacity); }
+      90% { opacity: var(--opacity); }
+      100% { transform: translateY(-20vh) scale(var(--scale)) rotate(360deg); opacity: 0; }
+    }
+    .particle {
+      position: absolute;
+      will-change: transform, opacity;
+      animation: float-up var(--duration) linear infinite;
+      animation-delay: var(--delay);
+      left: var(--left);
+      z-index: 0;
+    }
+    
+    /* Экстремальное 3D-свечение для подарка */
+    .epic-3d-glow {
+      filter: drop-shadow(0 20px 40px rgba(244, 63, 94, 0.5)) drop-shadow(0 0 80px rgba(99, 102, 241, 0.4));
+    }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="text-white min-h-screen flex flex-col relative overflow-x-hidden overflow-y-auto px-4 py-12">
+
+  <!-- Particles Background Container -->
+  <div id="particles-container" class="fixed inset-0 pointer-events-none overflow-hidden"></div>
+
+  <!-- Ambient Background -->
+  <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-rose-500/20 rounded-full blur-[100px] pointer-events-none animate-pulse"></div>
+  <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none animate-pulse" style="animation-delay: 2s;"></div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="relative z-10 flex flex-col items-center m-auto">
+    <i data-lucide="loader-2" class="w-12 h-12 text-rose-500 animate-spin mb-4"></i>
+    <p class="text-gray-400 font-bold uppercase tracking-widest text-sm">Ищем подарок...</p>
+  </div>
+
+  <!-- Main Gift Card -->
+  <div id="giftCard" class="hidden relative z-10 w-full max-w-lg bg-gray-900/60 glass-panel border border-gray-800 rounded-[3rem] p-8 sm:p-12 text-center shadow-2xl transition-all duration-700 transform scale-95 opacity-0 m-auto">
+    
+    <div id="senderBlock" class="hidden flex items-center justify-center gap-3 mb-6 bg-gray-800/50 w-fit mx-auto px-4 py-2 rounded-full border border-gray-700 shadow-inner">
+       <img id="senderAvatar" src="" class="w-8 h-8 rounded-full border border-gray-600 shadow-sm" />
+       <span class="text-sm font-bold text-gray-200">Подарок от <span id="senderName" class="text-white font-black">User</span></span>
+    </div>
+
+    <!-- Текстовое уведомление над подарком -->
+    <div id="claimHintText" class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 animate-pulse">Нажмите на подарок, чтобы открыть</div>
+
+    <div id="giftImageBtn" onclick="claimGift()" class="relative w-48 h-48 mx-auto mb-8 animate-float group cursor-pointer transition-all duration-300">
+       <!-- Многослойное неоновое свечение -->
+       <div class="absolute inset-0 bg-rose-500 blur-[60px] opacity-40 rounded-full group-hover:opacity-70 transition-opacity duration-700"></div>
+       <div class="absolute inset-0 bg-indigo-500 blur-[60px] opacity-40 rounded-full mix-blend-screen group-hover:opacity-70 transition-opacity duration-700 transform translate-x-4 -translate-y-4"></div>
+       
+       <!-- Премиальное 3D Изображение подарка -->
+       <img src="https://img.icons8.com/3d-fluency/250/gift.png" alt="3D Gift Box" class="relative z-10 w-full h-full object-contain epic-3d-glow group-hover:scale-110 group-hover:-rotate-3 active:scale-90 transition-transform duration-500" />
+       
+       <!-- ЭНТЕРПРАЙЗ: Интегрированный лоадер прямо внутри подарка -->
+       <div id="giftLoader" class="hidden absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900/60 rounded-[2rem] backdrop-blur-md opacity-0 transition-opacity duration-300">
+         <i data-lucide="loader-2" class="w-10 h-10 text-white animate-spin"></i>
+       </div>
+    </div>
+
+    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">Для вас есть сюрприз!</h1>
+    <h2 class="text-xl sm:text-2xl font-black text-rose-400 mb-6" id="giftValue">... B-Coins</h2>
+    
+    <div class="bg-indigo-500/10 border border-indigo-500/20 p-5 rounded-2xl mb-2 text-left">
+       <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4"></i> Что такое Blocko Pro?</h4>
+       <p class="text-sm text-gray-300 leading-relaxed mb-0">
+         Это профессиональная PWA-экосистема для управления проектами и бизнесом. Канбан-доски, AI-ассистент, чаты и офлайн-режим. 
+         <br><br><span class="text-rose-400 font-bold">Используйте подаренные монеты для оплаты премиум-тарифа или генераций нейросети!</span>
+       </p>
+    </div>
+  </div>
+
+  <!-- Error / Success State (Epic Reward Ritual) -->
+  <div id="msgState" class="hidden relative z-10 w-full max-w-md bg-gray-900/60 glass-panel border border-gray-800 rounded-[3rem] p-10 text-center shadow-2xl m-auto transform scale-95 opacity-0 transition-all duration-700">
+    <div id="msgIcon" class="w-24 h-24 mx-auto rounded-[2rem] flex items-center justify-center mb-8"></div>
+    <h2 id="msgTitle" class="text-3xl font-black text-white mb-4 tracking-tight">...</h2>
+    
+    <!-- ЭНТЕРПРАЙЗ: Контейнер изменен на div для поддержки сложной HTML-верстки -->
+    <div id="msgDesc" class="mb-10 w-full">...</div>
+    
+    <button onclick="window.location.href='index.html'" class="w-full py-4.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black uppercase tracking-widest text-[11px] rounded-2xl transition-all shadow-lg shadow-indigo-500/25 active:scale-95 flex items-center justify-center gap-2">
+       Перейти в рабочее пространство <i data-lucide="arrow-right" class="w-4 h-4"></i>
+    </button>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const giftCode = urlParams.get('code');
+    let currentUser = null;
+    let promoData = null;
+
+    auth.onAuthStateChanged((user) => {
+        currentUser = user;
+        
+        // ЭНТЕРПРАЙЗ: Динамически меняем текст подсказки над подарком
+        const hintText = document.getElementById('claimHintText');
+        if (hintText) hintText.innerText = user ? 'Нажмите на подарок, чтобы открыть' : 'Нажмите, чтобы авторизоваться и открыть';
+        
+        createParticles(); // Запускаем 3D-фоновую анимацию
+        initGiftPage();
+    });
+
+    // ЭНТЕРПРАЙЗ: Движок генерации летящих частиц (Parallax 3D Effect)
+    function createParticles() {
+        const container = document.getElementById('particles-container');
+        const icons = [
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>', // Логотип Blocko (Layers)
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect width="20" height="5" x="2" y="7"/><line x1="12" x2="12" y1="22" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>' // Иконка Подарка
+        ];
+        
+        for(let i = 0; i < 35; i++) {
+            const p = document.createElement('div');
+            const isGift = Math.random() > 0.7;
+            
+            // Рандомизация цвета: индиго или розовый для совпадения с темой
+            const colorClass = Math.random() > 0.5 ? 'text-indigo-500' : 'text-rose-500';
+            p.className = `particle ${colorClass}`;
+            
+            p.innerHTML = icons[isGift ? 1 : 0];
+            
+            // Рандомизация физики частиц
+            const scale = 0.3 + Math.random() * 1.5;
+            const opacity = 0.05 + Math.random() * 0.2; // Тонкая прозрачность для глубины резкости
+            const duration = 15 + Math.random() * 25; // Медленный, плавный полет
+            const delay = -Math.random() * 30; // Случайный старт
+            const left = Math.random() * 100;
+            
+            p.style.setProperty('--scale', scale);
+            p.style.setProperty('--opacity', opacity);
+            p.style.setProperty('--duration', `${duration}s`);
+            p.style.setProperty('--delay', `${delay}s`);
+            p.style.setProperty('--left', `${left}vw`);
+            p.style.width = '35px';
+            
+            // Добавляем blur для элементов "вне фокуса" (Fake Depth of Field)
+            if (scale < 0.6) {
+                p.style.filter = 'blur(2px)';
+            } else if (scale > 1.4) {
+                p.style.filter = 'blur(4px)';
+            }
+            
+            container.appendChild(p);
+        }
+    }
+
+    async function initGiftPage() {
+        const loading = document.getElementById('loadingState');
+        const card = document.getElementById('giftCard');
+
+        if (!giftCode) {
+            showMsg('alert-triangle', 'bg-red-500/20 text-red-500', 'Неверная ссылка', 'В ссылке отсутствует идентификатор подарка. Попросите отправителя скопировать ссылку полностью.');
+            return;
+        }
+
+        try {
+            const promoDoc = await db.collection('promocodes').doc(giftCode).get();
+            if (!promoDoc.exists) throw new Error("Код не найден или уже был удален из базы.");
+            
+            promoData = promoDoc.data();
+
+            if (!promoData.isGiftBox) throw new Error("Эта ссылка не является подарочной коробкой.");
+            if (promoData.maxUses > 0 && promoData.uses >= promoData.maxUses) {
+                showMsg('package-open', 'bg-gray-800 text-gray-400', 'Уже открыто', 'Кто-то оказался быстрее. Этот гифт-бокс уже был распакован.');
+                return;
+            }
+
+            // Пытаемся подтянуть данные отправителя
+            if (promoData.createdBy && promoData.createdBy !== 'admin_system') {
+                try {
+                    const senderDoc = await db.collection('users').doc(promoData.createdBy).get();
+                    if (senderDoc.exists) {
+                        const sender = senderDoc.data();
+                        document.getElementById('senderName').innerText = sender.name || 'Секретный Санта';
+                        document.getElementById('senderAvatar').src = sender.customAvatar || sender.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender.name || 'S')}`;
+                        document.getElementById('senderBlock').classList.remove('hidden');
+                        document.getElementById('senderBlock').classList.add('flex');
+                    }
+                } catch(e){}
+            }
+
+            document.getElementById('giftValue').innerText = `${promoData.rewardCoins || 0} B-Coins`;
+
+            loading.classList.add('hidden');
+            card.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('opacity-0', 'scale-95');
+                card.classList.add('opacity-100', 'scale-100');
+            }, 50);
+
+        } catch (err) {
+            showMsg('alert-triangle', 'bg-red-500/20 text-red-500', 'Подарок недоступен', err.message);
+        }
+    }
+
+    async function claimGift() {
+        // Если юзер не авторизован — редиректим на главную с флагом возврата
+        if (!currentUser) {
+            window.location.href = `index.html?redirect=gift&code=${giftCode}`;
+            return;
+        }
+
+        const giftBtn = document.getElementById('giftImageBtn');
+        const giftLoader = document.getElementById('giftLoader');
+        const hintText = document.getElementById('claimHintText');
+        const ogHint = hintText.innerText;
+        
+        // Блокируем интерфейс и показываем лоадер прямо внутри подарка
+        giftBtn.style.pointerEvents = 'none';
+        giftLoader.classList.remove('hidden');
+        setTimeout(() => giftLoader.classList.remove('opacity-0'), 10);
+        hintText.innerText = 'Распаковка...';
+
+        try {
+            const userRef = db.collection('users').doc(currentUser.uid);
+            const userDoc = await userRef.get();
+            const usedPromos = userDoc.data().usedPromos || [];
+
+            if (usedPromos.includes(giftCode)) throw new Error('Вы уже распаковали этот подарок ранее.');
+
+            // Двойная проверка на израсходованность (защита от race condition)
+            const promoRef = db.collection('promocodes').doc(giftCode);
+            const promoSnap = await promoRef.get();
+            const currentPromo = promoSnap.data();
+            if (currentPromo.uses >= currentPromo.maxUses) throw new Error('Подарок только что был открыт кем-то другим.');
+
+            // Транзакция начисления
+            const batch = db.batch();
+            batch.update(userRef, {
+                usedPromos: firebase.firestore.FieldValue.arrayUnion(giftCode),
+                coins: firebase.firestore.FieldValue.increment(currentPromo.rewardCoins || 0)
+            });
+            batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
+
+            await batch.commit();
+
+            // ЭНТЕРПРАЙЗ: Эпический эффект джекпота
+            document.getElementById('giftCard').classList.add('hidden');
+            
+            // Запускаем золотое конфетти
+            confetti({ particleCount: 300, spread: 120, origin: { y: 0.5 }, zIndex: 9999, colors: ['#fbbf24', '#f59e0b', '#ffffff', '#fb923c'] });
+            
+            // Генерируем премиальную верстку для суммы
+            const epicRewardHtml = `
+               <span class="block text-gray-400 mb-6 text-sm font-bold uppercase tracking-widest">Вам начислено:</span>
+               <span class="block text-6xl sm:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 filter drop-shadow-[0_0_30px_rgba(245,158,11,0.6)] mb-4 animate-pulse scale-110">${currentPromo.rewardCoins}</span>
+               <span class="block text-amber-500 font-black tracking-[0.4em] uppercase text-xs mb-8">B-Coins</span>
+               <span class="block text-sm text-gray-500 max-w-xs mx-auto leading-relaxed border-t border-gray-800 pt-6">Баланс пополнен. Используйте эти активы для расширения своей империи в Blocko Pro.</span>
+            `;
+
+            showMsg('crown', 'bg-amber-500/10 text-amber-500 border border-amber-500/30 shadow-[0_0_50px_rgba(245,158,11,0.2)]', 'ДЖЕКПОТ!', epicRewardHtml);
+
+        } catch (err) {
+            // Возвращаем подарок в исходное состояние при ошибке
+            giftBtn.style.pointerEvents = 'auto';
+            giftLoader.classList.add('opacity-0');
+            setTimeout(() => giftLoader.classList.add('hidden'), 300);
+            hintText.innerText = ogHint;
+            
+            // ЭНТЕРПРАЙЗ: Выводим ошибку красиво в интерфейс, а не в системный alert
+            showMsg('alert-triangle', 'bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]', 'Доступ закрыт', `<p class="text-sm text-gray-400 leading-relaxed">${err.message}</p>`);
+        }
+    }
+
+    function showMsg(icon, colorClasses, title, descHtml) {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('giftCard').classList.add('hidden');
+        
+        const state = document.getElementById('msgState');
+        document.getElementById('msgIcon').className = `w-24 h-24 mx-auto rounded-[2rem] flex items-center justify-center mb-8 ${colorClasses}`;
+        document.getElementById('msgIcon').innerHTML = `<i data-lucide="${icon}" class="w-12 h-12"></i>`;
+        document.getElementById('msgTitle').innerText = title;
+        
+        // ЭНТЕРПРАЙЗ ИСПРАВЛЕНИЕ: Используем innerHTML для рендера стилизованных блоков
+        document.getElementById('msgDesc').innerHTML = descHtml;
+        
+        state.classList.remove('hidden');
+        
+        // Плавное появление с анимацией масштабирования
+        setTimeout(() => {
+            state.classList.remove('opacity-0', 'scale-95');
+            state.classList.add('opacity-100', 'scale-100');
+        }, 50);
+        
+        lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

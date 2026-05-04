@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Blocko Pro — Enterprise Платформа для управления проектами</title>
+  <meta name="description" content="Забудьте о хаосе и утечках данных. Blocko Pro — это защищенные Kanban-доски, AI-ассистент, голосовые заметки и работа в офлайне. Создано для бизнеса и команд.">
+  <meta name="keywords" content="управление проектами, таск-трекер, kanban, офлайн доски, AI ассистент, SaaS, безопасность, b2b">
+  <meta name="author" content="Blocko Pro Team">
+  
+  <!-- SEO & Internationalization -->
+  <link rel="canonical" href="https://твоя-ссылка.github.io/ru.html" />
+  <link rel="alternate" hreflang="ru" href="https://твоя-ссылка.github.io/ru.html" />
+  <link rel="alternate" hreflang="uk" href="https://твоя-ссылка.github.io/uk.html" />
+  <link rel="alternate" hreflang="en" href="https://твоя-ссылка.github.io/en.html" />
+  <link rel="alternate" hreflang="hi" href="https://твоя-ссылка.github.io/hi.html" />
+  <link rel="alternate" hreflang="es" href="https://твоя-ссылка.github.io/es.html" />
+  <link rel="alternate" hreflang="zh" href="https://твоя-ссылка.github.io/zh.html" />
+  <link rel="alternate" hreflang="x-default" href="https://твоя-ссылка.github.io/en.html" />
+  
+  <!-- БРЕНДОВЫЙ ФАВИКОН -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://твоя-ссылка.github.io/ru.html">
+  <meta property="og:title" content="Blocko Pro — Защищенные проекты">
+  <meta property="og:description" content="Офлайн-режим, AI-генерация и геймификация. Организуй свою команду на высшем уровне.">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.3); border-radius: 20px; }
+    
+    /* Стили для имитации видео-плееров */
+    .video-mockup {
+      background: linear-gradient(145deg, rgba(30,30,30,0.8) 0%, rgba(15,15,15,0.9) 100%);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    
+    /* ЭНТЕРПРАЙЗ АНИМАЦИИ: Scroll Reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.9s cubic-bezier(0.5, 0, 0, 1);
+    }
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body class="bg-white dark:bg-gray-950 min-h-screen flex flex-col text-gray-900 dark:text-white transition-colors duration-300 relative">
+
+  <!-- ЭНТЕРПРАЙЗ АБСТРАКЦИЯ: Инновационный живой фон -->
+  <div class="fixed inset-0 z-[0] pointer-events-none overflow-hidden">
+    <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-600/10 blur-[120px] animate-[pulse_8s_ease-in-out_infinite]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-400/5 dark:bg-blue-600/10 blur-[120px] animate-[pulse_12s_ease-in-out_infinite]"></div>
+    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] dark:opacity-[0.04] mix-blend-overlay"></div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="w-full px-6 md:px-12 py-5 flex justify-between items-center border-b border-gray-100 dark:border-gray-800/60 bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl sticky top-0 z-50">
+    <!-- БРЕНДОВЫЙ ЛОГОТИП -->
+    <a href="#" class="flex items-center gap-3 select-none">
+      <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20 transition-transform hover:scale-105">
+        <i data-lucide="layers" class="w-6 h-6"></i>
+      </div>
+      <span class="text-2xl font-bold tracking-tight hover:opacity-80 transition-opacity">
+        Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
+      </span>
+    </a>
+    <div class="flex items-center gap-4 sm:gap-6">
+      <div class="relative group cursor-pointer hidden sm:block">
+        <div class="flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
+          <i data-lucide="globe" class="w-4 h-4"></i> RU
+        </div>
+        <div class="absolute top-full right-0 mt-2 w-44 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden z-50 flex flex-col">
+          <a href="ru.html" class="block px-4 py-2.5 text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10">🇷🇺 Русский</a>
+          <a href="uk.html" class="block px-4 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">🇺🇦 Українська</a>
+          <a href="en.html" class="block px-4 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">🇺🇸 English</a>
+          <a href="hi.html" class="block px-4 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">🇮🇳 हिन्दी</a>
+          <a href="es.html" class="block px-4 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">🇪🇸 Español</a>
+          <a href="zh.html" class="block px-4 py-2.5 text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">🇨🇳 中文</a>
+        </div>
+      </div>
+      <a href="index.html" class="px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-bold rounded-xl hover:scale-105 transition-transform shadow-lg">
+        Войти
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="flex flex-col items-center justify-center text-center px-4 pt-24 pb-16 relative z-10">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest rounded-full mb-8 border border-blue-100 dark:border-blue-800 shadow-sm relative z-10">
+      <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> www.blocko.cloud
+    </div>
+    
+    <h1 class="text-5xl sm:text-6xl md:text-8xl font-black text-gray-900 dark:text-white tracking-tighter max-w-5xl leading-[1.1] mb-6 relative z-10">
+      Организуй бизнес без <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">хаоса и утечек</span>
+    </h1>
+    
+    <p class="text-lg sm:text-2xl text-gray-500 dark:text-gray-400 max-w-3xl font-medium mb-10 relative z-10 leading-relaxed">
+      Забудьте про зависимость от интернета и незащищенные данные. Управляйте проектами через офлайн-first доски с тотальным шифрованием и AI-поддержкой.
+    </p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 relative z-10">
+      <a href="index.html" class="px-10 py-4 sm:py-5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-3 text-lg">
+        Открыть платформу <i data-lucide="arrow-right" class="w-5 h-5"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Pain Points Section: Идентификация проблемы -->
+  <section class="py-16 px-6 md:px-12 max-w-7xl mx-auto w-full relative z-10">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl md:text-5xl font-black mb-4 tracking-tight">Знакомая картина?</h2>
+      <p class="text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto text-lg">Ежедневно бизнес теряет время и деньги из-за несовершенных инструментов управления.</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-red-50/50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 p-8 rounded-[2.5rem] flex flex-col items-center text-center hover:scale-105 transition-transform duration-500">
+        <div class="w-20 h-20 bg-red-100 dark:bg-red-900/40 text-red-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <i data-lucide="message-square-dashed" class="w-10 h-10"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Информационный хаос</h3>
+        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">Задачи теряются в десятках чатов, а согласование деталей затягивается на дни из-за отсутствия единого контекста.</p>
+      </div>
+      <div class="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-8 rounded-[2.5rem] flex flex-col items-center text-center hover:scale-105 transition-transform duration-500">
+        <div class="w-20 h-20 bg-amber-100 dark:bg-amber-900/40 text-amber-500 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <i data-lucide="unlock" class="w-10 h-10"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Угроза утечки данных</h3>
+        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">Коммерческая тайна и клиентские базы хранятся на сторонних публичных серверах без вашего контроля доступов.</p>
+      </div>
+      <div class="bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200 dark:border-slate-800/50 p-8 rounded-[2.5rem] flex flex-col items-center text-center hover:scale-105 transition-transform duration-500">
+        <div class="w-20 h-20 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full flex items-center justify-center mb-6 shadow-inner">
+          <i data-lucide="wifi-off" class="w-10 h-10"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900 dark:text-white">Зависимость от сети</h3>
+        <p class="text-gray-500 dark:text-gray-400 font-medium leading-relaxed">Работа команды моментально парализуется при сбоях провайдера или в командировках без стабильного интернета.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 1: Zig-Zag (Video Left, Text Right) -->
+  <section class="py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto w-full border-t border-gray-100 dark:border-gray-800/50">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div class="relative rounded-[2rem] overflow-hidden video-mockup border border-gray-200 dark:border-gray-800 aspect-[16/10] flex items-center justify-center group">
+        <!-- Заглушка для видео. Замени src на реальный URL твоего видео -->
+        <video class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" autoplay loop muted playsinline poster="https://images.unsplash.com/photo-1611162617474-5b21e879e113?q=80&w=1000&auto=format&fit=crop">
+            <!-- <source src="YOUR_VIDEO_URL_HERE.mp4" type="video/mp4"> -->
+        </video>
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80"></div>
+        <div class="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white shadow-2xl transition-transform transform group-hover:scale-110">
+            <i data-lucide="play" class="w-8 h-8 ml-1"></i>
+        </div>
+      </div>
+      
+      <div class="flex flex-col justify-center">
+        <h2 class="text-3xl md:text-5xl font-black mb-6 tracking-tight">Моментальный контроль над задачами</h2>
+        <p class="text-lg text-gray-500 dark:text-gray-400 font-medium mb-6 leading-relaxed">Создавайте карточки за доли секунды. Перетаскивайте их между статусами, назначайте дедлайны и ответственных. Наша система оптимизирована для работы с десятками тысяч задач без единого лага.</p>
+        <ul class="space-y-4 text-gray-700 dark:text-gray-300 font-medium">
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Плавный Drag & Drop</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Цветовое кодирование колонок</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Быстрый поиск и фильтрация</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 2: Zig-Zag (Text Left, Video Right) -->
+  <section class="py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto w-full border-t border-gray-100 dark:border-gray-800/50">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div class="flex flex-col justify-center order-2 lg:order-1">
+        <h2 class="text-3xl md:text-5xl font-black mb-6 tracking-tight">Богатый контент внутри каждой задачи</h2>
+        <p class="text-lg text-gray-500 dark:text-gray-400 font-medium mb-6 leading-relaxed">Обычного текста недостаточно. Прикрепляйте голосовые заметки прямо из браузера, создавайте интерактивные таблицы, запускайте опросы команды и формируйте чек-листы. Вся необходимая информация живет внутри одной карточки.</p>
+        <ul class="space-y-4 text-gray-700 dark:text-gray-300 font-medium">
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Запись аудио (Голосовые)</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Встроенные опросы (Polls)</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Умные таблицы и Markdown</li>
+        </ul>
+      </div>
+      
+      <div class="relative rounded-[2rem] overflow-hidden video-mockup border border-gray-200 dark:border-gray-800 aspect-[16/10] flex items-center justify-center group order-1 lg:order-2">
+        <!-- Заглушка для видео -->
+        <video class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" autoplay loop muted playsinline poster="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop">
+            <!-- <source src="YOUR_VIDEO_URL_HERE.mp4" type="video/mp4"> -->
+        </video>
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80"></div>
+        <div class="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white shadow-2xl transition-transform transform group-hover:scale-110">
+            <i data-lucide="play" class="w-8 h-8 ml-1"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 3: Zig-Zag (Video Left, Text Right) -->
+  <section class="py-16 md:py-24 px-6 md:px-12 max-w-7xl mx-auto w-full border-t border-gray-100 dark:border-gray-800/50">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div class="relative rounded-[2rem] overflow-hidden video-mockup border border-gray-200 dark:border-gray-800 aspect-[16/10] flex items-center justify-center group">
+        <!-- Заглушка для видео -->
+        <video class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" autoplay loop muted playsinline poster="https://images.unsplash.com/photo-1563986768609-322da13575f3?q=80&w=1000&auto=format&fit=crop">
+            <!-- <source src="YOUR_VIDEO_URL_HERE.mp4" type="video/mp4"> -->
+        </video>
+        <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-80"></div>
+        <div class="relative z-10 w-20 h-20 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 text-white shadow-2xl transition-transform transform group-hover:scale-110">
+            <i data-lucide="play" class="w-8 h-8 ml-1"></i>
+        </div>
+      </div>
+      
+      <div class="flex flex-col justify-center">
+        <h2 class="text-3xl md:text-5xl font-black mb-6 tracking-tight">AI-Ассистент и Партнерская сеть</h2>
+        <p class="text-lg text-gray-500 dark:text-gray-400 font-medium mb-6 leading-relaxed">Поручите рутину нейросети: генерация описаний и планов задач в один клик. А когда вы внедрите Blocko Pro в процессы коллег, наша многоуровневая партнерская система вознаградит вас премиум-статусами и балансом.</p>
+        <ul class="space-y-4 text-gray-700 dark:text-gray-300 font-medium">
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Интеграция OpenAI</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> 20% комиссии с рефералов</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Система достижений (Амбассадор)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section: Идеальное УТП -->
+  <section class="py-20 md:py-28 px-6 md:px-12 w-[calc(100%-2rem)] max-w-6xl mx-auto relative overflow-hidden rounded-[3rem] my-16 bg-gray-900 dark:bg-black border border-gray-800 shadow-2xl">
+    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
+    <div class="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] pointer-events-none"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
+    
+    <div class="relative z-10 flex flex-col items-center text-center">
+      
+      <!-- 3 Решения -->
+      <div class="flex flex-wrap justify-center gap-4 sm:gap-8 md:gap-12 mb-12 text-sm sm:text-base font-bold text-gray-400 uppercase tracking-widest">
+         <span>Умное управление здачами</span>
+         <span class="hidden sm:inline text-gray-700">•</span>
+         <span>Полная приватность</span>
+         <span class="hidden sm:inline text-gray-700">•</span>
+         <span>Офлайн доступ</span>
+      </div>
+
+      <h2 class="flex flex-col items-center mb-6">
+         <span class="text-5xl sm:text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400 leading-[1] mb-2">ТОТАЛЬНЫЙ</span>
+         <span class="text-4xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight">КОНТРОЛЬ</span>
+      </h2>
+      
+      <p class="text-lg md:text-2xl text-indigo-300 font-medium max-w-3xl mb-8 leading-relaxed">
+         Ваши идеи стоят слишком дорого, чтобы доверять их уязвимым системам.
+      </p>
+
+      <p class="text-base text-gray-400 font-medium max-w-2xl mb-12 leading-relaxed">
+        Blocko Pro — это ваш цифровой бункер. Верните себе управление временем, данными и рабочими процессами без оглядки на интернет-соединение.
+      </p>
+
+      <a href="index.html" class="px-12 py-5 bg-white hover:bg-gray-100 text-gray-900 font-black rounded-2xl shadow-xl shadow-white/10 active:scale-95 transition-all flex items-center gap-3 text-lg group">
+        Создать пространство
+        <i data-lucide="chevron-right" class="w-6 h-6 group-hover:translate-x-1 transition-transform"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- Legal Center / Footer -->
+  <footer class="w-full bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-800 pt-16 pb-8 px-6 md:px-12 mt-auto">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-12 mb-12">
+      <div class="col-span-1 md:col-span-2">
+        <!-- БРЕНДОВЫЙ ЛОГОТИП В ПОДВАЛЕ -->
+        <div class="flex items-center gap-3 select-none mb-6">
+          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20">
+            <i data-lucide="layers" class="w-6 h-6"></i>
+          </div>
+          <span class="text-2xl font-bold tracking-tight">
+            Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
+          </span>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed">
+          Профессиональная экосистема для управления бизнесом, ориентированная на безопасность, независимость от сети и превосходный пользовательский опыт.
+        </p>
+      </div>
+      
+      <div>
+        <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6">Продукт</h4>
+        <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Возможности</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Безопасность (Security)</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Партнерская сеть</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">API Документация</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <!-- ЭНТЕРПРАЙЗ: Таргетированные посадочные страницы (Лендинги для разных ЦА) -->
+        <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6">Решения</h4>
+        <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
+          <li><a href="b2b.html" class="hover:text-indigo-500 transition-colors">Для Бизнеса (B2B)</a></li>
+          <li><a href="it-teams.html" class="hover:text-indigo-500 transition-colors">Для IT-команд</a></li>
+          <li><a href="freelance.html" class="hover:text-indigo-500 transition-colors">Для Фрилансеров</a></li>
+          <li><a href="education.html" class="hover:text-indigo-500 transition-colors">Для Образования</a></li>
+        </ul>
+      </div>
+      
+      <div>
+        <h4 class="text-xs font-black text-gray-900 dark:text-white uppercase tracking-widest mb-6">Legal Center</h4>
+        <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Политика конфиденциальности</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Условия использования (TOS)</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">Cookies & Tracking</a></li>
+          <li><a href="#" class="hover:text-indigo-500 transition-colors">GDPR Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center pt-8 border-t border-gray-200 dark:border-gray-800 text-xs font-medium text-gray-400 gap-4">
+      <p>&copy; 2026 Blocko Pro Team. Все права защищены.</p>
+      <div class="flex gap-4">
+        <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors"><i data-lucide="github" class="w-5 h-5"></i></a>
+        <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+        <a href="#" class="hover:text-gray-900 dark:hover:text-white transition-colors"><i data-lucide="mail" class="w-5 h-5"></i></a>
+      </div>
+    </div>
+  </footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+      
+      // ЭНТЕРПРАЙЗ: Умный Intersection Observer для появления секций (Scroll Reveal)
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.15
+      };
+
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            observer.unobserve(entry.target); // Анимируем только один раз при скролле вниз
+          }
+        });
+      }, observerOptions);
+
+      // Автоматически добавляем класс reveal ко всем смысловым блокам
+      document.querySelectorAll('section, footer').forEach(el => {
+        el.classList.add('reveal');
+        observer.observe(el);
+      });
+    });
+  </script>
+</body>
+</html>

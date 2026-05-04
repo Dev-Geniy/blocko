@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blocko Market - Магазин улучшений</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- ЭНТЕРПРАЙЗ: Ядро для генерации QR-кодов на стороне клиента (Zero-latency) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .shelf-title { position: relative; display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
+    .shelf-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
+    .card-zoom:hover { transform: translateY(-8px); }
+    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .detail-overlay { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+
+    /* Premium Blocko Loader */
+    @keyframes block-stretch {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(2.5); opacity: 1; }
+    }
+    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-400 { animation-delay: 0.4s; }
+  </style>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300">
+
+<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
+<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+  <div class="flex flex-col items-center scale-110">
+    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 p-4 rounded-3xl text-white shadow-2xl shadow-blue-500/40 mb-6">
+      <i data-lucide="layers" class="w-12 h-12"></i>
+    </div>
+    <h2 class="text-3xl font-black tracking-tighter mb-10">BLOCKO <span class="text-blue-500">PRO</span></h2>
+    
+    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
+       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-blue-500 rounded-full"></div>
+       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-indigo-500 rounded-full"></div>
+       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-blue-400 rounded-full"></div>
+    </div>
+  </div>
+</div>
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Blocko Market</h1>
+      <p class="text-[10px] text-blue-500 font-bold uppercase tracking-[0.2em]">Upgrade your power</p>
+    </div>
+  </div>
+
+  <div class="flex gap-4">
+    <div class="flex flex-col items-end px-4 border-r border-gray-200 dark:border-gray-800">
+      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Бонусные баллы</span>
+      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black"><i data-lucide="gem" class="w-4 h-4"></i> <span id="valCredits">0</span></div>
+    </div>
+    
+    <div onclick="openTopUpModal()" class="flex flex-col items-end cursor-pointer group">
+      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-amber-500 transition-colors">Реальные монеты</span>
+      <div class="flex items-center gap-2 text-amber-500 font-black bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 group-hover:scale-105 transition-transform">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span id="valCoins">0</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+  
+  <!-- ПРОМО БЛОК (Интеграция маркетинга) -->
+  <section class="mb-16">
+    <div class="bg-gray-900/5 dark:bg-white/5 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden transition-all hover:border-amber-300 dark:hover:border-amber-700/50 hover:shadow-xl hover:shadow-amber-500/10">
+      <div class="absolute -right-20 -top-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-[1.2rem] flex items-center justify-center shadow-inner border border-amber-200 dark:border-amber-800/50 flex-shrink-0">
+          <i data-lucide="ticket" class="w-8 h-8"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-1">Есть промокод?</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Активируйте скидку, премиум-тариф или получите B-Coins.</p>
+        </div>
+      </div>
+      <div class="relative z-10 w-full md:w-auto flex gap-2">
+        <input type="text" id="storePromoCodeInput" placeholder="Введите код..." class="w-full md:w-64 px-5 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-bold uppercase tracking-widest focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner dark:text-white">
+        <button id="activateStorePromoBtn" onclick="activatePromoCode('storePromoCodeInput', 'activateStorePromoBtn')" class="px-6 py-4 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-sm flex items-center gap-2 flex-shrink-0">
+          <i data-lucide="zap" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-20">
+    <div class="shelf-title">
+      <div class="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-blue-500 border border-blue-100 dark:border-blue-900"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Нейросети & Интеллект</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfAI"></div>
+  </section>
+
+  <section class="mb-20">
+    <div class="shelf-title">
+      <div class="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg text-indigo-500 border border-indigo-100 dark:border-indigo-900"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Инфраструктура & Внедрение</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfPlans"></div>
+  </section>
+
+  <section class="mb-16">
+    <div class="shelf-title">
+      <div class="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-rose-500 border border-rose-100 dark:border-rose-900"><i data-lucide="gift" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Корпоративные Подарки</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfGifts"></div>
+  </section>
+
+  <!-- Бонусный центр (Gamification & Retention) -->
+  <section class="mb-20">
+    <div class="shelf-title">
+      <div class="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg text-amber-500 border border-amber-100 dark:border-amber-900"><i data-lucide="sparkles" class="w-5 h-5"></i></div>
+      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Бонусный Центр</h2>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      
+      <!-- Блок 1: Ежедневный подарок -->
+      <div id="dailyGiftCard" onclick="handleDailyGiftClick()" class="cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
+         <!-- Оверлей при использованном подарке -->
+         <div id="dailyGiftOverlay" class="absolute inset-0 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-[2px] z-10 hidden flex-col items-center justify-center">
+            <i data-lucide="clock" class="w-8 h-8 text-gray-400 mb-2"></i>
+            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Следующий подарок</span>
+            <div id="dailyGiftTimer" class="text-2xl font-mono font-black text-gray-800 dark:text-white">00:00:00</div>
+            <button onclick="event.stopPropagation(); handleDailyGiftClick()" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-700 shadow-sm active:scale-95"><i data-lucide="search" class="w-3.5 h-3.5 inline mr-1 mb-0.5"></i> Статус отправки</button>
+         </div>
+
+         <div class="relative w-20 h-20 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-rose-100 dark:border-rose-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
+           <i data-lucide="gift" class="w-10 h-10 relative z-10"></i>
+         </div>
+         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Подарок другу</h3>
+         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Бесплатный гифт-бокс на 50 монет каждый день. Отправьте другу!</p>
+         <button class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/25 active:scale-95 relative z-0"><i data-lucide="box" class="w-5 h-5"></i> Забрать и отправить</button>
+      </div>
+
+      <!-- Блок 2: Пригласи друга -->
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
+         <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+         <div class="relative w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-indigo-100 dark:border-indigo-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
+           <i data-lucide="users" class="w-10 h-10 relative z-10"></i>
+         </div>
+         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Пригласи друга</h3>
+         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Вы получите по 10 кредитов каждый за регистрацию.</p>
+         <button onclick="copyStoreAffiliateLink(this)" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 active:scale-95 relative z-10"><i data-lucide="link" class="w-5 h-5"></i> Копировать ссылку</button>
+      </div>
+
+      <!-- Блок 3: Квесты -->
+      <div onclick="openQuestsModal()" class="cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
+         <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+         <div class="relative w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
+           <i data-lucide="check-square" class="w-10 h-10 relative z-10"></i>
+         </div>
+         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Центр заданий</h3>
+         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Выполняй квесты и забирай ценные награды.</p>
+         <button class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 active:scale-95 relative z-10"><i data-lucide="play" class="w-5 h-5"></i> Открыть квесты</button>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<div id="productDetailsModal" class="hidden fixed inset-0 z-[300] bg-white/95 dark:bg-black/95 detail-overlay flex items-center justify-center opacity-0 transition-opacity duration-500 px-6">
+  <button onclick="closeDetails()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-4 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900">
+    <i data-lucide="x" class="w-8 h-8"></i>
+  </button>
+  
+  <div class="max-w-4xl w-full text-center flex flex-col items-center transform scale-95 transition-transform duration-500" id="productDetailsContent">
+    <div id="pdIconWrapper" class="w-24 h-24 rounded-full flex items-center justify-center mb-8 mx-auto shadow-2xl relative">
+      <div id="pdIconGlow" class="absolute inset-0 rounded-full blur-2xl opacity-50"></div>
+      <i id="pdIcon" data-lucide="star" class="w-12 h-12 relative z-10"></i>
+    </div>
+    
+    <h2 id="pdTitle" class="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-8 leading-tight">Название продукта</h2>
+    
+    <p id="pdDesc" class="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl mx-auto font-medium">
+      Подробное описание продукта.
+    </p>
+  </div>
+</div>
+
+<div id="topUpModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/80 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800">
+    <button onclick="closeTopUpModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-800 dark:hover:text-white p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    
+    <div class="text-center mb-8">
+      <div class="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20"><i data-lucide="coins" class="w-8 h-8"></i></div>
+      <h2 class="text-2xl font-black text-gray-900 dark:text-white">Пополнить Монеты</h2>
+      <p class="text-sm text-gray-500 mt-2">Приобретайте реальные монеты для оплаты услуг.</p>
+    </div>
+
+    <div class="space-y-4">
+      <button onclick="buyCoinsPack(1000, 10)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
+      </button>
+
+      <button onclick="buyCoinsPack(5000, 45)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
+        <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
+        <div class="flex items-center gap-3 relative z-10">
+          <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Популярный <span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full ml-2">-10%</span></div><div class="text-xs text-gray-500">5 000 Монет</div></div>
+        </div>
+        <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
+      </button>
+
+      <button onclick="buyCoinsPack(12000, 100)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Premium Confirm Modal -->
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+    <div id="confirmIconBg" class="mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
+      <i id="confirmIcon" data-lucide="shopping-bag" class="w-10 h-10"></i>
+    </div>
+    <h2 id="confirmTitle" class="text-2xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">Подтверждение</h2>
+    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed font-medium">Вы уверены?</p>
+    <div class="flex gap-3">
+      <button onclick="closeConfirmModal()" class="flex-1 py-4 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-colors">Отмена</button>
+      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all">Подтвердить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Epic Gift Link Modal -->
+<div id="giftLinkModal" class="hidden fixed inset-0 z-[400] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform duration-500 overflow-hidden" id="giftLinkContent">
+    
+    <!-- Неоновое свечение на фоне -->
+    <div class="absolute -top-32 -right-32 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeGiftLinkModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="relative w-28 h-28 mx-auto mb-8 z-10">
+       <div class="absolute inset-0 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-[2rem] blur-xl opacity-50 animate-pulse"></div>
+       <div class="relative w-full h-full bg-gradient-to-tr from-rose-500 to-pink-600 rounded-[2rem] flex items-center justify-center shadow-inner border border-rose-400/50">
+         <i data-lucide="gift" class="w-14 h-14 text-white"></i>
+       </div>
+    </div>
+
+    <h2 class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-3 relative z-10 tracking-tight">Ваш подарок готов!</h2>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mb-10 relative z-10 leading-relaxed font-medium">Скопируйте уникальную ссылку ниже и отправьте её получателю. Распаковка подарит незабываемые эмоции.</p>
+
+    <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 p-2 pl-6 rounded-2xl flex items-center gap-3 relative z-10 transition-colors hover:border-rose-300 dark:hover:border-rose-700/50 shadow-inner group">
+       <input type="text" id="generatedGiftLink" readonly class="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 truncate cursor-copy" onclick="copyGeneratedGiftLink()">
+       <button onclick="copyGeneratedGiftLink()" class="px-6 py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl shadow-lg shadow-rose-500/25 active:scale-95 transition-all flex items-center gap-2 flex-shrink-0">
+         <i data-lucide="copy" class="w-4 h-4"></i> Копировать
+       </button>
+    </div>
+  </div>
+</div>
+
+<!-- Daily Gift View Modal -->
+<div id="dailyGiftModal" class="hidden fixed inset-0 z-[450] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform duration-500 overflow-hidden" id="dailyGiftContent">
+    
+    <button onclick="closeDailyGiftModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <!-- State 1: Ready to Share -->
+    <div id="dgStateReady" class="block">
+        <div class="absolute -top-32 -right-32 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative w-28 h-28 mx-auto mb-6 z-10">
+           <div class="absolute inset-0 bg-gradient-to-tr from-rose-500 to-amber-500 rounded-[2rem] blur-xl opacity-50 animate-pulse"></div>
+           <div class="relative w-full h-full bg-gradient-to-tr from-rose-500 to-amber-500 rounded-[2rem] flex items-center justify-center shadow-inner border border-rose-400/50">
+             <i data-lucide="gift" class="w-14 h-14 text-white"></i>
+           </div>
+        </div>
+        <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Подарок готов!</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed font-medium">Бесплатный гифт-бокс на 50 B-Coins сгенерирован. Отправьте ссылку другу! <br><span class="text-[10px] font-black uppercase tracking-widest text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-md mt-2 inline-block">Только 1 использование</span></p>
+        
+        <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 p-2 pl-6 rounded-2xl flex items-center gap-3 relative z-10 transition-colors hover:border-rose-300 dark:hover:border-rose-700/50 shadow-inner group mb-4">
+           <input type="text" id="dgGiftLinkInput" readonly class="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 truncate cursor-copy" onclick="copyDgLink()">
+           <button onclick="openQrModal('dgGiftLinkInput', 'Отсканируйте код, чтобы забрать 50 B-Coins.')" class="px-4 py-3.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 font-bold rounded-xl shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 flex-shrink-0 border border-rose-200 dark:border-rose-800/50">
+             <i data-lucide="qr-code" class="w-4 h-4"></i>
+           </button>
+           <button onclick="copyDgLink()" class="px-4 py-3.5 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 flex-shrink-0">
+             <i data-lucide="copy" class="w-4 h-4"></i>
+           </button>
+        </div>
+        
+        <button onclick="shareDgLink()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <i data-lucide="share-2" class="w-5 h-5"></i> Отправить в соц. сети
+        </button>
+    </div>
+
+    <!-- State 2: Claimed -->
+    <div id="dgStateClaimed" class="hidden">
+        <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative w-28 h-28 mx-auto mb-6 z-10">
+           <div class="absolute inset-0 bg-emerald-500 rounded-[2rem] blur-xl opacity-30"></div>
+           <div class="relative w-full h-full bg-emerald-50 dark:bg-emerald-900/30 rounded-[2rem] flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-inner">
+             <i data-lucide="check-circle" class="w-14 h-14 text-emerald-500"></i>
+           </div>
+        </div>
+        <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Подарок открыт!</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed font-medium">Пользователь успешно распаковал коробку и забрал 50 B-Coins. Завтра вы сможете подарить еще один!</p>
+        
+        <div class="flex items-center justify-center gap-4 bg-gray-50 dark:bg-gray-800/80 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 w-fit mx-auto shadow-inner relative z-10">
+            <img id="dgClaimerAvatar" src="" class="w-12 h-12 rounded-full border-2 border-white dark:border-gray-700 shadow-sm object-cover" />
+            <div class="text-left">
+                <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Новый владелец:</div>
+                <div id="dgClaimerName" class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">User Name</div>
+            </div>
+        </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- Quests Modal (Энтерпрайз Геймификация) -->
+<div id="questsModal" class="hidden fixed inset-0 z-[460] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4 py-10 overflow-y-auto">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-2xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform scale-95 transition-transform duration-500" id="questsContent">
+    
+    <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <button onclick="closeQuestsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="text-center mb-8 relative z-10">
+      <div class="mx-auto w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-inner border border-emerald-100 dark:border-emerald-800/50">
+        <i data-lucide="target" class="w-10 h-10"></i>
+      </div>
+      <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Задания и награды</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выполняйте квесты, чтобы быстро накопить баланс.</p>
+    </div>
+
+    <div class="space-y-8 relative z-10">
+        <!-- Ежедневные задания -->
+        <div>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Ежедневные квесты</h3>
+            <div class="space-y-3">
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white dark:bg-gray-900 text-blue-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="door-open" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Открытие Бонусного Центра</h4>
+                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+10 кр.</span></p>
+                        </div>
+                    </div>
+                    <button id="btnQuestLogin" onclick="claimDailyQuest('login', 10)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="download" class="w-4 h-4"></i> Забрать</button>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-sky-300 dark:hover:border-sky-700 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-white dark:bg-gray-900 text-sky-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="send" class="w-5 h-5"></i></div>
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Поделиться платформой в Telegram</h4>
+                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+50 кр.</span></p>
+                        </div>
+                    </div>
+                    <button id="btnQuestTelegram" onclick="claimDailyQuest('telegram', 50)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="external-link" class="w-4 h-4"></i> Выполнить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Глобальные задания (С ручной проверкой) -->
+        <div>
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4"></i> Уникальные квесты</h3>
+            <div class="space-y-4">
+                
+                <!-- Эпическое -->
+                <div class="bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800/50 p-5 rounded-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-purple-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Эпическое</div>
+                    <div class="flex items-start gap-4 mb-4 mt-2">
+                        <div class="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl shadow-inner border border-purple-200 dark:border-purple-800 flex-shrink-0"><i data-lucide="edit-3" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Написать статью о Blocko Pro</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте текстовый обзор платформы на любом сайте, блоге или форуме.</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+300 кр.</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
+                        <input type="text" id="questArticleLink" placeholder="Вставьте ссылку на статью (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-purple-500 transition-colors shadow-inner">
+                        <button id="btnQuestArticle" onclick="submitSpecialQuest('article')" class="w-full sm:w-auto px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
+                    </div>
+                </div>
+
+                <!-- Мифическое -->
+                <div class="bg-gradient-to-br from-amber-500/5 to-orange-500/5 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl relative overflow-hidden shadow-[0_0_15px_rgba(245,158,11,0.05)]">
+                    <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Мифическое</div>
+                    <div class="flex items-start gap-4 mb-4 mt-2">
+                        <div class="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl shadow-inner border border-amber-200 dark:border-amber-800 flex-shrink-0"><i data-lucide="video" class="w-6 h-6"></i></div>
+                        <div>
+                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Снять видеообзор</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте качественный видеообзор о том, как вы используете Blocko Pro, на YouTube, TikTok или Reels.</p>
+                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-amber-600 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md ml-1">Тариф COMPANY</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
+                        <input type="text" id="questVideoLink" placeholder="Вставьте ссылку на видео (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-amber-500 transition-colors shadow-inner">
+                        <button id="btnQuestVideo" onclick="submitSpecialQuest('video')" class="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- ЭНТЕРПРАЙЗ: QR-Share Engine Modal -->
+<div id="qrCodeModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform flex flex-col items-center" id="qrCodeContent">
+    <button onclick="closeQrModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+    <div class="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-rose-100 dark:border-rose-800/50">
+      <i data-lucide="qr-code" class="w-8 h-8"></i>
+    </div>
+
+    <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">Ваш QR-код</h2>
+    <p id="qrCodeDesc" class="text-xs text-gray-500 font-medium leading-relaxed mb-6">
+      Отсканируйте код, чтобы перейти по ссылке.
+    </p>
+
+    <div class="bg-white p-3 rounded-[2rem] shadow-lg border border-gray-100 dark:border-gray-700 mb-8 relative group">
+       <canvas id="qrCanvas" class="rounded-xl w-48 h-48 mx-auto"></canvas>
+       <div class="absolute inset-0 bg-rose-500/10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+    </div>
+
+    <div class="flex items-center justify-center gap-3 w-full">
+       <button onclick="downloadQrCode()" class="flex-1 py-3.5 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-rose-500 dark:hover:text-rose-400 bg-gray-50 hover:bg-rose-50 dark:bg-gray-800 dark:hover:bg-rose-900/20 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-gray-100 dark:border-gray-700">
+         <i data-lucide="download" class="w-4 h-4"></i> Сохранить
+       </button>
+       <button onclick="shareQrCode()" class="flex-1 py-3.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white dark:hover:text-white bg-rose-50 hover:bg-rose-500 dark:bg-rose-900/30 dark:hover:bg-rose-600 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-rose-100 dark:border-rose-800/50">
+         <i data-lucide="share-2" class="w-4 h-4"></i> Отправить
+       </button>
+    </div>
+  </div>
+</div>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[500] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
+  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+</div>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  lucide.createIcons();
+
+  let currentUser = null;
+  let currentUserData = {};
+  let balances = { coins: 0, credits: 0 };
+
+  // Обновленная структура данных с экспертным описанием и правильными иконками
+  const PRODUCTS = {
+    AI: [
+      { id: 'ai_50', name: 'AI Boost', desc: 'Разовое добавление +50 генераций.', detailedDesc: 'Мгновенное пополнение лимита генераций. Идеально подходит для завершения горящих проектов, где требуется быстрая помощь нейросети для декомпозиции задач, без необходимости покупать подписку на месяц.', priceCoins: 200, priceCredits: 600, icon: 'bot', color: 'blue' },
+      { id: 'ai_200', name: 'AI Surge', desc: 'Разовое добавление +200 генераций.', detailedDesc: 'Массивный пакет генераций для масштабных задач. Обеспечивает длительную автономную работу с AI-ассистентом для детального планирования архитектуры проектов и чек-листов.', priceCoins: 600, priceCredits: 1800, icon: 'brain-circuit', color: 'cyan' },
+      { id: 'ai_daily_sub', name: 'AI Unlimited', desc: '250 запросов каждый день в течение месяца.', detailedDesc: 'Абсолютная мощь искусственного интеллекта в вашем распоряжении. Вы получаете 250 запросов каждый день (обновляется раз в 24 часа). Максимально эффективное решение для командных мозговых штурмов.', priceCoins: 1500, priceCredits: 4500, icon: 'sparkles', color: 'indigo' }
+    ],
+    PLANS: [
+      { id: 'plan_freelancer', name: 'Freelancer Cloud', desc: 'До 10 облачных проектов и команд.', detailedDesc: 'Профессиональное расширение лимитов для активных соло-специалистов. Открывает доступ к 10 синхронизируемым облачным проектам с возможностью приглашать до 10 участников на каждую рабочую доску.', priceCoins: 600, priceCredits: 1800, icon: 'cloud-lightning', color: 'emerald' },
+      { id: 'plan_company', name: 'Company Cloud', desc: 'Безлимит облачных досок и ролей.', detailedDesc: 'Снятие абсолютно всех ограничений для вашего бизнеса. Создавайте бесконечное количество проектов, приглашайте всю компанию, управляйте продвинутыми ролями доступа (Viewer/Editor) и используйте сгорающие секьюрные файлы в чатах.', priceCoins: 1900, priceCredits: 5700, icon: 'building-2', color: 'purple' },
+      { id: 'vip_status', name: 'VIP Внедрение', desc: 'Личное сопровождение экспертом компании.', detailedDesc: 'Эксклюзивный формат сотрудничества. Наш ведущий технический эксперт лично погружается в процессы вашей команды. Мы проводим коучинг сотрудников, настраиваем архитектуру досок под бизнес-логику компании и, при необходимости, разрабатываем индивидуальные функции (кастомные интеграции и автоматизации), которых нет в публичной версии Blocko Pro.', priceCoins: 5000, priceCredits: 15000, icon: 'award', color: 'amber' }
+    ],
+    GIFTS: [
+      { id: 'gift_20', name: 'Gift Box $20', desc: 'Код на 2000 монет для любого пользователя.', detailedDesc: 'Подарочный бокс, генерирующий уникальный промокод на 2000 монет. Отличный способ поощрить сотрудника или подарить премиум-статус коллеге.', priceCoins: 2000, priceCredits: null, icon: 'box', color: 'rose' },
+      { id: 'gift_100', name: 'Gift Box $100', desc: 'Код на 10 000 монет для масштабного подарка.', detailedDesc: 'Крупный корпоративный подарок. Код на 10 000 монет позволяет получателю открыть мощные возможности Blocko Pro, оплачивая подписки и покупая AI пакеты месяцами.', priceCoins: 10000, priceCredits: null, icon: 'package-open', color: 'pink' },
+      { id: 'gift_200', name: 'Gift Chest $200', desc: 'Эпический сундук на 20 000 монет.', detailedDesc: 'Максимальный корпоративный жест. Эпический сундук генерирует код на 20 000 монет — абсолютная свобода действий и выбора внутри экосистемы Blocko Pro для целой команды.', priceCoins: 20000, priceCredits: null, icon: 'archive', color: 'orange' }
+    ]
+  };
+
+  // Плоский список продуктов для удобного поиска по ID
+  const ALL_PRODUCTS_MAP = [...PRODUCTS.AI, ...PRODUCTS.PLANS, ...PRODUCTS.GIFTS].reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+  auth.onAuthStateChanged(user => {
+    const loader = document.getElementById('globalLoader');
+    if (user) { 
+      currentUser = user; 
+      loadBalances(); 
+      renderAll(); 
+      
+      if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => loader.classList.add('hidden'), 700);
+      }
+    } else { 
+      window.location.href = 'index.html'; 
+    }
+  });
+
+  async function loadBalances() {
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    const affDoc = await db.collection('affiliates').doc(currentUser.uid).get();
+    
+    if (userDoc.exists) currentUserData = userDoc.data();
+    
+    balances.coins = userDoc.exists ? (userDoc.data().coins || 0) : 0;
+    balances.credits = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
+    document.getElementById('valCoins').innerText = balances.coins;
+    document.getElementById('valCredits').innerText = balances.credits;
+    
+    checkDailyGiftState();
+  }
+
+  // --- ЭНТЕРПРАЙЗ: ЛОГИКА ЕЖЕДНЕВНЫХ ПОДАРКОВ ---
+  function getNextMidnight() {
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      return tomorrow.getTime();
+  }
+
+  function updateDailyTimer() {
+      const timerEl = document.getElementById('dailyGiftTimer');
+      if(!timerEl) return;
+      
+      const now = Date.now();
+      const diff = getNextMidnight() - now;
+      
+      if (diff <= 0) {
+          checkDailyGiftState(); // refresh
+          return;
+      }
+      
+      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const m = Math.floor((diff / 1000 / 60) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+      
+      timerEl.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  }
+  setInterval(updateDailyTimer, 1000);
+
+  function checkDailyGiftState() {
+      const todayStr = new Date().toLocaleDateString('ru-RU');
+      const overlay = document.getElementById('dailyGiftOverlay');
+      
+      if (currentUserData.lastDailyGiftDate === todayStr) {
+          // Подарок уже был сгенерирован сегодня
+          overlay.classList.remove('hidden');
+          overlay.classList.add('flex');
+          updateDailyTimer();
+      } else {
+          // Новый день - новый подарок
+          overlay.classList.add('hidden');
+          overlay.classList.remove('flex');
+      }
+  }
+
+  async function handleDailyGiftClick() {
+      if (!currentUser) return;
+      
+      const todayStr = new Date().toLocaleDateString('ru-RU');
+      
+      // Сценарий 1: Генерация нового подарка
+      if (currentUserData.lastDailyGiftDate !== todayStr) {
+          const code = 'DGIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+          
+          try {
+              const batch = db.batch();
+              batch.set(db.collection('promocodes').doc(code), {
+                  type: 'coins',
+                  rewardCoins: 50,
+                  maxUses: 1,
+                  uses: 0,
+                  expiresAt: null,
+                  isGiftBox: true,
+                  createdAt: new Date().toISOString(),
+                  createdBy: currentUser.uid
+              });
+              
+              batch.update(db.collection('users').doc(currentUser.uid), {
+                  lastDailyGiftDate: todayStr,
+                  lastDailyGiftCode: code
+              });
+              
+              await batch.commit();
+              
+              currentUserData.lastDailyGiftDate = todayStr;
+              currentUserData.lastDailyGiftCode = code;
+              
+              checkDailyGiftState();
+              openDailyGiftModal(code, 'ready');
+              
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+          } catch(e) {
+              console.error(e);
+              showSystemToast('Ошибка', 'Не удалось сгенерировать подарок', 'x-circle', 'text-red-500', 'bg-red-50');
+          }
+      } 
+      // Сценарий 2: Проверка статуса уже созданного подарка
+      else {
+          const code = currentUserData.lastDailyGiftCode;
+          if (!code) return;
+          
+          try {
+              const pDoc = await db.collection('promocodes').doc(code).get();
+              if (pDoc.exists) {
+                  const pData = pDoc.data();
+                  if (pData.uses > 0) {
+                      // Кто-то забрал
+                      const usersSnap = await db.collection('users').where('usedPromos', 'array-contains', code).limit(1).get();
+                      let claimer = { name: 'Неизвестный', avatar: 'https://ui-avatars.com/api/?name=U' };
+                      if (!usersSnap.empty) {
+                          const cData = usersSnap.docs[0].data();
+                          claimer = { 
+                              name: cData.name || 'Секретный Агент', 
+                              avatar: cData.customAvatar || cData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cData.name || 'U')}`
+                          };
+                      }
+                      openDailyGiftModal(code, 'claimed', claimer);
+                  } else {
+                      // Ещё не забрали
+                      openDailyGiftModal(code, 'ready');
+                  }
+              }
+          } catch(e) {
+              console.error(e);
+          }
+      }
+  }
+
+  function openDailyGiftModal(code, state, claimer = null) {
+      const modal = document.getElementById('dailyGiftModal');
+      const content = document.getElementById('dailyGiftContent');
+      
+      const link = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + code;
+      document.getElementById('dgGiftLinkInput').value = link;
+      
+      if (state === 'ready') {
+          document.getElementById('dgStateReady').classList.remove('hidden');
+          document.getElementById('dgStateClaimed').classList.add('hidden');
+      } else {
+          document.getElementById('dgStateReady').classList.add('hidden');
+          document.getElementById('dgStateClaimed').classList.remove('hidden');
+          if (claimer) {
+              document.getElementById('dgClaimerName').innerText = claimer.name;
+              document.getElementById('dgClaimerAvatar').src = claimer.avatar;
+          }
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+          content.classList.add('scale-100');
+      }, 10);
+  }
+
+  function closeDailyGiftModal() {
+      const modal = document.getElementById('dailyGiftModal');
+      const content = document.getElementById('dailyGiftContent');
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  function copyDgLink() {
+      const input = document.getElementById('dgGiftLinkInput');
+      navigator.clipboard.writeText(input.value);
+      showSystemToast('Скопировано!', 'Ссылка готова к отправке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+  }
+
+  function shareDgLink() {
+      const link = document.getElementById('dgGiftLinkInput').value;
+      const text = encodeURIComponent("Забери 50 B-Coins бесплатно! Я отправил тебе подарок в Blocko Pro:");
+      const url = encodeURIComponent(link);
+      window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'width=600,height=400');
+  }
+
+  function copyStoreAffiliateLink(btn) {
+      if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для получения ссылки.', 'lock', 'text-amber-500', 'bg-amber-50');
+      
+      const url = window.location.origin + window.location.pathname.replace('store.html', '') + 'index.html?ref=' + currentUser.uid;
+      navigator.clipboard.writeText(url);
+      
+      const ogHtml = btn.innerHTML;
+      btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Скопировано!';
+      btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+      btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-400');
+      btn.classList.replace('shadow-indigo-500/25', 'shadow-emerald-500/25');
+      lucide.createIcons({ root: btn });
+      
+      showSystemToast('Ссылка скопирована!', 'Отправьте её другу и получите бонусные кредиты.', 'copy', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+      
+      setTimeout(() => {
+          btn.innerHTML = ogHtml;
+          btn.classList.replace('bg-emerald-500', 'bg-indigo-600');
+          btn.classList.replace('hover:bg-emerald-400', 'hover:bg-indigo-500');
+          btn.classList.replace('shadow-emerald-500/25', 'shadow-indigo-500/25');
+          lucide.createIcons({ root: btn });
+      }, 3000);
+  }
+
+  function renderShelf(data, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = data.map(p => `
+      <div class="card-zoom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-${p.color}-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
+        
+        <div class="absolute inset-0 bg-gradient-to-b from-${p.color}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+        <div class="relative w-20 h-20 bg-${p.color}-50 dark:bg-${p.color}-500/10 text-${p.color}-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-${p.color}-100 dark:border-${p.color}-900 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
+          <div class="absolute inset-0 bg-${p.color}-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
+          <i data-lucide="${p.icon}" class="w-10 h-10 relative z-10"></i>
+        </div>
+        
+        <h3 class="font-extrabold text-2xl mb-3 text-gray-900 dark:text-white tracking-tight">${p.name}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 flex-1 leading-relaxed">${p.desc}</p>
+        
+        <div class="space-y-3 w-full relative z-10">
+          ${p.priceCoins ? `<button onclick="handlePurchase('${p.id}', 'coins', ${p.priceCoins})" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/25 active:scale-95"><i data-lucide="coins" class="w-5 h-5"></i> ${p.priceCoins} Монет</button>` : ''}
+          ${p.priceCredits ? `<button onclick="handlePurchase('${p.id}', 'credits', ${p.priceCredits})" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 active:scale-95"><i data-lucide="gem" class="w-5 h-5"></i> ${p.priceCredits} Бонусов</button>` : ''}
+          
+          <button onclick="openDetails('${p.id}')" class="w-full mt-2 pt-2 text-[11px] font-bold text-gray-400 hover:text-${p.color}-500 uppercase tracking-widest transition-colors bg-transparent outline-none">
+            Подробнее об услуге...
+          </button>
+        </div>
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
+
+  function renderAll() {
+    renderShelf(PRODUCTS.AI, 'shelfAI');
+    renderShelf(PRODUCTS.PLANS, 'shelfPlans');
+    renderShelf(PRODUCTS.GIFTS, 'shelfGifts');
+  }
+
+  // --- ЛОГИКА ДЕТАЛЬНОГО МОДАЛЬНОГО ОКНА ---
+  function openDetails(prodId) {
+    const product = ALL_PRODUCTS_MAP[prodId];
+    if (!product) return;
+
+    const modal = document.getElementById('productDetailsModal');
+    const content = document.getElementById('productDetailsContent');
+    
+    // Подставляем данные
+    document.getElementById('pdTitle').innerText = product.name;
+    document.getElementById('pdDesc').innerText = product.detailedDesc;
+    
+    // Оформляем иконку
+    const iconWrapper = document.getElementById('pdIconWrapper');
+    iconWrapper.className = `w-28 h-28 rounded-[2rem] flex items-center justify-center mb-10 mx-auto shadow-2xl relative bg-${product.color}-50 dark:bg-${product.color}-500/10 text-${product.color}-500 border border-${product.color}-200 dark:border-${product.color}-800`;
+    
+    document.getElementById('pdIconGlow').className = `absolute inset-0 rounded-full blur-2xl opacity-60 bg-${product.color}-500`;
+    
+    const iconEl = document.getElementById('pdIcon');
+    iconEl.setAttribute('data-lucide', product.icon);
+    iconEl.className = "w-14 h-14 relative z-10";
+
+    lucide.createIcons();
+
+    // Анимация появления
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      modal.classList.remove('opacity-0');
+      content.classList.remove('scale-95');
+      content.classList.add('scale-100');
+    }, 10);
+  }
+
+  function closeDetails() {
+    const modal = document.getElementById('productDetailsModal');
+    const content = document.getElementById('productDetailsContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100');
+    content.classList.add('scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  // --- ЭНТЕРПРАЙЗ КОНТРОЛЛЕРЫ МОДАЛОК (Без системных окон) ---
+  let confirmCallback = null;
+
+  function openConfirmModal(title, desc, confirmText, isDanger, callback) {
+    document.getElementById('confirmTitle').innerText = title;
+    document.getElementById('confirmDesc').innerText = desc;
+    
+    const iconBg = document.getElementById('confirmIconBg');
+    const icon = document.getElementById('confirmIcon');
+    const btn = document.getElementById('confirmBtnAction');
+    
+    if (isDanger) {
+      iconBg.className = "mx-auto w-20 h-20 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-red-100 dark:border-red-800/50";
+      icon.setAttribute('data-lucide', 'alert-triangle');
+      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-2xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
+    } else {
+      iconBg.className = "mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50";
+      icon.setAttribute('data-lucide', 'shopping-bag');
+      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all";
+    }
+    btn.innerText = confirmText;
+    lucide.createIcons();
+    confirmCallback = callback;
+    
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+  }
+
+  function closeConfirmModal() {
+    const modal = document.getElementById('customConfirmModal');
+    const content = document.getElementById('confirmModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100'); content.classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
+  }
+
+  function executeConfirm() {
+    if (confirmCallback) confirmCallback();
+    closeConfirmModal();
+  }
+
+  function openGiftLinkModal(url) {
+     document.getElementById('generatedGiftLink').value = url;
+     const modal = document.getElementById('giftLinkModal');
+     const content = document.getElementById('giftLinkContent');
+     modal.classList.remove('hidden');
+     setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+        content.classList.add('scale-100');
+     }, 10);
+  }
+
+  function closeGiftLinkModal() {
+     const modal = document.getElementById('giftLinkModal');
+     const content = document.getElementById('giftLinkContent');
+     modal.classList.add('opacity-0');
+     content.classList.remove('scale-100');
+     content.classList.add('scale-95');
+     setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  function copyGeneratedGiftLink() {
+     const input = document.getElementById('generatedGiftLink');
+     navigator.clipboard.writeText(input.value);
+     showSystemToast('Скопировано!', 'Уникальная ссылка готова к отправке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+  }
+
+  async function handlePurchase(prodId, currency, price) {
+    if (currency === 'coins' && balances.coins < price) {
+      openTopUpModal();
+      return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    }
+    if (currency === 'credits' && balances.credits < price) {
+      return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
+    }
+
+    const currencyName = currency === 'coins' ? 'монет' : 'бонусов';
+    
+    // Вызываем нашу премиальную модалку вместо системного confirm
+    openConfirmModal('Подтверждение покупки', `Вы собираетесь приобрести этот товар за ${price} ${currencyName}. Списать средства с баланса?`, 'Оплатить', false, async () => {
+      try {
+        const batch = db.batch();
+        const userRef = db.collection('users').doc(currentUser.uid);
+        const affRef = db.collection('affiliates').doc(currentUser.uid);
+
+        // Списание
+        if (currency === 'coins') batch.update(userRef, { coins: firebase.firestore.FieldValue.increment(-price) });
+        else batch.update(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) });
+
+        // Логика выдачи
+        if (prodId.startsWith('ai_')) {
+          if (prodId === 'ai_50') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
+          if (prodId === 'ai_200') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(200) }, { merge: true });
+          if (prodId === 'ai_daily_sub') batch.set(userRef, { aiDailySub: true, aiSubExpires: Date.now() + (30*24*60*60*1000) }, { merge: true });
+        }
+        
+        if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
+
+        let generatedCode = null;
+        if (prodId.startsWith('gift_')) {
+          const amount = parseInt(prodId.replace('gift_', '')) * 100;
+          generatedCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+          
+          batch.set(db.collection('promocodes').doc(generatedCode), { 
+            type: 'coins', 
+            rewardCoins: amount,
+            maxUses: 1,
+            uses: 0,
+            expiresAt: null,
+            isGiftBox: true,
+            createdAt: new Date().toISOString(),
+            createdBy: currentUser.uid 
+          });
+        }
+
+        await batch.commit();
+        
+        if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+        
+        if (generatedCode) {
+          const giftUrl = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + generatedCode;
+          // Открываем роскошную витрину со ссылкой
+          openGiftLinkModal(giftUrl);
+        } else {
+          showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+        }
+        
+        loadBalances();
+      } catch (e) { 
+        console.error(e); 
+        showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      }
+    });
+  }
+
+  // --- ЛОГИКА ПОПОЛНЕНИЯ (ИМИТАЦИЯ ОПЛАТЫ) ---
+  function openTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
+  function closeTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.add('opacity-0');
+    setTimeout(() => el.classList.add('hidden'), 300);
+  }
+
+  async function buyCoinsPack(amount, usdPrice) {
+    // Вызываем нашу премиальную модалку вместо системного confirm
+    openConfirmModal('Пополнить счет', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} B-Coins?`, 'Оплатить', false, async () => {
+      closeTopUpModal();
+      try {
+        const userRef = db.collection('users').doc(currentUser.uid);
+        await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
+        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
+        showSystemToast('Счет пополнен!', `Начислено ${amount} монет.`, 'coins', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+        loadBalances();
+      } catch(e) {
+        showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      }
+    });
+  }
+
+  function showSystemToast(title, desc, icon, color, bg) {
+    const t = document.getElementById('globalToast');
+    document.getElementById('toastTitle').innerText = title;
+    document.getElementById('toastDesc').innerText = desc;
+    document.getElementById('toastIcon').setAttribute('data-lucide', icon);
+    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bg}`;
+    lucide.createIcons();
+    t.classList.remove('translate-y-24', 'opacity-0');
+    setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 5000);
+  }
+
+  // Закрытие модалок по клику на фон и Escape
+  window.addEventListener('click', (e) => {
+    if (e.target.id === 'topUpModal') closeTopUpModal();
+    if (e.target.id === 'customConfirmModal') closeConfirmModal();
+    if (e.target.id === 'giftLinkModal') closeGiftLinkModal();
+    if (e.target.id === 'dailyGiftModal') closeDailyGiftModal();
+    if (e.target.id === 'questsModal') closeQuestsModal();
+    if (e.target.id === 'qrCodeModal') closeQrModal();
+  });
+  
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!document.getElementById('productDetailsModal').classList.contains('hidden')) closeDetails();
+      if (!document.getElementById('topUpModal').classList.contains('hidden')) closeTopUpModal();
+      if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
+      if (!document.getElementById('giftLinkModal').classList.contains('hidden')) closeGiftLinkModal();
+      if (!document.getElementById('dailyGiftModal').classList.contains('hidden')) closeDailyGiftModal();
+      if (!document.getElementById('questsModal').classList.contains('hidden')) closeQuestsModal();
+      if (!document.getElementById('qrCodeModal')?.classList.contains('hidden')) closeQrModal();
+    }
+  });
+
+  // --- ЭНТЕРПРАЙЗ: ЛОГИКА ЦЕНТРА ЗАДАНИЙ (КВЕСТЫ) ---
+  
+  function openQuestsModal() {
+      const modal = document.getElementById('questsModal');
+      const content = document.getElementById('questsContent');
+      
+      renderQuestsStatus(); // Подтягиваем статусы заданий перед показом
+      
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+          content.classList.add('scale-100');
+      }, 10);
+  }
+
+  function closeQuestsModal() {
+      const modal = document.getElementById('questsModal');
+      const content = document.getElementById('questsContent');
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      setTimeout(() => modal.classList.add('hidden'), 500);
+  }
+
+  async function renderQuestsStatus() {
+      if (!currentUser) return;
+      
+      const todayStr = new Date().toLocaleDateString('ru-RU');
+      
+      // Блокируем выполненные сегодня кнопки
+      if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
+          if (currentUserData.dailyQuests.includes('login')) disableQuestBtn('btnQuestLogin');
+          if (currentUserData.dailyQuests.includes('telegram')) disableQuestBtn('btnQuestTelegram');
+      }
+  }
+
+  function disableQuestBtn(id) {
+      const btn = document.getElementById(id);
+      if(btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Выполнено';
+          btn.className = "w-full sm:w-auto px-5 py-3 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-xl border border-gray-200 dark:border-gray-700 text-xs cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0";
+          lucide.createIcons({ root: btn.parentNode });
+      }
+  }
+
+  async function claimDailyQuest(type, amount) {
+      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
+      
+      const btnId = type === 'login' ? 'btnQuestLogin' : 'btnQuestTelegram';
+      const btn = document.getElementById(btnId);
+      
+      const ogHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons({ root: btn.parentNode });
+
+      try {
+          const userRef = db.collection('users').doc(currentUser.uid);
+          const affRef = db.collection('affiliates').doc(currentUser.uid);
+          const todayStr = new Date().toLocaleDateString('ru-RU');
+
+          let completedToday = [];
+          if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
+              completedToday = currentUserData.dailyQuests;
+          }
+
+          if (completedToday.includes(type)) {
+              throw new Error('Вы уже выполнили это задание сегодня.');
+          }
+
+          // Выполняем транзакцию
+          const batch = db.batch();
+          batch.set(userRef, {
+              dailyQuestsDate: todayStr,
+              dailyQuests: firebase.firestore.FieldValue.arrayUnion(type)
+          }, { merge: true });
+
+          batch.set(affRef, {
+              earnedCredits: firebase.firestore.FieldValue.increment(amount)
+          }, { merge: true });
+
+          await batch.commit();
+
+          // Логика конкретных заданий (Шаринг)
+          if (type === 'telegram') {
+              const url = encodeURIComponent(window.location.origin + window.location.pathname.replace('store.html', ''));
+              const text = encodeURIComponent("Присоединяйтесь ко мне в Blocko Pro!");
+              window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'width=600,height=400');
+          }
+
+          // Обновляем локальные данные, чтобы не тянуть из базы снова
+          currentUserData.dailyQuestsDate = todayStr;
+          if(!currentUserData.dailyQuests) currentUserData.dailyQuests = [];
+          currentUserData.dailyQuests.push(type);
+
+          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 }, zIndex: 9999 });
+          showSystemToast('Квест выполнен!', `Вам начислено ${amount} кредитов.`, 'check-square', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+          
+          loadBalances();
+          disableQuestBtn(btnId);
+
+      } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = ogHtml;
+          lucide.createIcons({ root: btn.parentNode });
+          showSystemToast('Внимание', e.message, 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+      }
+  }
+
+  async function submitSpecialQuest(type) {
+      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
+      
+      const inputId = type === 'article' ? 'questArticleLink' : 'questVideoLink';
+      const btnId = type === 'article' ? 'btnQuestArticle' : 'btnQuestVideo';
+      const linkInput = document.getElementById(inputId);
+      const link = linkInput.value.trim();
+
+      if (!link || !link.startsWith('http')) {
+          return showSystemToast('Ошибка', 'Введите корректную ссылку, начинающуюся с http:// или https://', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+      }
+
+      const btn = document.getElementById(btnId);
+      const ogHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
+      lucide.createIcons({ root: btn.parentNode });
+
+      try {
+          // Создаем заявку в отдельной коллекции для админ-панели
+          await db.collection('quest_submissions').add({
+              userId: currentUser.uid,
+              userName: currentUserData.name || 'User',
+              userEmail: currentUser.email || 'Скрыт',
+              type: type,
+              link: link,
+              status: 'pending',
+              createdAt: new Date().toISOString()
+          });
+
+          linkInput.value = '';
+          btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Отправлено';
+          btn.className = "w-full sm:w-auto px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0 cursor-default";
+          lucide.createIcons({ root: btn.parentNode });
+          
+          showSystemToast('Заявка принята!', 'Ваша работа отправлена на ручную проверку. Награда будет начислена администратором.', 'send', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+
+      } catch (e) {
+          btn.disabled = false;
+          btn.innerHTML = ogHtml;
+          lucide.createIcons({ root: btn.parentNode });
+          showSystemToast('Ошибка', 'Не удалось отправить заявку в базу.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      }
+  }
+
+  // --- ЭНТЕРПРАЙЗ: QR-SHARE ENGINE ---
+    let currentQrUrl = '';
+
+    function openQrModal(inputId, descText) {
+        const input = document.getElementById(inputId);
+        if (!input || !input.value) return;
+
+        currentQrUrl = input.value;
+        document.getElementById('qrCodeDesc').innerText = descText || 'Отсканируйте код, чтобы перейти по ссылке.';
+
+        const canvas = document.getElementById('qrCanvas');
+        
+        // Генерация QR-кода на лету
+        QRCode.toCanvas(canvas, currentQrUrl, {
+            width: 200,
+            margin: 1,
+            color: {
+                dark: "#0f172a",
+                light: "#ffffff"
+            }
+        }, function (error) {
+            if (error) console.error("QR Engine Error:", error);
+        });
+
+        const modal = document.getElementById('qrCodeModal');
+        const content = document.getElementById('qrCodeContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }, 10);
+    }
+
+    function closeQrModal() {
+        const modal = document.getElementById('qrCodeModal');
+        const content = document.getElementById('qrCodeContent');
+        modal.classList.add('opacity-0');
+        content.classList.remove('scale-100');
+        content.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+
+    function downloadQrCode() {
+        const canvas = document.getElementById('qrCanvas');
+        const url = canvas.toDataURL("image/png");
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'BlockoPro_Gift_QR.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showSystemToast('Успешно', 'QR-код сохранен на ваше устройство.', 'download', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+    }
+
+    async function shareQrCode() {
+        const canvas = document.getElementById('qrCanvas');
+        
+        try {
+            // Конвертируем canvas в Blob для отправки в системный шаринг
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            const file = new File([blob], 'BlockoPro_Gift_QR.png', { type: 'image/png' });
+
+            // Проверка поддержки нативного шаринга файлов (Web Share API Level 2)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Blocko Pro',
+                    text: 'Лови подарок от меня в Blocko Pro!\n' + currentQrUrl,
+                    files: [file]
+                });
+                showSystemToast('Отправлено', 'Подарочный QR-код успешно отправлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+            } else {
+                throw new Error('Native file share is not supported');
+            }
+        } catch (error) {
+            console.warn('Share API fallback:', error);
+            navigator.clipboard.writeText(currentQrUrl);
+            showSystemToast('Скопировано', 'Файловый шаринг недоступен. Ссылка на подарок скопирована.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+        }
+    }
+
+  // --- ЛОГИКА АКТИВАЦИИ ПРОМОКОДОВ В МАГАЗИНЕ ---
+  async function activatePromoCode(inputId = 'storePromoCodeInput', btnId = 'activateStorePromoBtn') {
+    if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
+    
+    const input = document.getElementById(inputId);
+    const code = input.value.trim().toUpperCase();
+    const btn = document.getElementById(btnId);
+    
+    if (!code) return;
+    
+    const ogBtn = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+    lucide.createIcons({ root: btn.parentElement });
+
+    try {
+       const promoRef = db.collection('promocodes').doc(code);
+       const promoDoc = await promoRef.get();
+       
+       if (!promoDoc.exists) throw new Error('not_found');
+       
+       const promo = promoDoc.data();
+       const now = Date.now();
+       
+       if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) throw new Error('expired');
+       if (promo.maxUses > 0 && (promo.uses || 0) >= promo.maxUses) throw new Error('limit');
+
+       const userRef = db.collection('users').doc(currentUser.uid);
+       const userDoc = await userRef.get();
+       const usedPromos = userDoc.data().usedPromos || [];
+       
+       if (usedPromos.includes(code)) throw new Error('already_used');
+
+       const batch = db.batch();
+       const updates = { usedPromos: firebase.firestore.FieldValue.arrayUnion(code) };
+       
+       let successMsg = '';
+       
+       if (promo.type === 'plan' || promo.type === 'plan_pro_2m' || promo.type === 'plan_fl_1m') {
+           let planToSet = promo.rewardPlan || (promo.type === 'plan_pro_2m' ? 'pro' : 'freelancer');
+           let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
+           
+           updates.plan = planToSet;
+           if (durMonths === 999) {
+               updates.planExpiresAt = firebase.firestore.FieldValue.delete();
+           } else {
+               const currentExpiry = userDoc.data().planExpiresAt || now;
+               updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
+           }
+           successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
+           localStorage.setItem('blocko_user_plan', planToSet);
+       } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
+           let coinsToAdd = promo.rewardCoins || 1000;
+           updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
+           successMsg = `Начислено ${coinsToAdd} B-Coins!`;
+       } else if (promo.type === 'discount' || promo.type === 'discount_50') {
+           updates.activeDiscount = promo.rewardDiscount || 50;
+           successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
+       }
+
+       batch.update(userRef, updates);
+       batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
+       
+       await batch.commit();
+       
+       if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+       showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+       input.value = '';
+       
+       // Мгновенное обновление баланса в шапке магазина
+       loadBalances();
+
+    } catch (err) {
+       let errMsg = 'Произошла ошибка базы данных.';
+       if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
+       else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
+       else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
+       else if (err.message === 'already_used') errMsg = 'Вы уже активировали этот промокод ранее.';
+       
+       showSystemToast('Ошибка активации', errMsg, 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    } finally {
+       btn.disabled = false;
+       btn.innerHTML = ogBtn;
+       lucide.createIcons({ root: btn.parentElement });
+    }
+  }
+</script>
+</body>
+</html>
