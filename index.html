@@ -857,12 +857,28 @@
           <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
-      
-      <!-- Скрытая карточка для корректной логики UI, если у юзера тариф Infinity -->
-      <div id="planCard_infinity" class="hidden"></div>
-      <button id="btnUpgrade_infinity" class="hidden"></button>
-      <div id="planBadge_infinity" class="hidden"></div>
 
+    </div>
+
+    <!-- ЭНТЕРПРАЙЗ: Горизонтальный Эпический Баннер (Только для Infinity) -->
+    <div id="infinityBannerWrapper" class="hidden mt-8 w-full relative overflow-hidden bg-gray-900 dark:bg-black border border-purple-500/30 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-purple-500/20 items-center justify-between gap-6 flex-col lg:flex-row text-left group">
+        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-fuchsia-600/20 to-indigo-600/20 opacity-50 blur-xl pointer-events-none group-hover:opacity-100 transition-opacity duration-700"></div>
+        <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-6 w-full">
+            <div class="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-inner flex-shrink-0">
+                <i data-lucide="crown" class="w-10 h-10 animate-pulse"></i>
+            </div>
+            <div class="text-center sm:text-left flex-1">
+                <h3 class="text-3xl font-black text-white tracking-tight mb-2 uppercase">GOD MODE <span class="text-purple-400">Активен</span></h3>
+                <p class="text-gray-400 text-sm font-medium leading-relaxed max-w-2xl mx-auto sm:mx-0">
+                    Ваш аккаунт имеет эксклюзивный статус <b class="text-gray-200">Infinity</b>. Вам доступны абсолютно все ресурсы экосистемы Blocko Pro без каких-либо лимитов и ограничений.
+                </p>
+            </div>
+        </div>
+        <div class="relative z-10 flex-shrink-0 w-full lg:w-auto mt-2 lg:mt-0">
+           <button onclick="openPlanDetails('infinity')" class="w-full lg:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+               <i data-lucide="sparkles" class="w-5 h-5"></i> Детали
+           </button>
+        </div>
     </div>
   </div>
 </div>
@@ -1781,15 +1797,14 @@ function openPricingModal() {
   const content = document.getElementById('pricingContent');
   if (!modal) return;
   
-  // ЭНТЕРПРАЙЗ: Динамическое выделение активного тарифа с поддержкой Infinity (GOD Mode)
-  const plans = ['free', 'freelancer', 'pro', 'infinity'];
+  // ЭНТЕРПРАЙЗ: Итерируем ТОЛЬКО по видимым тарифам
+  const plans = ['free', 'freelancer', 'pro'];
   
   plans.forEach(p => {
     const card = document.getElementById('planCard_' + p);
     const btn = document.getElementById('btnUpgrade_' + p);
     const badge = document.getElementById('planBadge_' + p);
     
-    // Если карточки физически нет (как для infinity), пропускаем стилизацию DOM-узла
     if (card && btn && badge) {
       if (p === userPlan) {
         // Активный тариф: синяя рамка, scale-105, кнопка заблокирована
@@ -1813,9 +1828,27 @@ function openPricingModal() {
     }
   });
 
-  // Если у юзера GOD Mode, покажем красивое уведомление вместо обычного бейджа на карточках
+  // ЭНТЕРПРАЙЗ: Управление баннером Infinity
+  const infinityBanner = document.getElementById('infinityBannerWrapper');
   if (userPlan === 'infinity') {
-      showSystemToast('GOD MODE', 'У вас активен максимальный безлимитный тариф. Вам не нужно ничего оплачивать.', 'crown', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
+      // Блокируем кнопки других тарифов
+      plans.forEach(p => {
+          const btn = document.getElementById('btnUpgrade_' + p);
+          if (btn) {
+              btn.innerText = "Заблокировано (GOD MODE)";
+              btn.className = "w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold rounded-2xl cursor-not-allowed transition-colors";
+              btn.onclick = null;
+          }
+      });
+      if (infinityBanner) {
+          infinityBanner.classList.remove('hidden');
+          infinityBanner.classList.add('flex');
+      }
+  } else {
+      if (infinityBanner) {
+          infinityBanner.classList.add('hidden');
+          infinityBanner.classList.remove('flex');
+      }
   }
 
   modal.classList.remove('hidden');
