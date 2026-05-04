@@ -1691,13 +1691,13 @@ function renderActivityLog() {
 /**
  * ENTERPRISE AUDIT CONTROLLER v3.0
  * Реализует логику управления тумблером Журнала действий.
- * Доступ строго ограничен владельцем с тарифным планом 'Company' (pro).
+ * Доступ строго ограничен владельцем с тарифным планом 'Company' (pro) и выше.
  * Изначальное состояние для новых досок — OFF (Безопасность данных по умолчанию).
  */
 function toggleActivityLogState(isChecked) {
   if (isLocalBoard) return; // На локальных досках тумблер полностью вырезан
 
-  if (isChecked && userPlan !== 'pro') {
+  if (isChecked && userPlan !== 'pro' && userPlan !== 'infinity') {
      document.getElementById("activityToggle").checked = false;
      return showSystemToast('Премиум', 'Журнал действий доступен только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
   }
@@ -1888,10 +1888,10 @@ function closeFileTypeModal() {
 
 // Конвертация в Base64 и сохранение с таймером/сжиганием
 async function confirmFileUpload(retentionType) {
-  // ПРОВЕРКА ТАРИФА
-  if (retentionType === 'burn' && userPlan !== 'pro') {
+  // ПРОВЕРКА ТАРИФА (Добавлена поддержка Infinity)
+  if (retentionType === 'burn' && userPlan !== 'pro' && userPlan !== 'infinity') {
      closeFileTypeModal();
-     return showSystemToast('Pro Функция', 'Сгорающие (шпионские) файлы доступны только на тарифе Company.', 'lock', 'text-amber-500', 'bg-amber-50');
+     return showSystemToast('Pro Функция', 'Сгорающие (шпионские) файлы доступны только на тарифах Company и выше.', 'lock', 'text-amber-500', 'bg-amber-50');
   }
 
   if (!pendingChatFile) return;
