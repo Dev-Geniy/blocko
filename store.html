@@ -1266,13 +1266,18 @@
            let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
            
            updates.plan = planToSet;
-           if (durMonths === 999) {
+           
+           // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Тариф Infinity выдается навсегда (GOD MODE)
+           if (durMonths === 999 || planToSet === 'infinity') {
                updates.planExpiresAt = firebase.firestore.FieldValue.delete();
+               if (planToSet === 'infinity') successMsg = `Активирован GOD MODE (Infinity)!`;
+               else successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
            } else {
                const currentExpiry = userDoc.data().planExpiresAt || now;
                updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
+               successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
            }
-           successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
+           
            localStorage.setItem('blocko_user_plan', planToSet);
        } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
            let coinsToAdd = promo.rewardCoins || 1000;
