@@ -159,6 +159,10 @@
       <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </a>
+      <!-- ЭНТЕРПРАЙЗ: Кнопка переключения лейаута Пространств -->
+      <button onclick="toggleSpacesLayout()" class="hidden md:flex p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors active:scale-95" title="Переключить вид панели досок (Сверху / Сбоку)">
+        <i data-lucide="sidebar-open" class="w-5 h-5 pointer-events-none"></i>
+      </button>
       <div class="flex items-center gap-3">
         <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
         
@@ -314,8 +318,23 @@
   </div>
 </div>
 
-<div class="flex flex-1 overflow-hidden relative">
-  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full">
+<div class="flex flex-1 overflow-hidden relative w-full">
+  <!-- ЭНТЕРПРАЙЗ: Вертикальная панель Пространств (Linear Style) -->
+  <aside id="spacesVerticalSidebar" class="hidden w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex-col transition-all duration-300 overflow-y-auto hide-scroll z-10 flex-shrink-0">
+     <div class="px-4 pt-5 pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+        <i data-lucide="folders" class="w-3.5 h-3.5"></i> Доски проекта
+     </div>
+     <div class="px-3 pb-4 flex flex-col gap-1.5" id="boardSpacesContainerVertical">
+       <!-- JS Injects Tabs Here -->
+     </div>
+     <div class="px-4 pb-6 mt-auto">
+       <button onclick="addSpace()" class="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-white dark:bg-gray-800 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-gray-200 dark:border-gray-700 font-bold text-xs shadow-sm active:scale-95 group">
+          <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform pointer-events-none"></i> Новая доска
+       </button>
+     </div>
+  </aside>
+
+  <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full transition-all duration-300">
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
   
@@ -1362,42 +1381,83 @@ let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
 let currentSpaceId = 'default'; // ЭНТЕРПРАЙЗ: Активное пространство (Вкладка доски)
+let spacesLayoutMode = localStorage.getItem('blocko_spaces_layout') || 'horizontal';
 
-// ЭНТЕРПРАЙЗ: Управление Пространствами (Sub-boards)
+function toggleSpacesLayout() {
+    spacesLayoutMode = spacesLayoutMode === 'horizontal' ? 'vertical' : 'horizontal';
+    localStorage.setItem('blocko_spaces_layout', spacesLayoutMode);
+    renderSpacesUI();
+}
+
+// ЭНТЕРПРАЙЗ: Управление Пространствами (Sub-boards) с поддержкой 2х режимов отображения
 function renderSpacesUI() {
-   const container = document.getElementById('boardSpacesContainer');
+   const containerHorizontal = document.getElementById('boardSpacesContainer');
+   const containerVertical = document.getElementById('boardSpacesContainerVertical');
+   const subHeaderWrapper = document.getElementById('spacesSubHeaderWrapper');
    const subHeader = document.getElementById('spacesSubHeader');
+   const verticalSidebar = document.getElementById('spacesVerticalSidebar');
    
    if (!boardData.spaces || boardData.spaces.length === 0) {
        boardData.spaces = [{ id: 'default', name: 'Главная доска' }];
    }
    
-   subHeader.classList.remove('hidden');
+   // Логика переключения контейнеров (на мобильных принудительно горизонт)
+   const isDesktop = window.innerWidth >= 768;
+   
+   if (spacesLayoutMode === 'vertical' && isDesktop) {
+       subHeaderWrapper.classList.add('hidden');
+       verticalSidebar.classList.remove('hidden');
+       verticalSidebar.classList.add('flex');
+   } else {
+       subHeaderWrapper.classList.remove('hidden');
+       subHeader.classList.remove('hidden'); // Принудительный показ внутренней панели
+       verticalSidebar.classList.add('hidden');
+       verticalSidebar.classList.remove('flex');
+   }
 
-   container.innerHTML = boardData.spaces.map(space => {
+   const generateTabs = (isVertical) => boardData.spaces.map(space => {
        const isActive = space.id === currentSpaceId;
-       // Premium Hover Design & Padding Optimization
-       const activeClasses = isActive 
-          ? 'bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/40 dark:to-gray-800 text-blue-700 dark:text-blue-400 shadow-md border-blue-200/50 dark:border-blue-700/50 scale-105 z-10' 
-          : 'bg-white/60 dark:bg-gray-800/60 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 border-gray-200/50 dark:border-gray-700/50';
+       
+       let activeClasses = '';
+       if (isVertical) {
+           activeClasses = isActive 
+              ? 'bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 shadow-sm border-blue-200/50 dark:border-blue-700/50 z-10' 
+              : 'bg-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-gray-800/60 border-transparent';
+       } else {
+           activeClasses = isActive 
+              ? 'bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/40 dark:to-gray-800 text-blue-700 dark:text-blue-400 shadow-md border-blue-200/50 dark:border-blue-700/50 scale-105 z-10' 
+              : 'bg-white/60 dark:bg-gray-800/60 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 border-gray-200/50 dark:border-gray-700/50';
+       }
+       
+       const layoutClasses = isVertical ? 'w-full py-2.5 px-3 justify-start' : 'px-4 py-2';
        
        return `
-          <div class="flex items-center group/space relative space-tab-item" data-id="${space.id}">
-              <button onclick="switchSpace('${space.id}')" class="px-4 py-2 rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2 whitespace-nowrap select-none">
-                 <i data-lucide="${isActive ? 'layout' : 'folder'}" class="w-4 h-4 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
-                 ${space.name}
+          <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${space.id}">
+              <button onclick="switchSpace('${space.id}')" class="rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2.5 select-none ${layoutClasses}">
+                 <i data-lucide="${isActive ? 'layout' : 'folder'}" class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
+                 <span class="truncate">${space.name}</span>
               </button>
               ${isActive && boardData.spaces.length > 1 ? `
-              <button onclick="event.stopPropagation(); deleteSpace('${space.id}')" class="absolute -top-1.5 -right-1.5 opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
+              <button onclick="event.stopPropagation(); deleteSpace('${space.id}')" class="absolute ${isVertical ? 'right-2 top-1/2 -translate-y-1/2' : '-top-1.5 -right-1.5'} opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
                  <i data-lucide="x" class="w-3 h-3 pointer-events-none"></i>
               </button>
               ` : ''}
           </div>
        `;
    }).join('');
-   lucide.createIcons({ root: container });
 
-   // Инициализация Drag and Drop для вкладок (Реорганизация пространств)
+   if (spacesLayoutMode === 'vertical' && isDesktop) {
+       containerVertical.innerHTML = generateTabs(true);
+       lucide.createIcons({ root: containerVertical });
+       initSpacesSortable(containerVertical);
+   } else {
+       containerHorizontal.innerHTML = generateTabs(false);
+       lucide.createIcons({ root: containerHorizontal });
+       initSpacesSortable(containerHorizontal);
+   }
+}
+
+function initSpacesSortable(container) {
    if (window.spacesSortable) window.spacesSortable.destroy();
    window.spacesSortable = new Sortable(container, {
        animation: 250,
