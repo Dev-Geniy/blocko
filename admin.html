@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocko Pro - Enterprise Command Center</title>
+
+  <!-- Фавикон -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase Core -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  </style>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-[#0B0F19] text-gray-100 min-h-screen flex overflow-hidden selection:bg-indigo-500/30">
+
+<!-- Sidebar -->
+<aside class="w-20 lg:w-64 border-r border-gray-800 bg-gray-900/50 glass-panel flex flex-col items-center lg:items-stretch py-6 transition-all z-20">
+  <div class="flex items-center gap-3 px-0 lg:px-6 mb-10 justify-center lg:justify-start">
+    <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 flex-shrink-0 border border-indigo-400/30">
+      <i data-lucide="shield-alert" class="w-5 h-5 text-white"></i>
+    </div>
+    <h1 class="font-black text-xl tracking-tight hidden lg:block text-white">COMMAND<span class="text-indigo-500">.</span></h1>
+  </div>
+
+  <nav class="flex flex-col gap-2 px-3 w-full">
+    <button id="navDatabase" onclick="switchTab('viewDatabase')" class="flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner">
+      <i data-lucide="database" class="w-5 h-5"></i><span class="hidden lg:block text-sm">База данных</span>
+    </button>
+    <button id="navCPA" onclick="switchTab('viewCPA')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <i data-lucide="network" class="w-5 h-5"></i><span class="hidden lg:block text-sm">CPA Сеть</span>
+    </button>
+    <button id="navPromo" onclick="switchTab('viewPromo')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <i data-lucide="ticket" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Промо акции</span>
+    </button>
+    <button id="navQuests" onclick="switchTab('viewQuests')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <div class="relative">
+        <i data-lucide="swords" class="w-5 h-5"></i>
+        <span id="questsBadge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+      </div>
+      <span class="hidden lg:block text-sm">Модерация Квестов</span>
+    </button>
+    <button id="navSupport" onclick="switchTab('viewSupport')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <div class="relative">
+        <i data-lucide="life-buoy" class="w-5 h-5"></i>
+        <span id="supportBadge" class="hidden absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+        </span>
+      </div>
+      <span class="hidden lg:block text-sm">Саппорт</span>
+    </button>
+    <button id="navLogs" onclick="switchTab('viewLogs')" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start transition-all">
+      <i data-lucide="activity" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Логи системы</span>
+    </button>
+    <div class="h-px bg-gray-800 my-2 mx-4 hidden lg:block"></div>
+    <button onclick="window.location.href='index.html'" class="flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start">
+      <i data-lucide="log-out" class="w-5 h-5"></i><span class="hidden lg:block text-sm">Выйти в App</span>
+    </button>
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+  <!-- Boot Loader -->
+  <div id="loader" class="absolute inset-0 bg-[#0B0F19] z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+     <i data-lucide="loader-2" class="w-10 h-10 text-indigo-500 animate-spin mb-4"></i>
+     <div class="text-sm font-bold text-gray-500 uppercase tracking-widest animate-pulse">Инициализация ядра БД...</div>
+  </div>
+
+  <header class="px-8 py-6 border-b border-gray-800 bg-gray-900/30 glass-panel flex justify-between items-center z-10 flex-shrink-0">
+    <div>
+      <h2 class="text-2xl font-black text-white mb-1">Управление пользователями</h2>
+      <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 rounded-md inline-block">Enterprise Database Access</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+        <input type="text" id="adminSearch" oninput="renderTable()" placeholder="Поиск по Email, UID, Имени..." class="pl-10 pr-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all w-64 text-white placeholder-gray-500 shadow-inner">
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 overflow-y-auto p-8 relative">
+    <!-- Abstract Background Glow -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+    <!-- VIEW: DATABASE -->
+    <div id="viewDatabase" class="animate-fade-in-up relative z-10">
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="p-6 bg-gray-900/60 border border-gray-800 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-gray-700 transition-colors">
+          <div class="text-gray-500 mb-2"><i data-lucide="users" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-white" id="statUsers">0</div>
+          <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">Всего аккаунтов</div>
+        </div>
+        <div class="p-6 bg-indigo-900/10 border border-indigo-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-indigo-500/40 transition-colors">
+          <div class="text-indigo-400 mb-2"><i data-lucide="zap" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-indigo-400" id="statPro">0</div>
+          <div class="text-[10px] font-bold text-indigo-500/70 uppercase tracking-widest mt-1">PRO / Company</div>
+        </div>
+        <div class="p-6 bg-emerald-900/10 border border-emerald-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-emerald-500/40 transition-colors">
+          <div class="text-emerald-400 mb-2"><i data-lucide="coins" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-emerald-400" id="statCoins">0</div>
+          <div class="text-[10px] font-bold text-emerald-500/70 uppercase tracking-widest mt-1">Монет в обороте</div>
+        </div>
+        <div class="p-6 bg-purple-900/10 border border-purple-500/20 rounded-3xl flex flex-col shadow-lg backdrop-blur-sm hover:border-purple-500/40 transition-colors">
+          <div class="text-purple-400 mb-2"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+          <div class="text-3xl font-black text-purple-400" id="statBoards">0</div>
+          <div class="text-[10px] font-bold text-purple-500/70 uppercase tracking-widest mt-1">Облачных досок</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl backdrop-blur-md">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-800/50 border-b border-gray-800 text-[10px] font-black text-gray-500 uppercase tracking-widest select-none">
+            <tr>
+              <th class="px-6 py-4">Пользователь</th>
+              <th class="px-6 py-4 cursor-pointer hover:text-white transition-colors group" onclick="handleSort('plan')">
+                 <div class="flex items-center gap-1">Тариф <i id="sortIcon_plan" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('coins')">
+                 <div class="flex items-center justify-center gap-1">Баланс (B) <i id="sortIcon_coins" data-lucide="arrow-down" class="w-3 h-3 text-indigo-500"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('boards')">
+                 <div class="flex items-center justify-center gap-1">Доски <i id="sortIcon_boards" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-center cursor-pointer hover:text-white transition-colors group" onclick="handleSort('referrals')">
+                 <div class="flex items-center justify-center gap-1">Рефералы <i id="sortIcon_referrals" data-lucide="arrow-down-up" class="w-3 h-3 text-gray-600 group-hover:text-indigo-400"></i></div>
+              </th>
+              <th class="px-6 py-4 text-right">Действия</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody" class="divide-y divide-gray-800/50">
+            <!-- JS Injects -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW: PROMO CODES -->
+    <div id="viewPromo" class="hidden animate-fade-in-up relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Constructor -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-1 h-fit">
+          <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2"><i data-lucide="ticket" class="w-5 h-5 text-amber-400"></i> Конструктор кампаний</h3>
+          
+          <div class="space-y-4">
+             <div>
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 flex justify-between">Промокод <span onclick="generateRandomPromo()" class="text-amber-500 cursor-pointer hover:text-amber-400 transition-colors"><i data-lucide="dices" class="w-3 h-3 inline"></i> Сгенерировать</span></label>
+                <input type="text" id="promoCodeInput" placeholder="SUMMER2026" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold uppercase transition-colors shadow-inner" />
+             </div>
+             
+             <div>
+                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тип бонуса</label>
+                <select id="promoTypeInput" onchange="togglePromoFields()" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors cursor-pointer appearance-none mb-4">
+                   <option value="plan">🎁 Премиум Тариф (Бесплатно)</option>
+                   <option value="discount">💸 Скидка на покупку (%)</option>
+                   <option value="coins">💰 Начисление B-Coins</option>
+                </select>
+
+                <!-- ЭНТЕРПРАЙЗ: Динамические поля конфигуратора -->
+                <div id="promoPlanFields" class="grid grid-cols-2 gap-3 mb-4 animate-fade-in-up">
+                   <div>
+                     <label class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1 block">Тариф</label>
+                     <select id="promoPlanSelect" class="w-full px-4 py-3 bg-gray-800 border border-purple-500/30 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors cursor-pointer appearance-none">
+                        <option value="freelancer">Freelancer</option>
+                        <option value="pro" selected>Company (Pro)</option>
+                        <option value="infinity">Infinity</option>
+                     </select>
+                   </div>
+                   <div>
+                     <label class="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1 block">Длительность</label>
+                     <select id="promoDurationSelect" class="w-full px-4 py-3 bg-gray-800 border border-purple-500/30 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors cursor-pointer appearance-none">
+                        <option value="1">1 месяц</option>
+                        <option value="2" selected>2 месяца</option>
+                        <option value="3">3 месяца</option>
+                        <option value="6">6 месяцев</option>
+                        <option value="12">1 год</option>
+                        <option value="999">Навсегда</option>
+                     </select>
+                   </div>
+                </div>
+
+                <div id="promoDiscountFields" class="hidden mb-4 animate-fade-in-up">
+                   <label class="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1 block">Размер скидки (%)</label>
+                   <input type="number" id="promoDiscountValue" placeholder="Например: 50" min="1" max="100" class="w-full px-4 py-3 bg-gray-800 border border-emerald-500/30 rounded-xl outline-none text-white focus:border-emerald-500 font-bold transition-colors shadow-inner" />
+                </div>
+
+                <div id="promoCoinsFields" class="hidden mb-4 animate-fade-in-up">
+                   <label class="text-[10px] font-black text-amber-400 uppercase tracking-widest mb-1 block">Сумма B-Coins</label>
+                   <input type="number" id="promoCoinsValue" placeholder="Например: 1000" min="1" class="w-full px-4 py-3 bg-gray-800 border border-amber-500/30 rounded-xl outline-none text-white focus:border-amber-500 font-bold transition-colors shadow-inner" />
+                </div>
+             </div>
+
+             <div class="grid grid-cols-2 gap-3 pt-3 border-t border-gray-800">
+                <div>
+                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Лимит активаций</label>
+                  <input type="number" id="promoLimitInput" placeholder="Безлимит (0)" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-gray-500 font-bold transition-colors shadow-inner" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Срок сгорания кода</label>
+                  <input type="date" id="promoExpireInput" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-gray-400 focus:text-white focus:border-gray-500 font-bold transition-colors shadow-inner cursor-pointer" />
+                </div>
+             </div>
+             
+             <button onclick="createPromo()" class="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white text-sm font-black rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all mt-4 flex items-center justify-center gap-2 border border-orange-400/50">
+               <i data-lucide="rss" class="w-4 h-4"></i> Выпустить в сеть
+             </button>
+          </div>
+        </div>
+
+        <!-- Active Promos Table -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-2">
+          <h3 class="text-lg font-black text-white mb-5 flex items-center gap-2"><i data-lucide="bar-chart-horizontal" class="w-5 h-5 text-indigo-400"></i> Активные промо-кампании</h3>
+          <div class="overflow-x-auto hide-scroll">
+             <table class="w-full text-left border-collapse">
+               <thead class="bg-gray-800/50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                 <tr>
+                   <th class="px-4 py-3 rounded-tl-xl">Код</th>
+                   <th class="px-4 py-3">Бонус</th>
+                   <th class="px-4 py-3 text-center">Активации</th>
+                   <th class="px-4 py-3 text-center">Статус</th>
+                   <th class="px-4 py-3 text-right rounded-tr-xl">Действие</th>
+                 </tr>
+               </thead>
+               <tbody id="promoTbody" class="divide-y divide-gray-800/50">
+                  <!-- JS Injects -->
+               </tbody>
+             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: SYSTEM LOGS -->
+    <div id="viewLogs" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-8 shadow-2xl backdrop-blur-md max-w-3xl mx-auto mt-6">
+        <div class="w-16 h-16 bg-blue-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+           <i data-lucide="activity" class="w-8 h-8 text-blue-400"></i>
+        </div>
+        <h2 class="text-2xl font-black text-white mb-4">Что такое «Логи системы»?</h2>
+        <p class="text-sm text-gray-400 leading-relaxed mb-8">
+          Логи системы (Enterprise Audit Trail) — это <b class="text-gray-200">неизменяемый цифровой след всех транзакций в платформе</b>. В масштабах Enterprise-продукта логи решают 3 критические задачи:
+        </p>
+        
+        <div class="space-y-4 mb-8">
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-rose-500/30 transition-colors group">
+              <div class="p-2 bg-rose-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="shield-alert" class="w-5 h-5 text-rose-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Безопасность и Расследования (Security Guard)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Если злоумышленник попытается накрутить рефералов или сменить тариф, система мгновенно зафиксирует его IP, UID и точное время запроса. Администратор сможет расследовать инцидент и откатить ущерб.</p>
+              </div>
+           </div>
+           
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-indigo-500/30 transition-colors group">
+              <div class="p-2 bg-indigo-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="network" class="w-5 h-5 text-indigo-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Аналитика поведения (System Telemetry)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Глобальный мониторинг узких мест платформы. Мы видим, какие фичи (например, генерация AI-обложек) вызывают наибольшую нагрузку на API (OpenAI/ImgBB) в пиковые часы.</p>
+              </div>
+           </div>
+           
+           <div class="flex items-start gap-4 bg-gray-800/50 p-5 rounded-2xl border border-gray-700/50 hover:border-emerald-500/30 transition-colors group">
+              <div class="p-2 bg-emerald-500/10 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="bug-play" class="w-5 h-5 text-emerald-400"></i></div>
+              <div>
+                 <h4 class="text-sm font-bold text-gray-200 mb-1">Дебаггинг без скриншотов (Pro Support)</h4>
+                 <p class="text-xs text-gray-500 leading-relaxed">Позволяет отделу поддержки воспроизвести цепочку действий пользователя за 5 минут до возникновения бага, радикально снижая время закрытия тикетов (Time-to-Resolution).</p>
+              </div>
+           </div>
+        </div>
+
+        <button class="px-6 py-4 bg-blue-600/10 text-blue-400 border border-blue-500/30 rounded-xl text-sm font-black w-full uppercase tracking-widest cursor-not-allowed">
+          Модуль архитектуры в разработке
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW: SUPPORT HELPDESK -->
+    <div id="viewSupport" class="hidden animate-fade-in-up relative z-10">
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Folders Sidebar -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-5 shadow-2xl backdrop-blur-md lg:col-span-1 h-fit flex flex-col gap-1.5 select-none">
+           <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 px-2">Категории обращений</h3>
+           
+           <button onclick="setSupportFolder('all')" id="folder_all" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="inbox" class="w-4 h-4"></i> Входящие</div>
+             <span id="count_all" class="text-[10px] bg-indigo-500/20 px-2 py-0.5 rounded-md">0</span>
+           </button>
+           
+           <button onclick="setSupportFolder('bug')" id="folder_bug" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="bug" class="w-4 h-4 text-rose-500"></i> Ошибки (Bugs)</div>
+             <span id="count_bug" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('idea')" id="folder_idea" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="lightbulb" class="w-4 h-4 text-purple-500"></i> Идеи и Фичи</div>
+             <span id="count_idea" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('complaint')" id="folder_complaint" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="megaphone" class="w-4 h-4 text-amber-500"></i> Жалобы</div>
+             <span id="count_complaint" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <button onclick="setSupportFolder('thanks')" id="folder_thanks" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="heart-handshake" class="w-4 h-4 text-emerald-500"></i> Благодарности</div>
+             <span id="count_thanks" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+
+           <div class="h-px bg-gray-800 my-2"></div>
+
+           <button onclick="setSupportFolder('resolved')" id="folder_resolved" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-500 hover:bg-gray-800 hover:text-white border border-transparent">
+             <div class="flex items-center gap-2.5 text-sm"><i data-lucide="archive" class="w-4 h-4"></i> Решено (Архив)</div>
+             <span id="count_resolved" class="text-[10px] bg-gray-800 px-2 py-0.5 rounded-md">0</span>
+           </button>
+        </div>
+
+        <!-- Tickets List -->
+        <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 shadow-2xl backdrop-blur-md lg:col-span-3 min-h-[500px] flex flex-col">
+           <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-black text-white flex items-center gap-2" id="supportViewTitle"><i data-lucide="inbox" class="w-5 h-5 text-indigo-400"></i> Входящие обращения</h3>
+              <button onclick="loadSupportTickets()" class="p-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg transition-colors border border-gray-700" title="Обновить"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+           </div>
+           
+           <div class="flex-1 overflow-y-auto pr-2 space-y-3 hide-scroll" id="supportTicketsList">
+              <!-- JS Injects -->
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW: QUESTS MODERATION -->
+    <div id="viewQuests" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+         <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-black text-white flex items-center gap-3"><i data-lucide="swords" class="w-8 h-8 text-emerald-500"></i> Заявки на награды</h3>
+            <button onclick="loadQuestSubmissions()" class="p-3 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-colors border border-gray-700 shadow-sm" title="Обновить"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+         </div>
+
+         <!-- Статистика модерации -->
+         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Ожидают проверки</div>
+                <div class="text-2xl font-black text-white" id="statPendingQuests">0</div>
+              </div>
+              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="clock" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Одобрено (Награждены)</div>
+                <div class="text-2xl font-black text-emerald-400" id="statApprovedQuests">0</div>
+              </div>
+              <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Отклонено (Спам/Брак)</div>
+                <div class="text-2xl font-black text-rose-400" id="statRejectedQuests">0</div>
+              </div>
+              <div class="p-3 bg-rose-500/10 text-rose-500 rounded-xl"><i data-lucide="x-circle" class="w-6 h-6"></i></div>
+            </div>
+         </div>
+
+         <!-- Список заявок -->
+         <div class="grid grid-cols-1 gap-4" id="questsList">
+            <!-- JS INJECT -->
+         </div>
+      </div>
+    </div>
+
+    <!-- VIEW: CPA NETWORK -->
+    <div id="viewCPA" class="hidden animate-fade-in-up relative z-10">
+      <div class="bg-gray-900/60 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md">
+         <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-black text-white flex items-center gap-3"><i data-lucide="network" class="w-8 h-8 text-indigo-500"></i> Партнерская сеть (CPA)</h3>
+            <button onclick="loadCpaNetwork()" class="p-3 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-xl transition-colors border border-gray-700 shadow-sm" title="Обновить"><i data-lucide="refresh-cw" class="w-5 h-5"></i></button>
+         </div>
+
+         <!-- Статистика CPA -->
+         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Партнеров (Активных)</div>
+                <div class="text-2xl font-black text-white" id="statCpaPartners">0</div>
+              </div>
+              <div class="p-3 bg-indigo-500/10 text-indigo-500 rounded-xl"><i data-lucide="users" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Суммарный оборот ($)</div>
+                <div class="text-2xl font-black text-emerald-400" id="statCpaRevenue">$0.00</div>
+              </div>
+              <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Всего хостов (Клики)</div>
+                <div class="text-2xl font-black text-blue-400" id="statCpaClicks">0</div>
+              </div>
+              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="mouse-pointer-click" class="w-6 h-6"></i></div>
+            </div>
+            <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Запросы на вывод</div>
+                <div class="text-2xl font-black text-rose-400" id="statCpaWithdrawals">0</div>
+              </div>
+              <div class="p-3 bg-rose-500/10 text-rose-500 rounded-xl"><i data-lucide="arrow-up-circle" class="w-6 h-6"></i></div>
+            </div>
+         </div>
+
+         <!-- Таблица партнеров -->
+         <div class="overflow-x-auto hide-scroll bg-gray-800/30 rounded-2xl border border-gray-700/50">
+             <table class="w-full text-left border-collapse">
+               <thead class="bg-gray-800/50 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-700">
+                 <tr>
+                   <th class="px-6 py-4 rounded-tl-2xl">Партнер</th>
+                   <th class="px-6 py-4 text-center">Ранг & RevShare</th>
+                   <th class="px-6 py-4 text-center">Хосты / Рег / Sales</th>
+                   <th class="px-6 py-4 text-center">Баланс ($)</th>
+                   <th class="px-6 py-4 text-right rounded-tr-2xl">Действия</th>
+                 </tr>
+               </thead>
+               <tbody id="cpaPartnersTbody" class="divide-y divide-gray-700/50">
+                  <!-- JS Injects -->
+               </tbody>
+             </table>
+         </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Ticket Details Modal -->
+<div id="ticketModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-2xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative flex flex-col max-h-[90vh]" id="ticketModalContent">
+    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+    <div class="flex justify-between items-start mb-6 flex-shrink-0">
+      <div class="flex items-center gap-4">
+         <img id="tmAvatar" src="" class="w-12 h-12 rounded-full border border-gray-700 object-cover shadow-sm" />
+         <div>
+            <h3 class="text-lg font-black text-white" id="tmName">Имя</h3>
+            <div class="text-[10px] text-gray-500 font-mono mt-0.5"><span id="tmEmail"></span> • UID: <span id="tmUid"></span></div>
+            <div class="text-[10px] font-bold mt-1.5" id="tmBadge"></div>
+         </div>
+      </div>
+      <button onclick="closeTicketModal()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto pr-2 mb-6 hide-scroll">
+       <div class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 flex justify-between"><span>Сообщение</span><span id="tmDate"></span></div>
+       <div class="bg-gray-800/50 border border-gray-700 p-6 rounded-2xl text-sm text-gray-200 leading-relaxed whitespace-pre-wrap font-medium" id="tmMessage">
+          <!-- Text -->
+       </div>
+    </div>
+
+    <div class="pt-6 border-t border-gray-800 flex items-center justify-between flex-shrink-0 gap-4">
+       <button id="tmMailBtn" class="px-5 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-bold transition-colors border border-gray-700 flex items-center gap-2 active:scale-95">
+         <i data-lucide="mail" class="w-4 h-4"></i> Ответить на Email
+       </button>
+       
+       <button id="tmStatusBtn" class="px-6 py-3 text-white rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all flex items-center gap-2">
+         <!-- Injected by JS -->
+       </button>
+    </div>
+  </div>
+</div>
+
+<!-- User Profile & Edit Modal -->
+<div id="userProfileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-4xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative overflow-hidden flex flex-col max-h-[90vh]" id="userProfileModalContent">
+    <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+    <div class="flex justify-between items-start mb-6 flex-shrink-0">
+      <div class="flex items-center gap-4">
+         <div class="relative">
+            <img id="upAvatar" src="" class="w-16 h-16 rounded-full border-2 border-gray-700 object-cover shadow-lg" />
+            <div id="upBanBadge" class="hidden absolute -bottom-1 -right-1 bg-red-600 p-1 rounded-full border-2 border-gray-900" title="Аккаунт заблокирован"><i data-lucide="shield-off" class="w-3.5 h-3.5 text-white"></i></div>
+         </div>
+         <div>
+            <h3 class="text-2xl font-black text-white flex items-center gap-2">
+                <span id="upName">Имя</span>
+                <span id="upAdminBadge" class="hidden"><i data-lucide="shield-check" class="w-5 h-5 text-indigo-500"></i></span>
+            </h3>
+            <div class="text-xs text-gray-400 font-mono mt-1" id="upEmail">email@example.com</div>
+            <div class="text-[10px] text-gray-600 font-mono mt-1 leading-tight">UID: <span id="upUid"></span><br>Рег: <span id="upCreated" class="text-gray-400"></span> • Онлайн: <span id="upLastLogin" class="text-gray-400"></span></div>
+         </div>
+      </div>
+      <button onclick="closeUserProfile()" class="text-gray-500 hover:text-white transition-colors bg-gray-800 p-2 rounded-xl border border-transparent hover:border-gray-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div class="flex-1 overflow-y-auto pr-2 space-y-6 hide-scroll">
+      <!-- Readonly Stats -->
+      <div class="grid grid-cols-3 gap-4">
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="layout-dashboard" class="w-5 h-5 text-purple-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upBoardsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Досок</div>
+         </div>
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="coins" class="w-5 h-5 text-emerald-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upCoinsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Текущий баланс</div>
+         </div>
+         <div class="bg-gray-800/50 border border-gray-700 p-4 rounded-2xl flex flex-col items-center justify-center text-center">
+            <i data-lucide="users" class="w-5 h-5 text-amber-400 mb-2"></i>
+            <div class="text-xl font-black text-white" id="upRefsCount">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Приглашено</div>
+         </div>
+      </div>
+
+      <!-- Management Form -->
+      <div class="bg-gray-800/30 border border-gray-700/50 p-5 rounded-3xl">
+        <h4 class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2"><i data-lucide="sliders" class="w-4 h-4"></i> Управление доступом и тарифами</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div>
+             <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 block">Тарифный план</label>
+             <select id="editPlan" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 appearance-none font-bold transition-colors shadow-inner">
+               <option value="free">Free (Базовый)</option>
+               <option value="freelancer">Freelancer</option>
+               <option value="pro">Company (Pro)</option>
+               <option value="infinity">Infinity (God Mode)</option>
+             </select>
+          </div>
+          <div>
+             <label class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1 flex items-center justify-between">
+               Истекает <span id="planDaysLeft" class="text-[9px] font-bold"></span>
+             </label>
+             <input type="date" id="editPlanExpires" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-blue-500 font-bold transition-colors shadow-inner cursor-pointer" />
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 block">Статус бейджа (Достижение)</label>
+            <select id="editBadge" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-amber-500 appearance-none font-bold transition-colors shadow-inner">
+               <option value="none">Нет бейджа</option>
+               <option value="friend">Blocko Friend</option>
+               <option value="partner">Blocko Partner</option>
+               <option value="ambassador">Ambassador</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 block">Баланс B-Coins</label>
+            <input type="number" id="editCoins" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-emerald-500 font-bold transition-colors shadow-inner" />
+          </div>
+          <div>
+             <label class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1 block">Бонусный AI Лимит (Запросов)</label>
+             <input type="number" id="editAiLimit" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-indigo-500 font-bold transition-colors shadow-inner" />
+          </div>
+          <div>
+             <label class="text-[10px] font-black text-purple-500 uppercase tracking-widest mb-1 block">Рефералы (Ручная накрутка)</label>
+             <input type="number" id="editRefs" class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl outline-none text-white focus:border-purple-500 font-bold transition-colors shadow-inner" />
+          </div>
+          
+          <!-- BAN MODULE -->
+          <div class="border border-red-500/20 bg-red-500/5 p-2 rounded-xl flex items-center justify-between gap-2 md:col-span-2 mt-2">
+             <div class="flex-1">
+                <label class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1 block">Блокировка аккаунта (Ban)</label>
+                <select id="banDurationSelect" class="w-full px-3 py-2 bg-gray-900 border border-red-500/30 rounded-lg outline-none text-white text-xs font-bold focus:border-red-500 appearance-none transition-colors cursor-pointer">
+                   <option value="1">На 1 день</option>
+                   <option value="7">На неделю</option>
+                   <option value="30">На месяц</option>
+                   <option value="999">Навсегда</option>
+                </select>
+             </div>
+             <div class="flex items-center gap-2 mt-4">
+                <button onclick="adminBanUser()" class="px-5 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-bold transition-colors active:scale-95 shadow-md flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5"></i> Забанить</button>
+                <button onclick="adminUnbanUser()" class="px-5 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 rounded-lg text-xs font-bold transition-colors active:scale-95">Снять бан</button>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Details Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Team Details -->
+          <div>
+             <h4 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4"></i> Команда проектов</h4>
+             <div id="upTeamList" class="space-y-2 bg-gray-900 border border-gray-800 rounded-2xl p-2 max-h-48 overflow-y-auto hide-scroll shadow-inner">
+                <!-- Injected by JS -->
+             </div>
+          </div>
+
+          <!-- Referrals Network -->
+          <div>
+             <h4 class="text-xs font-black text-purple-400 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="network" class="w-4 h-4"></i> Реферальная сеть</h4>
+             <div id="upRefsList" class="space-y-2 bg-purple-900/10 border border-purple-500/20 rounded-2xl p-2 max-h-48 overflow-y-auto hide-scroll shadow-inner">
+                <!-- Injected by JS -->
+             </div>
+          </div>
+      </div>
+
+    <div class="mt-6 pt-6 border-t border-gray-800 flex gap-3 flex-shrink-0">
+      <button onclick="closeUserProfile()" class="flex-1 py-3.5 text-sm font-bold text-gray-400 bg-gray-800 hover:bg-gray-700 rounded-xl transition-colors border border-gray-700">Закрыть</button>
+      <button onclick="saveUserChanges()" class="flex-[2] py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">Применить изменения</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="adminToast" class="fixed bottom-6 right-6 z-[600] transform translate-y-24 opacity-0 transition-all duration-300 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-2 pointer-events-none border border-emerald-400/50">
+  <i data-lucide="check-circle-2" class="w-5 h-5"></i> <span id="toastText">Готово</span>
+</div>
+
+<script>
+  lucide.createIcons();
+  let allUsers = [];
+  let allBoards = [];
+  let boardsMap = {};
+  let currentEditUid = null;
+  
+  // Enterprise Sorting State
+  let currentSortKey = 'coins';
+  let currentSortDir = 'desc';
+
+  function handleSort(key) {
+      if (currentSortKey === key) {
+          currentSortDir = currentSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+          currentSortKey = key;
+          currentSortDir = 'desc';
+      }
+      renderTable();
+  }
+
+  // AUTH SECURITY GUARD
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) return window.location.href = 'index.html';
+    
+    try {
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        const data = userDoc.exists ? userDoc.data() : {};
+        
+        if (!data.isAdmin) {
+            // ЭНТЕРПРАЙЗ: Бэкдор для инициализации владельца (Zero-Trust Bootstrap)
+            const secret = prompt("BLOCKO PRO SECURITY:\nВведите ключ шифрования для доступа к Command Center:");
+            if (secret === "blocko_god_mode_2026") {
+                await db.collection('users').doc(user.uid).set({ isAdmin: true }, { merge: true });
+                showToast("Уровень доступа: GOD MODE. Обновление протоколов...");
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                window.location.href = 'index.html';
+            }
+            return;
+        }
+
+    // ЭНТЕРПРАЙЗ: Железный занавес безопасности (Real-time RBAC Barrier)
+    const ownerEmail = 'uajerryua@gmail.com';
+    let hasAccess = user.email === ownerEmail;
+
+    if (!hasAccess && user.email) {
+        try {
+            const sysDoc = await db.collection('system').doc('admins').get();
+            if (sysDoc.exists && sysDoc.data().emails) {
+                if (sysDoc.data().emails.includes(user.email)) hasAccess = true;
+            }
+        } catch(e) {
+            console.error("Auth verify error", e);
+        }
+    }
+
+    if (!hasAccess) {
+        // ЭНТЕРПРАЙЗ: Скрытая система сигнализации (Логирование попыток проникновения)
+        try {
+            db.collection('system_logs').add({
+                type: 'security_alert',
+                message: 'Несанкционированная попытка входа в Command Center',
+                user: user.email || user.uid,
+                createdAt: new Date().toISOString()
+            });
+        } catch(e) {
+            console.error("Alert log failed");
+        }
+
+        // Мгновенный кик из панели с эффектом стирания интерфейса
+        document.body.innerHTML = '<div style="display:flex; height:100vh; align-items:center; justify-content:center; background:#0b0f19; color:#ef4444; font-family:sans-serif; font-size:24px; font-weight:bold;">ДОСТУП ЗАПРЕЩЕН / ACCESS DENIED</div>';
+        setTimeout(() => window.location.href = 'index.html', 1500);
+        return;
+    }
+      
+    // Авторизация пройдена - грузим тяжелую дату
+    loadEnterpriseData();
+    } catch(e) {
+        console.error(e);
+        window.location.href = 'index.html';
+    }
+  });
+
+  async function loadEnterpriseData() {
+    try {
+      // 1. Агрегация досок (Map Reduce)
+      const boardsSnap = await db.collection('boards').get();
+      boardsMap = {};
+      allBoards = [];
+      let totalBoards = 0;
+      boardsSnap.forEach(doc => {
+         const data = doc.data();
+         allBoards.push({ id: doc.id, ...data });
+         const owner = data.owner;
+         if(owner) {
+             boardsMap[owner] = (boardsMap[owner] || 0) + 1;
+         }
+         totalBoards++;
+      });
+      document.getElementById('statBoards').innerText = totalBoards;
+
+      // 2. Агрегация пользователей
+      const usersSnap = await db.collection('users').get();
+      allUsers = [];
+      let totalPro = 0;
+      let totalCoins = 0;
+
+      usersSnap.forEach(doc => {
+        const u = { uid: doc.id, ...doc.data() };
+        allUsers.push(u);
+        if (u.plan === 'pro' || u.plan === 'freelancer' || u.plan === 'infinity') totalPro++;
+        if (u.coins) totalCoins += parseInt(u.coins);
+      });
+
+      // Анимация счетчиков
+      animateValue('statUsers', 0, allUsers.length, 1000);
+      animateValue('statPro', 0, totalPro, 1000);
+      animateValue('statCoins', 0, totalCoins, 1000);
+
+      renderTable();
+      loadPromos(); // ЭНТЕРПРАЙЗ: Загрузка модуля промо-кампаний
+      loadSupportTickets(); // ЭНТЕРПРАЙЗ: Загрузка Helpdesk
+      loadQuestSubmissions(); // ЭНТЕРПРАЙЗ: Загрузка модерации квестов
+      loadCpaNetwork(); // ЭНТЕРПРАЙЗ: Загрузка партнерской CPA-сети
+
+      // Убираем лоадер
+      const loader = document.getElementById('loader');
+      loader.classList.add('opacity-0');
+      setTimeout(() => loader.remove(), 500);
+
+    } catch (error) {
+      console.error("Data load error", error);
+      alert("Критическая ошибка загрузки БД");
+    }
+  }
+
+  function animateValue(id, start, end, duration) {
+      if (start === end) { document.getElementById(id).innerText = end; return; }
+      let range = end - start;
+      let current = start;
+      let increment = end > start ? Math.ceil(range / (duration/16)) : -1;
+      let stepTime = Math.abs(Math.floor(duration / range));
+      let obj = document.getElementById(id);
+      let timer = setInterval(function() {
+          current += increment;
+          if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+              current = end;
+              clearInterval(timer);
+          }
+          obj.innerText = current;
+      }, stepTime);
+  }
+
+  function renderTable() {
+     const tbody = document.getElementById('usersTbody');
+     const query = document.getElementById('adminSearch').value.toLowerCase();
+     
+     const filtered = allUsers.filter(u => {
+         const searchStr = (u.name + ' ' + u.email + ' ' + u.uid).toLowerCase();
+         return searchStr.includes(query);
+     });
+
+     // ЭНТЕРПРАЙЗ: Продвинутый движок сортировки с O(1) весами (SEO-Оптимизация)
+     const planWeights = { 'infinity': 4, 'pro': 3, 'freelancer': 2, 'free': 1, '': 0, undefined: 0 };
+     
+     filtered.sort((a,b) => {
+         let valA, valB;
+         if (currentSortKey === 'coins') {
+             valA = parseInt(a.coins || 0);
+             valB = parseInt(b.coins || 0);
+         } else if (currentSortKey === 'boards') {
+             valA = boardsMap[a.uid] || 0;
+             valB = boardsMap[b.uid] || 0;
+         } else if (currentSortKey === 'referrals') {
+             // Динамический расчет реальных рефералов (Data Integrity)
+             valA = allUsers.filter(u => u.referredBy === a.uid).length;
+             valB = allUsers.filter(u => u.referredBy === b.uid).length;
+         } else if (currentSortKey === 'plan') {
+             valA = planWeights[a.plan] || 0;
+             valB = planWeights[b.plan] || 0;
+         }
+         
+         if (valA < valB) return currentSortDir === 'asc' ? -1 : 1;
+         if (valA > valB) return currentSortDir === 'asc' ? 1 : -1;
+         return 0;
+     });
+
+     // Обновляем визуальные индикаторы (Chevrons)
+     ['plan', 'coins', 'boards', 'referrals'].forEach(key => {
+         const iconEl = document.getElementById('sortIcon_' + key);
+         if (iconEl) {
+             if (key === currentSortKey) {
+                 iconEl.setAttribute('data-lucide', currentSortDir === 'desc' ? 'arrow-down' : 'arrow-up');
+                 iconEl.classList.add('text-indigo-400');
+                 iconEl.classList.remove('text-gray-600', 'group-hover:text-indigo-400');
+             } else {
+                 iconEl.setAttribute('data-lucide', 'arrow-down-up');
+                 iconEl.classList.add('text-gray-600', 'group-hover:text-indigo-400');
+                 iconEl.classList.remove('text-indigo-400');
+             }
+         }
+     });
+
+     tbody.innerHTML = filtered.map(u => {
+        const boardsCount = boardsMap[u.uid] || 0;
+        // Подтягиваем 100% точное значение реальных приглашенных
+        const realRefsCount = allUsers.filter(ru => ru.referredBy === u.uid).length;
+        const safeName = u.name || 'Аноним';
+        const safeAvatar = u.customAvatar || u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+        
+        let planColor = 'bg-gray-800 text-gray-400 border border-gray-700';
+        if (u.plan === 'freelancer') planColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
+        if (u.plan === 'pro') planColor = 'bg-purple-500/10 text-purple-400 border border-purple-500/30 shadow-[0_0_10px_rgba(168,85,247,0.1)]';
+        if (u.plan === 'infinity') planColor = 'bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 shadow-lg border border-orange-500/40';
+
+        return `
+          <tr onclick="openUserProfile('${u.uid}')" class="hover:bg-gray-800/60 transition-colors group cursor-pointer">
+            <td class="px-6 py-4">
+              <div class="flex items-center gap-3">
+                <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
+                <div>
+                  <div class="text-sm font-bold text-white flex items-center gap-1.5">
+                    ${safeName} 
+                    ${u.isAdmin ? '<i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-500" title="Администратор"></i>' : ''}
+                    ${u.badgeStatus && u.badgeStatus !== 'none' ? `<i data-lucide="award" class="w-3.5 h-3.5 text-amber-500" title="${u.badgeStatus}"></i>` : ''}
+                  </div>
+                  <div class="text-[10px] text-gray-500 font-mono mt-0.5">${u.email || u.uid}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${planColor}">${u.plan || 'Free'}</span>
+            </td>
+            <td class="px-6 py-4 text-center">
+              <div class="inline-flex items-center gap-1.5 text-emerald-400 font-black bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
+                 <i data-lucide="coins" class="w-3.5 h-3.5"></i> ${u.coins || 0}
+              </div>
+            </td>
+            <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${boardsCount}</td>
+            <td class="px-6 py-4 text-center text-sm font-bold text-gray-400">${realRefsCount}</td>
+            <td class="px-6 py-4 text-right">
+              <div class="p-2 bg-gray-800/50 text-gray-400 group-hover:text-white group-hover:bg-indigo-600 rounded-xl transition-all shadow-sm border border-transparent group-hover:border-indigo-500 inline-block">
+                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+              </div>
+            </td>
+          </tr>
+        `;
+     }).join('');
+     lucide.createIcons();
+  }
+
+  // Вспомогательная функция для парсинга любых Firebase-дат
+  function formatFirebaseDate(ts) {
+      if (!ts) return 'Нет данных';
+      try {
+          const date = ts.toDate ? ts.toDate() : new Date(ts);
+          if (isNaN(date.getTime())) return 'Нет данных';
+          return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
+      } catch(e) {
+          return 'Нет данных';
+      }
+  }
+
+  function openUserProfile(uid) {
+     const user = allUsers.find(u => u.uid === uid);
+     if(!user) return;
+     currentEditUid = uid;
+     
+     // 1. Fill Header
+     const safeName = user.name || 'Аноним';
+     const safeAvatar = user.customAvatar || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     document.getElementById('upAvatar').src = safeAvatar;
+     document.getElementById('upName').innerText = safeName;
+     document.getElementById('upEmail').innerText = user.email || 'Email скрыт';
+     document.getElementById('upUid').innerText = uid;
+     
+     // ИСПРАВЛЕНИЕ: Интеллектуальный парсинг дат + Последний онлайн
+     document.getElementById('upCreated').innerText = formatFirebaseDate(user.createdAt);
+     document.getElementById('upLastLogin').innerText = formatFirebaseDate(user.lastLogin || user.updatedAt);
+     
+     if (user.isAdmin) document.getElementById('upAdminBadge').classList.remove('hidden');
+     else document.getElementById('upAdminBadge').classList.add('hidden');
+
+     if (user.isBanned) document.getElementById('upBanBadge').classList.remove('hidden');
+     else document.getElementById('upBanBadge').classList.add('hidden');
+
+     // 5. Extract Referrals (Реферальная сеть) - ДЕЛАЕМ ЭТО РАНЬШЕ ДЛЯ СТАТИСТИКИ
+     const referrals = allUsers.filter(u => u.referredBy === uid);
+     
+     // 2. Fill Readonly Stats
+     document.getElementById('upBoardsCount').innerText = boardsMap[uid] || 0;
+     document.getElementById('upCoinsCount').innerText = user.coins || 0;
+     document.getElementById('upRefsCount').innerText = referrals.length; // ЭНТЕРПРАЙЗ: Точный реальный подсчет
+
+     // 3. Fill Forms
+     document.getElementById('editPlan').value = user.plan || 'free';
+     
+     // ЭНТЕРПРАЙЗ: Расчет дней до конца подписки
+     const expiresInput = document.getElementById('editPlanExpires');
+     const daysLeftEl = document.getElementById('planDaysLeft');
+     if (user.planExpiresAt) {
+        const expDate = new Date(user.planExpiresAt);
+        expiresInput.value = expDate.toISOString().split('T')[0];
+        
+        const diffDays = Math.ceil((expDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0) {
+            daysLeftEl.innerText = `(Осталось: ${diffDays} дн.)`;
+            daysLeftEl.className = 'text-[9px] text-blue-400 font-bold';
+        } else {
+            daysLeftEl.innerText = '(Истек)';
+            daysLeftEl.className = 'text-[9px] text-red-500 font-bold';
+        }
+     } else {
+        expiresInput.value = '';
+        daysLeftEl.innerText = '(Безлимит)';
+        daysLeftEl.className = 'text-[9px] text-gray-500 font-bold';
+     }
+
+     document.getElementById('editCoins').value = user.coins || 0;
+     document.getElementById('editBadge').value = user.badgeStatus || 'none';
+     document.getElementById('editAiLimit').value = user.bonusAiLimit || 0;
+     
+     const editRefsInput = document.getElementById('editRefs');
+     if(editRefsInput) editRefsInput.value = user.referralCount || 0;
+
+     // 4. Extract Team (Участники проектов)
+     const userBoards = allBoards.filter(b => b.owner === uid);
+     const teamUids = new Set();
+     userBoards.forEach(b => {
+         if(b.members && Array.isArray(b.members)) {
+             b.members.forEach(m => teamUids.add(m));
+         }
+     });
+     teamUids.delete(uid); // remove self
+
+     const teamListEl = document.getElementById('upTeamList');
+     if(teamUids.size === 0) {
+         teamListEl.innerHTML = '<div class="text-center text-xs text-gray-500 py-4 font-medium italic">В проектах нет приглашенных участников</div>';
+     } else {
+         const teamHtml = Array.from(teamUids).map(tUid => {
+             const tUser = allUsers.find(u => u.uid === tUid);
+             if(!tUser) return '';
+             const tName = tUser.name || 'Аноним';
+             const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
+             let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
+             let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
+             
+             return `
+               <div onclick="openUserProfile('${tUid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer group">
+                  <div class="flex items-center gap-3">
+                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700" />
+                     <div>
+                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-indigo-400 transition-colors">${tName}</div>
+                        <div class="text-[9px] text-gray-500 font-mono leading-none">${tUid}</div>
+                     </div>
+                  </div>
+                  <div class="px-2 py-0.5 rounded border text-[9px] font-black tracking-widest ${planColor}">${planLabel}</div>
+               </div>
+             `;
+         }).join('');
+         teamListEl.innerHTML = teamHtml;
+     }
+
+     const refsListEl = document.getElementById('upRefsList');
+     if(referrals.length === 0) {
+         refsListEl.innerHTML = '<div class="text-center text-xs text-purple-400/50 py-4 font-medium italic">Пользователь никого не пригласил</div>';
+     } else {
+         // ЭНТЕРПРАЙЗ: Расширенная статистика по тарифам рефералов (SEO Analytics Engine)
+         let freeCount = 0, flCount = 0, proCount = 0;
+         referrals.forEach(r => {
+            if (r.plan === 'pro' || r.plan === 'infinity') proCount++;
+            else if (r.plan === 'freelancer') flCount++;
+            else freeCount++;
+         });
+         
+         const statsHtml = `
+            <div class="flex items-center justify-between px-3 py-2 bg-purple-900/20 rounded-xl mb-3 border border-purple-500/20 shadow-inner">
+               <div class="flex flex-col items-center">
+                 <span class="text-[8px] font-black text-gray-400 uppercase tracking-widest">Free</span>
+                 <span class="text-xs font-bold text-gray-300">${freeCount}</span>
+               </div>
+               <div class="flex flex-col items-center border-l border-r border-purple-500/20 px-4 mx-2">
+                 <span class="text-[8px] font-black text-blue-400 uppercase tracking-widest">FL</span>
+                 <span class="text-xs font-bold text-blue-300">${flCount}</span>
+               </div>
+               <div class="flex flex-col items-center">
+                 <span class="text-[8px] font-black text-purple-400 uppercase tracking-widest">PRO</span>
+                 <span class="text-xs font-bold text-purple-300">${proCount}</span>
+               </div>
+            </div>
+         `;
+
+         const listHtml = referrals.map(tUser => {
+             const tName = tUser.name || 'Аноним';
+             const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
+             let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
+             let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
+             
+             return `
+               <div onclick="openUserProfile('${tUser.uid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-500/20 transition-colors cursor-pointer group">
+                  <div class="flex items-center gap-3">
+                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700 shadow-sm" />
+                     <div>
+                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-purple-300 transition-colors">${tName}</div>
+                        <div class="text-[9px] text-gray-500 font-mono leading-none">${tUser.uid}</div>
+                     </div>
+                  </div>
+                  <div class="px-2 py-0.5 rounded border text-[9px] font-black tracking-widest ${planColor}">${planLabel}</div>
+               </div>
+             `;
+         }).join('');
+         
+         refsListEl.innerHTML = statsHtml + listHtml;
+     }
+
+     const modal = document.getElementById('userProfileModal');
+     const content = document.getElementById('userProfileModalContent');
+     modal.classList.remove('hidden');
+     setTimeout(() => {
+       modal.classList.remove('opacity-0');
+       content.classList.remove('scale-95');
+     }, 10);
+  }
+
+  function closeUserProfile() {
+     const modal = document.getElementById('userProfileModal');
+     const content = document.getElementById('userProfileModalContent');
+     modal.classList.add('opacity-0');
+     content.classList.add('scale-95');
+     setTimeout(() => { modal.classList.add('hidden'); currentEditUid = null; }, 300);
+  }
+
+  async function adminBanUser() {
+      if(!currentEditUid) return;
+      const duration = parseInt(document.getElementById('banDurationSelect').value);
+      const timeLabels = {1: "1 день", 7: "неделю", 30: "месяц", 999: "навсегда"};
+      
+      if(confirm(`ВНИМАНИЕ! Блокировка аккаунта.\nВы уверены, что хотите забанить пользователя на ${timeLabels[duration]}?`)) {
+          let banUntil = "forever";
+          if (duration !== 999) {
+              banUntil = new Date(Date.now() + duration * 24 * 60 * 60 * 1000).toISOString();
+          }
+          
+          try {
+              await db.collection('users').doc(currentEditUid).update({ isBanned: true, banUntil: banUntil });
+              
+              const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+              if(uIdx > -1) {
+                  allUsers[uIdx].isBanned = true;
+                  allUsers[uIdx].banUntil = banUntil;
+              }
+              document.getElementById('upBanBadge').classList.remove('hidden');
+              showToast("Пользователь заблокирован!");
+          } catch(e) {
+              alert("Ошибка: " + e.message);
+          }
+      }
+  }
+
+  async function adminUnbanUser() {
+      if(!currentEditUid) return;
+      if(confirm("Снять блокировку с этого аккаунта?")) {
+          try {
+              await db.collection('users').doc(currentEditUid).update({ isBanned: false, banUntil: firebase.firestore.FieldValue.delete() });
+              
+              const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+              if(uIdx > -1) {
+                  allUsers[uIdx].isBanned = false;
+                  allUsers[uIdx].banUntil = null;
+              }
+              document.getElementById('upBanBadge').classList.add('hidden');
+              showToast("Блокировка снята!");
+          } catch(e) {
+              alert("Ошибка: " + e.message);
+          }
+      }
+  }
+
+  async function saveUserChanges() {
+      if(!currentEditUid) return;
+      const plan = document.getElementById('editPlan').value;
+      
+      // ЭНТЕРПРАЙЗ: Обработка истечения тарифа
+      let expiresAtVal = document.getElementById('editPlanExpires').value;
+      let planExpiresAt = firebase.firestore.FieldValue.delete();
+      let newLocalExpiresAt = null;
+      
+      if (expiresAtVal) {
+         const dateObj = new Date(expiresAtVal);
+         // Даем пользователю полные сутки, устанавливая конец дня
+         dateObj.setHours(23, 59, 59, 999);
+         planExpiresAt = dateObj.getTime();
+         newLocalExpiresAt = planExpiresAt;
+      }
+      
+      const coins = parseInt(document.getElementById('editCoins').value) || 0;
+      const badge = document.getElementById('editBadge').value;
+      const bonusAi = parseInt(document.getElementById('editAiLimit').value) || 0;
+      
+      const editRefsInput = document.getElementById('editRefs');
+      const refs = editRefsInput ? parseInt(editRefsInput.value) || 0 : 0;
+
+      try {
+          // Сохранение в Firebase
+          await db.collection('users').doc(currentEditUid).update({
+              plan: plan,
+              planExpiresAt: planExpiresAt,
+              coins: coins,
+              referralCount: refs,
+              badgeStatus: badge,
+              bonusAiLimit: bonusAi,
+              updatedByAdmin: new Date().toISOString()
+          });
+
+          // Обновляем локальный стейт массива для перерисовки без рефетча
+          const uIdx = allUsers.findIndex(u => u.uid === currentEditUid);
+          if(uIdx > -1) {
+              allUsers[uIdx].plan = plan;
+              if (newLocalExpiresAt !== null) {
+                  allUsers[uIdx].planExpiresAt = newLocalExpiresAt;
+              } else {
+                  delete allUsers[uIdx].planExpiresAt;
+              }
+              allUsers[uIdx].coins = coins;
+              allUsers[uIdx].referralCount = refs;
+              allUsers[uIdx].badgeStatus = badge;
+              allUsers[uIdx].bonusAiLimit = bonusAi;
+          }
+
+          renderTable();
+          closeUserProfile();
+          showToast('Профиль успешно обновлен!');
+      } catch(e) {
+          console.error(e);
+          alert("Ошибка при сохранении: " + e.message);
+      }
+  }
+
+  // --- TAB ROUTER ---
+  function switchTab(tabId) {
+     ['viewDatabase', 'viewPromo', 'viewQuests', 'viewSupport', 'viewLogs', 'viewCPA'].forEach(id => {
+         document.getElementById(id).classList.add('hidden');
+     });
+     
+     const baseClass = "flex items-center gap-3 p-3 lg:px-4 text-gray-500 hover:text-white hover:bg-gray-800 rounded-xl font-bold transition-all w-full justify-center lg:justify-start";
+     document.getElementById('navDatabase').className = baseClass;
+     document.getElementById('navPromo').className = baseClass;
+     document.getElementById('navQuests').className = baseClass;
+     document.getElementById('navSupport').className = baseClass;
+     document.getElementById('navLogs').className = baseClass;
+     document.getElementById('navCPA').className = baseClass;
+
+     document.getElementById(tabId).classList.remove('hidden');
+     
+     if (tabId === 'viewDatabase') {
+         document.getElementById('navDatabase').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewPromo') {
+         document.getElementById('navPromo').className = "flex items-center gap-3 p-3 lg:px-4 bg-amber-500/10 text-amber-400 rounded-xl font-bold border border-amber-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewQuests') {
+         document.getElementById('navQuests').className = "flex items-center gap-3 p-3 lg:px-4 bg-emerald-500/10 text-emerald-400 rounded-xl font-bold border border-emerald-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewSupport') {
+         document.getElementById('navSupport').className = "flex items-center gap-3 p-3 lg:px-4 bg-rose-500/10 text-rose-400 rounded-xl font-bold border border-rose-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewLogs') {
+         document.getElementById('navLogs').className = "flex items-center gap-3 p-3 lg:px-4 bg-blue-500/10 text-blue-400 rounded-xl font-bold border border-blue-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     } else if (tabId === 'viewCPA') {
+         document.getElementById('navCPA').className = "flex items-center gap-3 p-3 lg:px-4 bg-indigo-500/10 text-indigo-400 rounded-xl font-bold border border-indigo-500/20 transition-all w-full justify-center lg:justify-start shadow-inner";
+     }
+  }
+
+  // --- PROMO CODE ENGINE ---
+  let allPromos = [];
+
+  async function loadPromos() {
+     try {
+         const snap = await db.collection('promocodes').get();
+         allPromos = [];
+         snap.forEach(doc => {
+             allPromos.push({ id: doc.id, ...doc.data() });
+         });
+         renderPromos();
+     } catch(e) { console.error("Promo load error:", e); }
+  }
+
+  function togglePromoFields() {
+      const type = document.getElementById('promoTypeInput').value;
+      document.getElementById('promoPlanFields').classList.toggle('hidden', type !== 'plan');
+      document.getElementById('promoDiscountFields').classList.toggle('hidden', type !== 'discount');
+      document.getElementById('promoCoinsFields').classList.toggle('hidden', type !== 'coins');
+  }
+
+  function getPromoLabelHtml(promo) {
+      if (promo.rewardType === 'plan') {
+          const planNames = { 'freelancer': 'FL', 'pro': 'PRO', 'infinity': 'GOD' };
+          const pName = planNames[promo.rewardPlan] || 'План';
+          const dur = promo.rewardPlanDuration == 999 ? 'Навсегда' : `${promo.rewardPlanDuration} мес.`;
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner whitespace-nowrap"><i data-lucide="zap" class="w-3 h-3"></i> ${pName} (${dur})</div>`;
+      } else if (promo.rewardType === 'discount') {
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner whitespace-nowrap"><i data-lucide="percent" class="w-3 h-3"></i> Скидка -${promo.rewardDiscount}%</div>`;
+      } else if (promo.rewardType === 'coins') {
+          return `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-inner whitespace-nowrap"><i data-lucide="coins" class="w-3 h-3"></i> ${promo.rewardCoins} B-Coins</div>`;
+      }
+      
+      // Обратная совместимость со старыми тестовыми кодами
+      const oldLabels = {
+         'plan_pro_2m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner"><i data-lucide="zap" class="w-3 h-3"></i> PRO (2 мес)</div>',
+         'plan_fl_1m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner"><i data-lucide="briefcase" class="w-3 h-3"></i> FL (1 мес)</div>'
+      };
+      return oldLabels[promo.type] || `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-500/10 text-gray-400 border border-gray-500/20 shadow-inner whitespace-nowrap"><i data-lucide="ticket" class="w-3 h-3"></i> ${promo.type || 'Бонус'}</div>`;
+  }
+
+  function renderPromos() {
+     const tbody = document.getElementById('promoTbody');
+     if (!tbody) return;
+     
+     if (allPromos.length === 0) {
+         tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-xs text-gray-600 font-bold uppercase tracking-widest border-b border-transparent">Нет запущенных кампаний</td></tr>';
+         return;
+     }
+
+     // Сортируем: новые сверху
+     allPromos.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+     tbody.innerHTML = allPromos.map(p => {
+         const maxStr = p.maxUses > 0 ? p.maxUses : '∞';
+         const usesStr = `${p.uses || 0} / <span class="text-gray-500">${maxStr}</span>`;
+         const isExpired = p.expiresAt && new Date(p.expiresAt).getTime() < Date.now();
+         const isExhausted = p.maxUses > 0 && (p.uses || 0) >= p.maxUses;
+         
+         let statusHtml = '<span class="px-2.5 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]">Активен</span>';
+         if (isExpired) statusHtml = '<span class="px-2.5 py-1 rounded border border-red-500/30 bg-red-500/10 text-red-400 text-[9px] font-black uppercase tracking-widest">Истек</span>';
+         else if (isExhausted) statusHtml = '<span class="px-2.5 py-1 rounded border border-gray-500/30 bg-gray-500/10 text-gray-400 text-[9px] font-black uppercase tracking-widest">Лимит</span>';
+
+         return `
+            <tr class="hover:bg-gray-800/40 transition-colors group">
+               <td class="px-4 py-4 font-mono font-bold text-white tracking-wider text-sm">${p.id}</td>
+               <td class="px-4 py-4 text-xs font-bold">${getPromoLabelHtml(p)}</td>
+               <td class="px-4 py-4 text-center text-xs text-white font-mono font-bold">${usesStr}</td>
+               <td class="px-4 py-4 text-center">${statusHtml}</td>
+               <td class="px-4 py-4 text-right">
+                 <button onclick="deletePromo('${p.id}')" class="p-2 text-gray-500 hover:text-red-500 bg-gray-800/50 hover:bg-red-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-red-500/30 inline-block" title="Отозвать промокод">
+                   <i data-lucide="trash-2" class="w-4 h-4"></i>
+                 </button>
+               </td>
+            </tr>
+         `;
+     }).join('');
+     lucide.createIcons();
+  }
+
+  function generateRandomPromo() {
+     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+     let result = 'BLOCKO-';
+     for (let i = 0; i < 6; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+     document.getElementById('promoCodeInput').value = result;
+  }
+
+  async function createPromo() {
+     const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+     const rewardType = document.getElementById('promoTypeInput').value; // plan, discount, coins
+     const maxUses = parseInt(document.getElementById('promoLimitInput').value) || 0;
+     const expiresAtStr = document.getElementById('promoExpireInput').value;
+     
+     if (!code) {
+         showToast('Введите или сгенерируйте код!');
+         return;
+     }
+
+     // ЭНТЕРПРАЙЗ: Формирование Payload на основе выбранного типа бонуса
+     let rewardData = { rewardType: rewardType };
+     
+     if (rewardType === 'plan') {
+         rewardData.rewardPlan = document.getElementById('promoPlanSelect').value;
+         rewardData.rewardPlanDuration = parseInt(document.getElementById('promoDurationSelect').value) || 1;
+     } else if (rewardType === 'discount') {
+         const dVal = parseInt(document.getElementById('promoDiscountValue').value) || 0;
+         if (dVal < 1 || dVal > 100) return showToast('Ошибка: Скидка должна быть от 1% до 100%!');
+         rewardData.rewardDiscount = dVal;
+     } else if (rewardType === 'coins') {
+         const cVal = parseInt(document.getElementById('promoCoinsValue').value) || 0;
+         if (cVal < 1) return showToast('Ошибка: Сумма B-Coins должна быть больше 0!');
+         rewardData.rewardCoins = cVal;
+     }
+     
+     let expiresAt = null;
+     if (expiresAtStr) {
+         const d = new Date(expiresAtStr);
+         d.setHours(23, 59, 59, 999);
+         expiresAt = d.toISOString();
+     }
+
+     const adminUid = auth.currentUser ? auth.currentUser.uid : 'admin_system';
+
+     const promoData = {
+         ...rewardData,
+         type: rewardType, // для обратной совместимости старого API
+         maxUses: maxUses,
+         uses: 0,
+         expiresAt: expiresAt,
+         createdAt: new Date().toISOString(),
+         createdBy: adminUid
+     };
+
+     try {
+         await db.collection('promocodes').doc(code).set(promoData);
+         showToast('Кампания успешно запущена!');
+         
+         document.getElementById('promoCodeInput').value = '';
+         document.getElementById('promoLimitInput').value = '';
+         document.getElementById('promoExpireInput').value = '';
+         if (document.getElementById('promoDiscountValue')) document.getElementById('promoDiscountValue').value = '';
+         if (document.getElementById('promoCoinsValue')) document.getElementById('promoCoinsValue').value = '';
+         
+         await loadPromos();
+     } catch(e) {
+         alert("Ошибка запуска: " + e.message);
+     }
+  }
+
+  async function deletePromo(code) {
+     if(confirm(`Отозвать промокод ${code} навсегда? Пользователи больше не смогут его применить.`)) {
+         try {
+             await db.collection('promocodes').doc(code).delete();
+             showToast('Промокод отозван.');
+             loadPromos();
+         } catch(e) { alert("Ошибка: " + e.message); }
+     }
+  }
+
+  // --- SUPPORT ENGINE ---
+  let allTickets = [];
+  let currentSupportFolder = 'all';
+
+  async function loadSupportTickets() {
+     try {
+         const snap = await db.collection('support_tickets').get();
+         allTickets = [];
+         let unreadCount = 0;
+         snap.forEach(doc => {
+             const t = { id: doc.id, ...doc.data() };
+             allTickets.push(t);
+             if (t.status === 'open') unreadCount++;
+         });
+         
+         // Update notification badge
+         const badge = document.getElementById('supportBadge');
+         if (unreadCount > 0) badge.classList.remove('hidden');
+         else badge.classList.add('hidden');
+
+         renderSupportTickets();
+     } catch(e) { console.error("Tickets load error:", e); }
+  }
+
+  function setSupportFolder(folder) {
+     currentSupportFolder = folder;
+     
+     // Reset all buttons
+     const folders = ['all', 'bug', 'idea', 'complaint', 'thanks', 'resolved'];
+     folders.forEach(f => {
+         const btn = document.getElementById('folder_' + f);
+         if (f === 'all') btn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent";
+         else btn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors text-gray-400 hover:bg-gray-800 border border-transparent";
+     });
+
+     // Highlight active
+     const activeBtn = document.getElementById('folder_' + folder);
+     if (folder === 'all') activeBtn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-indigo-500/10 text-indigo-400 border border-indigo-500/20";
+     else if (folder === 'resolved') activeBtn.className = "w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-gray-800 text-white border border-gray-700";
+     else {
+        const colorMap = { 'bug': 'rose', 'idea': 'purple', 'complaint': 'amber', 'thanks': 'emerald' };
+        const c = colorMap[folder];
+        activeBtn.className = `w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-bold transition-colors bg-${c}-500/10 text-${c}-400 border border-${c}-500/20`;
+     }
+
+     // Update Titles
+     const titleMap = {
+         'all': '<i data-lucide="inbox" class="w-5 h-5 text-indigo-400"></i> Входящие обращения',
+         'bug': '<i data-lucide="bug" class="w-5 h-5 text-rose-500"></i> Ошибки и Баги',
+         'idea': '<i data-lucide="lightbulb" class="w-5 h-5 text-purple-500"></i> Идеи и Предложения',
+         'complaint': '<i data-lucide="megaphone" class="w-5 h-5 text-amber-500"></i> Жалобы пользователей',
+         'thanks': '<i data-lucide="heart-handshake" class="w-5 h-5 text-emerald-500"></i> Благодарности',
+         'resolved': '<i data-lucide="archive" class="w-5 h-5 text-gray-400"></i> Решенные (Архив)'
+     };
+     document.getElementById('supportViewTitle').innerHTML = titleMap[folder];
+
+     renderSupportTickets();
+  }
+
+  function renderSupportTickets() {
+     // Recalculate counts
+     document.getElementById('count_all').innerText = allTickets.filter(t => t.status === 'open').length;
+     document.getElementById('count_bug').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'bug').length;
+     document.getElementById('count_idea').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'idea').length;
+     document.getElementById('count_complaint').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'complaint').length;
+     document.getElementById('count_thanks').innerText = allTickets.filter(t => t.status === 'open' && t.type === 'thanks').length;
+     document.getElementById('count_resolved').innerText = allTickets.filter(t => t.status === 'resolved').length;
+
+     const list = document.getElementById('supportTicketsList');
+     
+     let filtered = allTickets;
+     if (currentSupportFolder === 'resolved') {
+         filtered = allTickets.filter(t => t.status === 'resolved');
+     } else {
+         filtered = allTickets.filter(t => t.status === 'open');
+         if (currentSupportFolder !== 'all') {
+             filtered = filtered.filter(t => t.type === currentSupportFolder);
+         }
+     }
+
+     // Sort by date newest first
+     filtered.sort((a,b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+     if (filtered.length === 0) {
+         list.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-gray-600 opacity-50 py-20"><i data-lucide="check-circle" class="w-12 h-12 mb-4"></i><div class="text-sm font-bold uppercase tracking-widest">Папка пуста</div></div>`;
+         lucide.createIcons();
+         return;
+     }
+
+     list.innerHTML = filtered.map(t => {
+         const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
+         const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+         const dateStr = formatFirebaseDate(t.createdAt);
+         
+         const badgeMap = {
+             'bug': '<span class="text-[9px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2 py-0.5 rounded shadow-sm">Баг</span>',
+             'idea': '<span class="text-[9px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded shadow-sm">Идея</span>',
+             'complaint': '<span class="text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded shadow-sm">Жалоба</span>',
+             'thanks': '<span class="text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded shadow-sm">Спасибо</span>',
+             'other': '<span class="text-[9px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-400 border border-gray-500/20 px-2 py-0.5 rounded shadow-sm">Прочее</span>'
+         };
+         const typeBadge = badgeMap[t.type] || badgeMap['other'];
+
+         return `
+            <div class="bg-gray-800/40 border border-gray-700/50 p-4 rounded-2xl hover:bg-gray-800 hover:border-indigo-500/30 transition-all cursor-pointer group flex items-start gap-4" onclick="openTicketModal('${t.id}')">
+               <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover flex-shrink-0" />
+               <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                     <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-white truncate">${safeName}</span>
+                        ${typeBadge}
+                     </div>
+                     <span class="text-[10px] text-gray-500 font-mono">${dateStr}</span>
+                  </div>
+                  <div class="text-xs text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300 transition-colors">${t.message || 'Без текста'}</div>
+               </div>
+            </div>
+         `;
+     }).join('');
+     lucide.createIcons();
+  }
+
+  function openTicketModal(id) {
+     const t = allTickets.find(x => x.id === id);
+     if (!t) return;
+
+     const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
+     const safeEmail = (t.user && t.user.email) ? t.user.email : 'Email скрыт';
+     const safeUid = (t.user && t.user.id) ? t.user.id : 'Неизвестен';
+     const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     
+     document.getElementById('tmAvatar').src = safeAvatar;
+     document.getElementById('tmName').innerText = safeName;
+     document.getElementById('tmEmail').innerText = safeEmail;
+     document.getElementById('tmUid').innerText = safeUid;
+     document.getElementById('tmDate').innerText = formatFirebaseDate(t.createdAt);
+     document.getElementById('tmMessage').innerText = t.message || 'Без текста';
+
+     const badgeMap = {
+         'bug': '<span class="text-[10px] font-black uppercase tracking-widest bg-rose-500/10 text-rose-400 border border-rose-500/20 px-2.5 py-1 rounded shadow-sm">Ошибка / Баг</span>',
+         'idea': '<span class="text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded shadow-sm">Идея / Улучшение</span>',
+         'complaint': '<span class="text-[10px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded shadow-sm">Жалоба</span>',
+         'thanks': '<span class="text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded shadow-sm">Благодарность</span>',
+         'other': '<span class="text-[10px] font-black uppercase tracking-widest bg-gray-500/10 text-gray-400 border border-gray-500/20 px-2.5 py-1 rounded shadow-sm">Прочее</span>'
+     };
+     document.getElementById('tmBadge').innerHTML = badgeMap[t.type] || badgeMap['other'];
+
+     // Mail button setup
+     const mailBtn = document.getElementById('tmMailBtn');
+     if (t.user && t.user.email) {
+         mailBtn.style.display = 'flex';
+         mailBtn.onclick = () => window.open(`mailto:${t.user.email}?subject=RE: Ваш тикет в Blocko Pro Support`);
+     } else {
+         mailBtn.style.display = 'none';
+     }
+
+     // Status Button setup
+     const statusBtn = document.getElementById('tmStatusBtn');
+     if (t.status === 'resolved') {
+         statusBtn.className = "px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-bold border border-gray-700 active:scale-95 transition-all flex items-center gap-2";
+         statusBtn.innerHTML = '<i data-lucide="rotate-ccw" class="w-4 h-4"></i> Вернуть в работу';
+         statusBtn.onclick = () => updateTicketStatus(t.id, 'open');
+     } else {
+         statusBtn.className = "px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center gap-2";
+         statusBtn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Пометить как решено';
+         statusBtn.onclick = () => updateTicketStatus(t.id, 'resolved');
+     }
+
+     lucide.createIcons();
+
+     const modal = document.getElementById('ticketModal');
+     const content = document.getElementById('ticketModalContent');
+     modal.classList.remove('hidden');
+     setTimeout(() => {
+       modal.classList.remove('opacity-0');
+       content.classList.remove('scale-95');
+     }, 10);
+  }
+
+  function closeTicketModal() {
+     const modal = document.getElementById('ticketModal');
+     const content = document.getElementById('ticketModalContent');
+     modal.classList.add('opacity-0');
+     content.classList.add('scale-95');
+     setTimeout(() => modal.classList.add('hidden'), 300);
+  }
+
+  async function updateTicketStatus(id, newStatus) {
+     try {
+         await db.collection('support_tickets').doc(id).update({
+             status: newStatus,
+             updatedAt: new Date().toISOString()
+         });
+         
+         const idx = allTickets.findIndex(t => t.id === id);
+         if (idx > -1) allTickets[idx].status = newStatus;
+
+         closeTicketModal();
+         renderSupportTickets();
+         
+         // Update badge
+         const unreadCount = allTickets.filter(t => t.status === 'open').length;
+         const badge = document.getElementById('supportBadge');
+         if (unreadCount > 0) badge.classList.remove('hidden');
+         else badge.classList.add('hidden');
+
+         showToast(newStatus === 'resolved' ? 'Тикет перенесен в Архив' : 'Тикет возвращен в работу');
+     } catch(e) {
+         alert("Ошибка обновления статуса: " + e.message);
+     }
+  }
+
+  // --- QUEST MODERATION ENGINE ---
+  let allQuestSubmissions = [];
+
+  async function loadQuestSubmissions() {
+      try {
+          const snap = await db.collection('quest_submissions').orderBy('createdAt', 'desc').get();
+          allQuestSubmissions = [];
+          let pendingCount = 0;
+          let approvedCount = 0;
+          let rejectedCount = 0;
+
+          snap.forEach(doc => {
+              const q = { id: doc.id, ...doc.data() };
+              allQuestSubmissions.push(q);
+              if (q.status === 'pending') pendingCount++;
+              else if (q.status === 'approved') approvedCount++;
+              else if (q.status === 'rejected') rejectedCount++;
+          });
+
+          // Обновляем статистику
+          document.getElementById('statPendingQuests').innerText = pendingCount;
+          document.getElementById('statApprovedQuests').innerText = approvedCount;
+          document.getElementById('statRejectedQuests').innerText = rejectedCount;
+
+          // Обновляем бейдж в меню
+          const badge = document.getElementById('questsBadge');
+          if (pendingCount > 0) badge.classList.remove('hidden');
+          else badge.classList.add('hidden');
+
+          renderQuestSubmissions();
+      } catch (e) { console.error("Quests load error:", e); }
+  }
+
+  function renderQuestSubmissions() {
+      const list = document.getElementById('questsList');
+      
+      // Показываем сначала те, что ждут проверки
+      const sorted = allQuestSubmissions.sort((a, b) => {
+          if (a.status === 'pending' && b.status !== 'pending') return -1;
+          if (a.status !== 'pending' && b.status === 'pending') return 1;
+          return 0; // Остальные по дате (уже отсортировано из БД)
+      });
+
+      if (sorted.length === 0) {
+          list.innerHTML = `<div class="p-10 text-center text-gray-500 font-bold uppercase tracking-widest"><i data-lucide="inbox" class="w-10 h-10 mx-auto mb-4 opacity-50"></i> Заявок пока нет</div>`;
+          lucide.createIcons();
+          return;
+      }
+
+      list.innerHTML = sorted.map(q => {
+          const isPending = q.status === 'pending';
+          const isArticle = q.type === 'article';
+          
+          const typeBadge = isArticle 
+             ? `<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest"><i data-lucide="edit-3" class="w-3 h-3 inline mr-1 mb-0.5"></i> Эпическое (Статья)</span>`
+             : `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest"><i data-lucide="video" class="w-3 h-3 inline mr-1 mb-0.5"></i> Мифическое (Видео)</span>`;
+          
+          const rewardText = isArticle ? '+300 кредитов' : 'Тариф COMPANY';
+
+          let statusUi = '';
+          if (q.status === 'approved') statusUi = `<div class="px-4 py-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl font-bold text-sm flex items-center gap-2"><i data-lucide="check-circle" class="w-4 h-4"></i> Одобрено</div>`;
+          else if (q.status === 'rejected') statusUi = `<div class="px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl font-bold text-sm flex items-center gap-2"><i data-lucide="x-circle" class="w-4 h-4"></i> Отклонено</div>`;
+          else {
+              statusUi = `
+                <div class="flex gap-2 w-full sm:w-auto">
+                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'reject')" class="flex-1 sm:flex-none px-4 py-2 bg-gray-800 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-gray-700 hover:border-rose-500/50 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> Отклонить</button>
+                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'approve')" class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Выдать награду</button>
+                </div>
+              `;
+          }
+
+          return `
+            <div class="bg-gray-800/40 border ${isPending ? 'border-gray-600' : 'border-gray-700/50 opacity-60'} p-5 rounded-2xl flex flex-col gap-4 transition-all">
+               <div class="flex justify-between items-start gap-4">
+                  <div class="flex items-center gap-3">
+                     <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(q.userName)}&background=3b82f6&color=fff" class="w-10 h-10 rounded-full border border-gray-600">
+                     <div>
+                        <div class="font-bold text-white text-sm">${q.userName} <span class="text-gray-500 text-xs ml-2 font-normal">${q.userEmail}</span></div>
+                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">UID: ${q.userId} • Дата: ${formatFirebaseDate(q.createdAt)}</div>
+                     </div>
+                  </div>
+                  <div class="hidden sm:block">${typeBadge}</div>
+               </div>
+               
+               <div class="sm:hidden">${typeBadge}</div>
+
+               <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
+                  <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ссылка на работу пользователя:</div>
+                  <a href="${q.link}" target="_blank" class="text-blue-400 hover:text-blue-300 font-medium text-sm break-all flex items-center gap-2 group"><i data-lucide="external-link" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> ${q.link}</a>
+               </div>
+
+               <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2 pt-4 border-t border-gray-700">
+                  <div class="text-xs font-bold text-gray-400">Награда к выдаче: <span class="text-white">${rewardText}</span></div>
+                  ${statusUi}
+               </div>
+            </div>
+          `;
+      }).join('');
+      lucide.createIcons();
+  }
+
+  async function reviewQuest(questId, userId, type, action) {
+      if (!confirm(`Вы уверены, что хотите ${action === 'approve' ? 'ОДОБРИТЬ и ВЫДАТЬ НАГРАДУ' : 'ОТКЛОНИТЬ'} эту работу?`)) return;
+
+      try {
+          const batch = db.batch();
+          const questRef = db.collection('quest_submissions').doc(questId);
+          
+          if (action === 'approve') {
+              if (type === 'article') {
+                  // Выдаем 300 кредитов
+                  batch.set(db.collection('affiliates').doc(userId), {
+                      earnedCredits: firebase.firestore.FieldValue.increment(300)
+                  }, { merge: true });
+              } else if (type === 'video') {
+                  // Выдаем тариф Company пожизненно (или сбрасываем лимит)
+                  batch.update(db.collection('users').doc(userId), {
+                      plan: 'pro',
+                      planExpiresAt: firebase.firestore.FieldValue.delete()
+                  });
+              }
+              batch.update(questRef, { status: 'approved', processedAt: new Date().toISOString() });
+              showToast('Работа одобрена. Награда выдана!');
+          } else {
+              batch.update(questRef, { status: 'rejected', processedAt: new Date().toISOString() });
+              showToast('Работа отклонена.');
+          }
+
+          await batch.commit();
+          loadQuestSubmissions(); // Перезагружаем список
+      } catch (e) {
+          alert('Ошибка обработки: ' + e.message);
+      }
+  }
+
+  // --- CPA NETWORK ENGINE ---
+  let allCpaPartners = [];
+
+  async function loadCpaNetwork() {
+      try {
+          const snap = await db.collection('affiliates_cpa').get();
+          allCpaPartners = [];
+          let totalRevenue = 0;
+          let totalClicks = 0;
+          let pendingWithdrawals = 0; // Для будущей логики статусов вывода
+          
+          snap.forEach(doc => {
+              const data = doc.data();
+              if(data.isActive) {
+                  allCpaPartners.push({ id: doc.id, ...data });
+                  totalRevenue += (data.balanceUSD || 0);
+                  totalClicks += (data.clicks || 0);
+                  // Подсчитываем заявки на вывод (предполагаем наличие массива withdrawals)
+                  if(data.withdrawals) {
+                      pendingWithdrawals += data.withdrawals.filter(w => w.status === 'pending').length;
+                  }
+              }
+          });
+
+          // Обновляем статистику
+          document.getElementById('statCpaPartners').innerText = allCpaPartners.length;
+          document.getElementById('statCpaRevenue').innerText = '$' + totalRevenue.toFixed(2);
+          document.getElementById('statCpaClicks').innerText = totalClicks;
+          document.getElementById('statCpaWithdrawals').innerText = pendingWithdrawals;
+
+          renderCpaNetwork();
+      } catch (e) {
+          console.error("CPA Network load error:", e);
+      }
+  }
+
+  // --- БРОНЕБОЙНЫЙ РЕНДЕР ТАБЛИЦЫ ---
+  function renderCpaNetwork() {
+      const tbody = document.getElementById('cpaPartnersTbody');
+      if (!tbody) return;
+
+      if (allCpaPartners.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-xs text-gray-500 font-bold uppercase tracking-widest">Нет активных партнеров</td></tr>';
+          return;
+      }
+
+      const sorted = allCpaPartners.sort((a, b) => (b.balanceUSD || 0) - (a.balanceUSD || 0));
+
+      tbody.innerHTML = sorted.map(p => {
+          const userProfile = allUsers.find(u => u.uid === p.id) || {};
+          const safeName = userProfile.name || 'Аноним Партнер';
+          const safeEmail = userProfile.email || p.id;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+
+          const totalSales = p.sales || 0;
+          let rankName = 'Silver';
+          let revShare = 30;
+          let rankColor = 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+          
+          if (totalSales >= 50) {
+              rankName = 'Platinum';
+              revShare = 50;
+              rankColor = 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-indigo-500/10 border-indigo-200 dark:border-indigo-500/30 shadow-[0_0_8px_rgba(99,102,241,0.2)]';
+          } else if (totalSales >= 10) {
+              rankName = 'Gold';
+              revShare = 40;
+              rankColor = 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 shadow-[0_0_8px_rgba(245,158,11,0.2)]';
+          }
+
+          const balance = (p.balanceUSD || 0).toFixed(2);
+          const metrics = `<span class="text-blue-500">${p.clicks || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-purple-500">${p.signups || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-amber-500">${totalSales}</span>`;
+
+          return `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
+               <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                     <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                     <div>
+                        <div class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">${safeName}</div>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5">${safeEmail}</div>
+                     </div>
+                  </div>
+               </td>
+               <td class="px-6 py-4 text-center">
+                  <div class="inline-flex flex-col items-center">
+                     <span class="px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${rankColor}">${rankName}</span>
+                     <span class="text-[10px] text-gray-500 mt-1 font-bold">${revShare}% Share</span>
+                  </div>
+               </td>
+               <td class="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300 tracking-wider">
+                  ${metrics}
+               </td>
+               <td class="px-6 py-4 text-center">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-black bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50 shadow-sm">
+                     $${balance}
+                  </span>
+               </td>
+               <td class="px-6 py-4 text-right">
+                 <!-- Глобальный вызов с полной блокировкой всплытия событий -->
+                 <button onclick="window.openCpaModal(event, '${p.id}')" class="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 inline-flex items-center justify-center active:scale-95" title="Детали и Выплаты">
+                   <i data-lucide="external-link" class="w-4 h-4 pointer-events-none"></i>
+                 </button>
+               </td>
+            </tr>
+          `;
+      }).join('');
+      lucide.createIcons();
+  }
+
+  // --- РАДИКАЛЬНОЕ РЕШЕНИЕ: ДИНАМИЧЕСКИЙ РЕНДЕР ОКНА ---
+  window.openCpaModal = function(e, partnerId) {
+      if(e) {
+          e.preventDefault();
+          e.stopPropagation();
+      }
+      
+      try {
+          // 1. Выжигаем старое окно, если оно зависло в DOM
+          const existingModal = document.getElementById('cpaInspectModal');
+          if (existingModal) existingModal.remove();
+
+          // 2. Ищем данные
+          const partner = allCpaPartners.find(p => p.id === partnerId);
+          const userProfile = allUsers.find(u => u.uid === partnerId) || {};
+          if (!partner) return alert(`Ошибка: Партнер не найден.`);
+          
+          currentEditUid = partnerId; // Глобальный ID для операций
+          
+          const safeName = userProfile.name || 'Аноним Партнер';
+          const safeEmail = userProfile.email || partnerId;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+
+          const sales = partner.sales || 0;
+          const currentBal = parseFloat(partner.balanceUSD) || 0;
+          const clicks = partner.clicks || 0;
+          const signups = partner.signups || 0;
+          const linksCount = (partner.savedLinks || []).length;
+          
+          const history = partner.history || [];
+          let totalEarned = 0;
+          history.forEach(tx => {
+              const amt = parseFloat(tx.amount) || 0;
+              if (amt > 0) totalEarned += amt;
+          });
+          
+          const sortedHistory = [...history].sort((a, b) => {
+              const timeA = a.date ? new Date(a.date).getTime() : 0;
+              const timeB = b.date ? new Date(b.date).getTime() : 0;
+              return timeB - timeA;
+          });
+          
+          // Разделяем историю
+          const pendingWithdrawals = sortedHistory.filter(tx => (parseFloat(tx.amount) || 0) < 0 && tx.status === 'pending');
+          const resolvedHistory = sortedHistory.filter(tx => !((parseFloat(tx.amount) || 0) < 0 && tx.status === 'pending'));
+
+          // Генерация HTML заявок
+          let withdrawalsHtml = '<div class="text-center text-xs text-gray-500 py-4 font-bold uppercase tracking-widest">Нет активных заявок</div>';
+          if (pendingWithdrawals.length > 0) {
+              withdrawalsHtml = pendingWithdrawals.map(tx => {
+                  const amt = Math.abs(parseFloat(tx.amount) || 0);
+                  const dateStr = tx.date ? new Date(tx.date).toLocaleString('ru-RU') : 'Неизвестно';
+                  return `
+                     <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-rose-200 dark:border-rose-900/50 flex justify-between items-center shadow-sm">
+                        <div>
+                           <div class="text-xs font-bold text-gray-900 dark:text-white">Заявка на вывод: <span class="text-rose-500 font-black">$${amt.toFixed(2)}</span></div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                           <button onclick="window.approvePayout('${partnerId}', '${tx.id}')" class="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Одобрить"><i data-lucide="check" class="w-4 h-4"></i></button>
+                           <button onclick="window.rejectPayout('${partnerId}', '${tx.id}', ${amt})" class="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-rose-200 dark:border-rose-800" title="Отклонить"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        </div>
+                     </div>
+                  `;
+              }).join('');
+          }
+
+          // Генерация HTML истории
+          let historyHtml = '<div class="text-center text-xs text-gray-500 py-6 font-bold uppercase tracking-widest">Транзакций нет</div>';
+          if (resolvedHistory.length > 0) {
+              historyHtml = resolvedHistory.map(tx => {
+                  const amt = parseFloat(tx.amount) || 0;
+                  const isPositive = amt > 0;
+                  const sign = isPositive ? '+' : '';
+                  const colorClass = isPositive ? 'text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800/50' : 'text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+                  const dateStr = tx.date ? new Date(tx.date).toLocaleString('ru-RU') : 'Неизвестно';
+                  
+                  let statusHtml = '';
+                  if (tx.status === 'approved') statusHtml = `<div class="text-[9px] font-black text-emerald-500 uppercase mt-1 tracking-widest"><i data-lucide="check-circle" class="w-3 h-3 inline pb-0.5"></i> Выплачено</div>`;
+                  if (tx.status === 'rejected') statusHtml = `<div class="text-[9px] font-black text-rose-500 uppercase mt-1 tracking-widest"><i data-lucide="x-circle" class="w-3 h-3 inline pb-0.5"></i> Отклонено</div>`;
+
+                  return `
+                     <div class="p-3 bg-white dark:bg-gray-800/80 rounded-xl border border-gray-100 dark:border-gray-700/50 flex justify-between items-center mb-2 shadow-sm">
+                        <div>
+                           <div class="text-xs font-bold text-gray-900 dark:text-gray-200">${tx.description || 'Транзакция'}</div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                           ${statusHtml}
+                        </div>
+                        <div class="px-3 py-1.5 rounded-lg border text-sm font-black ${colorClass}">
+                           ${sign}$${Math.abs(amt).toFixed(2)}
+                        </div>
+                     </div>
+                  `;
+              }).join('');
+          }
+
+          // 3. Собираем монолитный HTML окна
+          const modalDOM = document.createElement('div');
+          modalDOM.id = 'cpaInspectModal';
+          modalDOM.className = 'fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto';
+          modalDOM.innerHTML = `
+            <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform relative flex flex-col my-auto" id="cpaInspectContent">
+              <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+              <button onclick="window.closeCpaInspectModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+              <div class="flex flex-col md:flex-row gap-8 mt-2">
+                <div class="w-full md:w-1/3 flex flex-col gap-6">
+                  <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                     <img src="${safeAvatar}" class="w-16 h-16 rounded-full border-2 border-indigo-500/30 object-cover shadow-lg" />
+                     <div class="min-w-0">
+                        <h3 class="text-lg font-black text-gray-900 dark:text-white truncate">${safeName}</h3>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5 truncate">${safeEmail}</div>
+                        <div class="text-[9px] text-gray-400 font-mono mt-1 truncate">UID: <span>${partnerId}</span></div>
+                     </div>
+                  </div>
+
+                  <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 shadow-inner">
+                    <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Глобальная статистика</div>
+                    <div class="space-y-4">
+                      <div class="flex justify-between items-center">
+                         <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="mouse-pointer-click" class="w-4 h-4 text-blue-500"></i> Клики (Хосты)</span>
+                         <span class="text-sm font-black text-gray-900 dark:text-white">${clicks}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                         <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 text-purple-500"></i> Регистрации</span>
+                         <span class="text-sm font-black text-gray-900 dark:text-white">${signups}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                         <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="shopping-cart" class="w-4 h-4 text-amber-500"></i> Продажи</span>
+                         <span class="text-sm font-black text-gray-900 dark:text-white">${sales}</span>
+                      </div>
+                      <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700/50">
+                         <span class="text-xs font-bold text-gray-500 flex items-center gap-2"><i data-lucide="link" class="w-4 h-4 text-gray-400"></i> Активных ссылок</span>
+                         <span class="text-sm font-black text-gray-900 dark:text-white">${linksCount}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-800/50 shadow-inner relative overflow-hidden">
+                     <div class="absolute -right-10 -top-10 w-24 h-24 bg-emerald-500/20 rounded-full blur-2xl"></div>
+                     <div class="relative z-10">
+                         <div class="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mb-1">Доступно к выводу</div>
+                         <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">$${currentBal.toFixed(2)}</div>
+                         <div class="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/50">
+                            <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Ручная корректировка (+/-)</label>
+                            <div class="flex gap-2">
+                               <input type="number" id="cpaInspectAdjustVal" placeholder="Сумма" class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-800 rounded-lg outline-none text-xs font-bold text-gray-900 dark:text-white focus:border-emerald-500 transition-colors shadow-sm" />
+                               <button onclick="window.adjustCpaBalance()" class="px-4 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold rounded-lg shadow-md active:scale-95 transition-all"><i data-lucide="check" class="w-4 h-4"></i></button>
+                            </div>
+                         </div>
+                     </div>
+                  </div>
+                </div>
+
+                <div class="w-full md:w-2/3 flex flex-col gap-6">
+                   <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-1/2">
+                      <h4 class="text-xs font-black text-gray-900 dark:text-gray-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i data-lucide="arrow-up-circle" class="w-4 h-4 text-rose-500"></i> Запросы на вывод средств</h4>
+                      <div class="space-y-3 flex-1 overflow-y-auto hide-scroll pr-1">${withdrawalsHtml}</div>
+                   </div>
+                   <div class="bg-gray-50 dark:bg-gray-800/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col h-1/2">
+                      <h4 class="text-xs font-black text-gray-900 dark:text-gray-300 uppercase tracking-[0.2em] mb-4 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-indigo-500"></i> Финансовая история</h4>
+                      <div class="space-y-2 flex-1 overflow-y-auto hide-scroll pr-1">${historyHtml}</div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          `;
+
+          // 4. Инжектим в body
+          document.body.appendChild(modalDOM);
+          lucide.createIcons({ root: modalDOM });
+
+          // 5. Запускаем анимацию
+          // Force reflow
+          void modalDOM.offsetWidth;
+          
+          modalDOM.classList.remove('opacity-0');
+          document.getElementById('cpaInspectContent').classList.remove('scale-95');
+
+      } catch (err) {
+          console.error("Critical Modal Render Error:", err);
+          alert("Сбой интерфейса: " + err.message);
+      }
+  }
+
+  // Привязываем функции к window для 100% доступности из динамического HTML
+  window.closeCpaInspectModal = function() {
+      const modal = document.getElementById('cpaInspectModal');
+      if(modal) {
+          modal.classList.add('opacity-0');
+          const content = document.getElementById('cpaInspectContent');
+          if(content) content.classList.add('scale-95');
+          setTimeout(() => modal.remove(), 300); // Полностью уничтожаем из DOM
+      }
+  }
+
+  window.adjustCpaBalance = async function() {
+      if(!currentEditUid) return;
+      const input = document.getElementById('cpaInspectAdjustVal');
+      const val = parseFloat(input.value);
+      if(isNaN(val)) return showToast('Введите числовое значение');
+
+      try {
+          const ref = db.collection('affiliates_cpa').doc(currentEditUid);
+          const doc = await ref.get();
+          if (!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          history.push({
+              id: 'tx_' + Date.now(),
+              amount: val,
+              description: val > 0 ? 'Ручная корректировка (Начисление)' : 'Ручная корректировка (Списание)',
+              date: new Date().toISOString(),
+              status: 'completed'
+          });
+
+          await ref.update({
+              balanceUSD: firebase.firestore.FieldValue.increment(val),
+              history: history
+          });
+
+          showToast('Баланс партнера успешно обновлен!');
+          loadCpaNetwork(); 
+          // Закрываем и открываем заново для обновления данных
+          window.closeCpaInspectModal();
+          setTimeout(() => window.openCpaModal(null, currentEditUid), 400); 
+
+      } catch (e) {
+          console.error(e);
+          showToast('Ошибка при обновлении баланса');
+      }
+  }
+
+  window.approvePayout = async function(partnerId, txId) {
+      if(!confirm('Подтвердить выплату? Статус изменится на "Выплачено".')) return;
+      try {
+          const ref = db.collection('affiliates_cpa').doc(partnerId);
+          const doc = await ref.get();
+          if(!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          const txIndex = history.findIndex(t => t.id === txId);
+          if (txIndex > -1) {
+              history[txIndex].status = 'approved';
+              await ref.update({ history: history });
+              showToast('Выплата переведена в статус ОДОБРЕНО!');
+              loadCpaNetwork();
+              window.closeCpaInspectModal();
+              setTimeout(() => window.openCpaModal(null, partnerId), 400);
+          }
+      } catch (e) {
+          showToast('Ошибка подтверждения');
+      }
+  }
+
+  window.rejectPayout = async function(partnerId, txId, refundAmount) {
+      if(!confirm('Отклонить выплату? Средства будут возвращены на баланс партнера.')) return;
+      try {
+          const ref = db.collection('affiliates_cpa').doc(partnerId);
+          const doc = await ref.get();
+          if(!doc.exists) return;
+          
+          let history = doc.data().history || [];
+          const txIndex = history.findIndex(t => t.id === txId);
+          if (txIndex > -1) {
+              history[txIndex].status = 'rejected';
+              
+              // Возвращаем средства через компенсационную транзакцию
+              history.push({
+                  id: 'tx_refund_' + Date.now(),
+                  amount: refundAmount,
+                  description: 'Возврат средств (отказ в выплате)',
+                  date: new Date().toISOString(),
+                  status: 'completed'
+              });
+              
+              await ref.update({ 
+                  history: history,
+                  balanceUSD: firebase.firestore.FieldValue.increment(refundAmount)
+              });
+              
+              showToast('Выплата отклонена. Средства возвращены партнеру.');
+              loadCpaNetwork();
+              window.closeCpaInspectModal();
+              setTimeout(() => window.openCpaModal(null, partnerId), 400);
+          }
+      } catch (e) {
+          showToast('Ошибка отклонения');
+      }
+  }
+  
+  // --- SYSTEM HELPERS ---
+  function showToast(text) {
+      const t = document.getElementById('adminToast');
+      document.getElementById('toastText').innerText = text;
+      t.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => {
+          t.classList.add('translate-y-24', 'opacity-0');
+      }, 3000);
+  }
+</script>
+</body>
+</html>
