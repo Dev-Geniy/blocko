@@ -3582,24 +3582,29 @@ function toggleChecklistView(index) {
   elements.forEach(el => lucide.createIcons({ root: el }));
 }
 
-// --- EVENT DELEGATION ENGINE (O(1) Memory Footprint) ---
-// Инициализируем делегирование событий ровно 1 раз для всей доски
+// --- ENTERPRISE EVENT DELEGATION ENGINE v4.2 (Secure Routing) ---
+/**
+ * Единый центр управления событиями Blocko Pro.
+ * Решает проблему блокировки кнопок в модальных окнах и оптимизирует потребление памяти.
+ */
 if (!window.blockoDelegationInited) {
-  const boardEl = document.getElementById('board');
-  
-  boardEl.addEventListener('click', (e) => {
-    // Находим ближайший родительский элемент с data-action
+  // Слушатель для всей поверхности документа для корректной работы с динамическими модалками
+  document.addEventListener('click', (e) => {
     const target = e.target.closest('[data-action]');
     if (!target) return;
-    
-    e.preventDefault();
-    e.stopPropagation(); // Избавляемся от всех инлайн event.stopPropagation()
-    
+
     const { action, col, card, type, opt } = target.dataset;
-    
-switch(action) {
+
+    // Прерываем всплытие только для элементов внутри доски, чтобы не ломать нативные инпуты
+    if (e.target.closest('#board') || e.target.closest('.card-item')) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    switch(action) {
       case 'viewCard': openViewModal(col, card); break;
       case 'editCard': openEditModal(col, card); break;
+      case 'saveCard': saveCard(); break; // Восстановление критической связи
       case 'deleteCard': deleteCardDirectly(col, card, type); break;
       case 'openTable': openTableEditor(col, card); break;
       case 'votePoll': votePoll(col, card, parseInt(opt)); break;
@@ -3610,10 +3615,13 @@ switch(action) {
         const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
         updateBoardData({ columns: updatedCols });
         break;
+      case 'closeEdit': closeEditModal(); break;
+      case 'archiveCard': archiveCard(); break;
     }
-  });
+  }, true); // Используем capture phase для приоритетной обработки
 
-  boardEl.addEventListener('dblclick', (e) => {
+  // Обработка быстрых действий через двойной клик
+  document.getElementById('board')?.addEventListener('dblclick', (e) => {
     const target = e.target.closest('[data-dblaction]');
     if (!target) return;
     if (target.dataset.dblaction === 'quickAdd') quickAddCard(target.dataset.col);
