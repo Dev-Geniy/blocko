@@ -126,10 +126,16 @@
   if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
   lucide.createIcons();
 
+  // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Защита от BFCache
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) window.location.reload();
+  });
+
   const BOARD_ID = new URLSearchParams(window.location.search).get('b');
   const isLocalBoard = BOARD_ID && BOARD_ID.startsWith('local_');
   let currentBoardData = null;
   let currentUser = null;
+  let onlineArchivedCards = []; // Эксклюзивно для Cloud синхронизации
 
   const DEFAULT_BOARD_TAGS = [
     { id: 'tag_bug', name: 'Баг', color: 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800' },
@@ -158,6 +164,10 @@
        document.getElementById('localBadge').classList.remove('hidden');
        const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
        if (localBoards[BOARD_ID]) {
+          if (localBoards[BOARD_ID].password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== localBoards[BOARD_ID].password) {
+            window.location.href = 'index.html';
+            return;
+          }
           currentBoardData = localBoards[BOARD_ID];
           setupArchiveUI();
           renderArchive();
@@ -168,8 +178,27 @@
       db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
         if (!doc.exists) return window.location.href = 'index.html';
         currentBoardData = doc.data();
+        
+        const isOwner = currentBoardData.owner === currentUser.uid;
+        
+        // Защита: Если пользователя удалили из проекта, мгновенно выгоняем из Архива
+        if (!isOwner && currentBoardData.members && !currentBoardData.members.includes(currentUser.uid)) {
+          window.location.href = 'index.html';
+          return;
+        }
+
+        if (!isOwner && currentBoardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== currentBoardData.password) {
+          window.location.href = `index.html?auth_board=${BOARD_ID}&target=archive`;
+          return;
+        }
+
         setupArchiveUI();
-        renderArchive();
+        
+        // ЭНТЕРПРАЙЗ: Слушаем подколлекцию cards для облачной доски (Real-time Archive Sync)
+        db.collection("boards").doc(BOARD_ID).collection("cards").where("archived", "==", true).onSnapshot(cardsSnap => {
+          onlineArchivedCards = cardsSnap.docs.map(c => ({ id: c.id, ...c.data() }));
+          renderArchive();
+        });
       });
     }
   }
@@ -207,31 +236,31 @@
   function renderArchive() {
     const grid = document.getElementById('archiveGrid');
     const burnBtn = document.getElementById('btnBurnArchive');
-    const countBadge = document.getElementById('archiveCountBadge'); // Ищем наш новый бейджик
+    const countBadge = document.getElementById('archiveCountBadge'); 
     const searchQuery = document.getElementById('archiveSearch').value.toLowerCase();
+    
     let archivedCards = [];
     const isOwner = currentBoardData.owner === currentUser.uid || isLocalBoard;
 
-    // Собираем архивные карточки и запоминаем ID их исходных колонок
-    currentBoardData.columns.forEach(col => {
-      if (col.cards) {
-        col.cards.forEach(card => {
-          if (card.archived) archivedCards.push({ ...card, colName: col.name, originColId: col.id });
-        });
-      }
-    });
-
-    // 1. ДИНАМИЧЕСКИЙ СЧЕТЧИК
-    if (countBadge) {
-      countBadge.innerText = archivedCards.length > 0 ? `(${archivedCards.length})` : '';
+    // Унифицированная сборка архива
+    if (isLocalBoard) {
+      currentBoardData.columns.forEach(col => {
+        if (col.cards) {
+          col.cards.forEach(card => {
+            if (card.archived) archivedCards.push({ ...card, colName: col.name, originColId: col.id });
+          });
+        }
+      });
+    } else {
+      archivedCards = onlineArchivedCards.map(c => {
+         const col = currentBoardData.columns.find(col => col.id == c.columnId);
+         return { ...c, colName: col ? col.name : 'Удаленная колонка', originColId: c.columnId };
+      });
     }
 
-    // Управление видимостью кнопки "Сжечь архив"
-    if (burnBtn) {
-      burnBtn.style.display = (archivedCards.length > 0 && isOwner) ? 'flex' : 'none';
-    }
+    if (countBadge) countBadge.innerText = archivedCards.length > 0 ? `(${archivedCards.length})` : '';
+    if (burnBtn) burnBtn.style.display = (archivedCards.length > 0 && isOwner) ? 'flex' : 'none';
 
-    // Пустое состояние
     if (archivedCards.length === 0) {
       grid.innerHTML = `
         <div class="col-span-full py-24 flex flex-col items-center opacity-70">
@@ -239,13 +268,12 @@
             <i data-lucide="archive-x" class="w-10 h-10 text-gray-400"></i>
           </div>
           <h3 class="text-xl font-bold mb-1">Архив чист</h3>
-          <p class="text-sm text-gray-500">Удаленные из активной работы карточки появятся здесь.</p>
+          <p class="text-sm text-gray-500">Удаленные из активной работы объекты появятся здесь.</p>
         </div>`;
       lucide.createIcons();
       return;
     }
 
-    // 2. СОРТИРОВКА: Сначала новые (LIFO)
     archivedCards.sort((a, b) => b.id - a.id);
 
     archivedCards = archivedCards.filter(c => 
@@ -254,50 +282,29 @@
     );
 
     if (archivedCards.length === 0 && searchQuery !== '') {
-      grid.innerHTML = `
-        <div class="col-span-full py-16 text-center">
-          <p class="text-gray-500">Карточек по запросу "${searchQuery}" не найдено.</p>
-        </div>`;
+      grid.innerHTML = `<div class="col-span-full py-16 text-center"><p class="text-gray-500">По запросу "${searchQuery}" не найдено.</p></div>`;
       return;
     }
 
     grid.innerHTML = archivedCards.map(card => {
       const cleanDesc = cleanMarkdown(card.description);
-      
       const tagsHtml = card.tags && card.tags.length > 0 
-        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + 
-          card.tags.map(tId => { 
-            const t = getTagInfo(tId); 
-            return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}">${t.name}</span>` : ''; 
-          }).join('') + `</div>` 
-        : '';
+        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + card.tags.map(tId => { const t = getTagInfo(tId); return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}">${t.name}</span>` : ''; }).join('') + `</div>` : '';
+      const imageHtml = card.image ? `<img src="${card.image}" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` : '';
 
-      // 3. МИНИАТЮРА ОБЛОЖКИ (Если есть картинка)
-      const imageHtml = card.image 
-        ? `<img src="${card.image}" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` 
-        : '';
-
-      // 4. ИКОНКИ СТАТИСТИКИ (Чеклисты и комментарии)
-      let checklistHtml = '';
-      if (card.checklist && card.checklist.length > 0) {
-        const done = card.checklist.filter(i => i.isCompleted).length;
-        const total = card.checklist.length;
-        checklistHtml = `<div class="flex items-center gap-1 ${done === total ? 'text-green-500' : 'text-gray-400'}"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> ${done}/${total}</div>`;
-      }
-
-      let commentsHtml = '';
-      if (card.comments && card.comments.length > 0) {
-        commentsHtml = `<div class="flex items-center gap-1 text-gray-400"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${card.comments.length}</div>`;
-      }
-
-      const statsHtml = (checklistHtml || commentsHtml) 
-        ? `<div class="flex gap-3 text-[11px] font-bold mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">${checklistHtml}${commentsHtml}</div>`
-        : '';
+      let typeIconHtml = '';
+      if (card.type === 'poll') typeIconHtml = `<i data-lucide="bar-chart-3" class="w-3.5 h-3.5 text-purple-500"></i>`;
+      else if (card.type === 'audio') typeIconHtml = `<i data-lucide="mic" class="w-3.5 h-3.5 text-emerald-500"></i>`;
+      else if (card.type === 'table') typeIconHtml = `<i data-lucide="table" class="w-3.5 h-3.5 text-blue-500"></i>`;
+      else if (card.type === 'timer') typeIconHtml = `<i data-lucide="timer" class="w-3.5 h-3.5 text-rose-500"></i>`;
+      else if (card.type === 'todo') typeIconHtml = `<i data-lucide="list-todo" class="w-3.5 h-3.5 text-cyan-500"></i>`;
+      else if (card.type === 'link') typeIconHtml = `<i data-lucide="link" class="w-3.5 h-3.5 text-gray-500"></i>`;
+      else typeIconHtml = `<i data-lucide="layers" class="w-3.5 h-3.5 text-blue-500"></i>`;
 
       const actionsHtml = isOwner 
         ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
-            <button onclick="restoreCard('${card.id}', ${card.originColId})" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть на доску
+            <button onclick="restoreCard('${card.id}', '${card.originColId}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
             </button>
             <button onclick="permanentDelete('${card.id}')" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -312,18 +319,12 @@
       return `
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col hover:border-amber-400 transition-colors">
           <div class="flex justify-between items-start mb-3">
-            ${tagsHtml}
-            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">
-              ${card.colName}
-            </div>
+            <div class="flex items-center gap-2">${typeIconHtml} ${tagsHtml}</div>
+            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">${card.colName}</div>
           </div>
-          
           ${imageHtml}
-          
           <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${card.title}</h3>
           <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${cleanDesc}</p>
-          
-          ${statsHtml}
           ${actionsHtml}
         </div>
       `;
@@ -334,83 +335,83 @@
 
   // --- МАССОВОЕ УДАЛЕНИЕ (СЖЕЧЬ АРХИВ) ---
   function burnArchive() {
-    openConfirmModal('Сжечь архив?', 'Вы уверены? Это действие навсегда удалит все заархивированные карточки из проекта.', 'Сжечь всё', true, () => {
-      const updatedColumns = currentBoardData.columns.map(col => {
-        // Оставляем только те карточки, которые НЕ в архиве
-        col.cards = (col.cards || []).filter(c => !c.archived);
-        return col;
-      });
-      updateBoardData({ columns: updatedColumns });
+    openConfirmModal('Сжечь архив?', 'Вы уверены? Это действие навсегда удалит все заархивированные карточки из проекта.', 'Сжечь всё', true, async () => {
+      if (isLocalBoard) {
+        const updatedColumns = currentBoardData.columns.map(col => {
+          col.cards = (col.cards || []).filter(c => !c.archived);
+          return col;
+        });
+        updateBoardData({ columns: updatedColumns });
+      } else {
+        const batch = db.batch();
+        onlineArchivedCards.forEach(card => {
+          batch.delete(db.collection("boards").doc(BOARD_ID).collection("cards").doc(card.id));
+        });
+        await batch.commit();
+      }
       showSystemToast('Архив очищен', 'Все архивные задачи уничтожены навсегда.', 'flame', 'text-orange-500', 'bg-orange-50');
     });
   }
 
-  // --- ВОССТАНОВЛЕНИЕ С ЗАЩИТОЙ ОТ "СИРОТ" ---
+  // --- ВОССТАНОВЛЕНИЕ ---
   function restoreCard(cardId, originColId) {
-    openConfirmModal('Вернуть на доску?', 'Карточка будет восстановлена для дальнейшей работы.', 'Восстановить', false, () => {
-      
-      let cardFoundAndRestored = false;
-      let targetCardData = null;
+    openConfirmModal('Вернуть на доску?', 'Карточка будет восстановлена для дальнейшей работы.', 'Восстановить', false, async () => {
+      if (isLocalBoard) {
+        let cardFoundAndRestored = false;
+        let targetCardData = null;
 
-      // 1. Проверяем, существует ли еще исходная колонка и восстанавливаем
-      let updatedColumns = currentBoardData.columns.map(col => {
-        if (col.id === originColId) {
-          col.cards = col.cards.map(c => {
-            if (c.id == cardId) {
-              c.archived = false;
-              cardFoundAndRestored = true;
-            }
-            return c;
-          });
-        } else {
-          // Если колонка не совпадает, но карточка почему-то здесь (защита от сбоев)
-          const found = (col.cards || []).find(c => c.id == cardId);
-          if (found) { targetCardData = found; }
-        }
-        return col;
-      });
-
-      // 2. Если исходная колонка была удалена, карточка становится "Осиротевшей"
-      if (!cardFoundAndRestored && targetCardData) {
-        // Проверяем, есть ли уже колонка "Восстановленные"
-        let recoveryCol = updatedColumns.find(c => c.name === "Восстановленные");
-        
-        targetCardData.archived = false; // Снимаем статус архива
-        
-        if (recoveryCol) {
-          recoveryCol.cards.push(targetCardData);
-        } else {
-          // Создаем колонку-спасатель
-          updatedColumns.push({
-            id: Date.now(),
-            name: "Восстановленные",
-            color: "amber",
-            cards: [targetCardData]
-          });
-        }
-        
-        // Удаляем сироту из старого (неизвестного) места
-        updatedColumns = updatedColumns.map(col => {
-          if (col.name !== "Восстановленные") {
-            col.cards = col.cards.filter(c => c.id != cardId);
+        let updatedColumns = currentBoardData.columns.map(col => {
+          if (col.id == originColId) {
+            col.cards = col.cards.map(c => {
+              if (c.id == cardId) { c.archived = false; cardFoundAndRestored = true; }
+              return c;
+            });
+          } else {
+            const found = (col.cards || []).find(c => c.id == cardId);
+            if (found) { targetCardData = found; }
           }
           return col;
         });
-      }
 
-      updateBoardData({ columns: updatedColumns });
-      showSystemToast('Восстановлено', 'Карточка успешно возвращена на доску.', 'refresh-cw', 'text-green-500', 'bg-green-50');
+        if (!cardFoundAndRestored && targetCardData) {
+          let recoveryCol = updatedColumns.find(c => c.name === "Восстановленные");
+          targetCardData.archived = false;
+          if (recoveryCol) recoveryCol.cards.push(targetCardData);
+          else updatedColumns.push({ id: Date.now(), name: "Восстановленные", color: "amber", cards: [targetCardData] });
+          updatedColumns = updatedColumns.map(col => {
+            if (col.name !== "Восстановленные") col.cards = col.cards.filter(c => c.id != cardId);
+            return col;
+          });
+        }
+        updateBoardData({ columns: updatedColumns });
+      } else {
+        // Cloud: Восстанавливаем прямо в подколлекции, проверяя наличие колонки
+        let targetColId = originColId;
+        if (!currentBoardData.columns.find(c => c.id == originColId)) {
+           let recoveryCol = currentBoardData.columns.find(c => c.name === "Восстановленные");
+           if (recoveryCol) { targetColId = recoveryCol.id; } 
+           else {
+             const newCol = { id: Date.now(), name: "Восстановленные", color: "amber" };
+             const newColumns = [...currentBoardData.columns, newCol];
+             await db.collection("boards").doc(BOARD_ID).update({ columns: newColumns });
+             targetColId = newCol.id;
+           }
+        }
+        await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).update({ archived: false, columnId: targetColId });
+      }
+      showSystemToast('Восстановлено', 'Объект успешно возвращен на доску.', 'refresh-cw', 'text-green-500', 'bg-green-50');
     });
   }
 
   function permanentDelete(cardId) {
-    openConfirmModal('Удалить навсегда?', 'Вы уверены? Карточка будет стерта из базы без возможности восстановления.', 'Удалить', true, () => {
-      const updatedColumns = currentBoardData.columns.map(col => {
-        col.cards = col.cards.filter(c => c.id != cardId);
-        return col;
-      });
-      updateBoardData({ columns: updatedColumns });
-      showSystemToast('Удалено', 'Карточка безвозвратно удалена.', 'trash-2', 'text-red-500', 'bg-red-50');
+    openConfirmModal('Удалить навсегда?', 'Вы уверены? Объект будет стерт из базы без возможности восстановления.', 'Удалить', true, async () => {
+      if (isLocalBoard) {
+        const updatedColumns = currentBoardData.columns.map(col => { col.cards = col.cards.filter(c => c.id != cardId); return col; });
+        updateBoardData({ columns: updatedColumns });
+      } else {
+        await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).delete();
+      }
+      showSystemToast('Удалено', 'Объект безвозвратно удален.', 'trash-2', 'text-red-500', 'bg-red-50');
     });
   }
 
