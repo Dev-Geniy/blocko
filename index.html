@@ -782,7 +782,7 @@
         <ul class="space-y-5 mb-10 flex-1 relative z-10">
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> 1 облачный проект (Cloud)</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> <b>Безлимит</b> Device-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-400"><i data-lucide="alert-circle" class="w-5 h-5 mt-0.5"></i> Ограниченный AI ассистент</li>
+          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> Ограниченный AI ассистент (5/день)</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
           <button id="btnUpgrade_free" onclick="upgradeTo('free')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
@@ -808,7 +808,7 @@
         <ul class="space-y-5 mb-10 flex-1 relative z-10">
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 облачных проектов</li>
           <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 участников на доску</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный лимит AI</li>
+          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный AI лимит (30/день)</li>
         </ul>
         <div class="space-y-3 mt-auto relative z-10 w-full">
           <button id="btnUpgrade_freelancer" onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
@@ -841,6 +841,11 @@
           <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
         </div>
       </div>
+      
+      <!-- Скрытая карточка для корректной логики UI, если у юзера тариф Infinity -->
+      <div id="planCard_infinity" class="hidden"></div>
+      <button id="btnUpgrade_infinity" class="hidden"></button>
+      <div id="planBadge_infinity" class="hidden"></div>
 
     </div>
   </div>
@@ -1753,13 +1758,15 @@ function openPricingModal() {
   const content = document.getElementById('pricingContent');
   if (!modal) return;
   
-  // ЭНТЕРПРАЙЗ: Динамическое выделение активного тарифа (Single Source of Truth)
-  const plans = ['free', 'freelancer', 'pro'];
+  // ЭНТЕРПРАЙЗ: Динамическое выделение активного тарифа с поддержкой Infinity (GOD Mode)
+  const plans = ['free', 'freelancer', 'pro', 'infinity'];
+  
   plans.forEach(p => {
     const card = document.getElementById('planCard_' + p);
     const btn = document.getElementById('btnUpgrade_' + p);
     const badge = document.getElementById('planBadge_' + p);
     
+    // Если карточки физически нет (как для infinity), пропускаем стилизацию DOM-узла
     if (card && btn && badge) {
       if (p === userPlan) {
         // Активный тариф: синяя рамка, scale-105, кнопка заблокирована
@@ -1782,6 +1789,11 @@ function openPricingModal() {
       }
     }
   });
+
+  // Если у юзера GOD Mode, покажем красивое уведомление вместо обычного бейджа на карточках
+  if (userPlan === 'infinity') {
+      showSystemToast('GOD MODE', 'У вас активен максимальный безлимитный тариф. Вам не нужно ничего оплачивать.', 'crown', 'text-purple-500', 'bg-purple-50 dark:bg-purple-900/30');
+  }
 
   modal.classList.remove('hidden');
   setTimeout(() => {
@@ -2538,7 +2550,7 @@ const PLAN_DETAILS_MAP = {
       { icon: 'cloud', val: '1 Проект', title: 'Облачное хранилище' },
       { icon: 'users', val: 'До 3-х', title: 'Членов команды' },
       { icon: 'hard-drive', val: '∞', title: 'Офлайн проекты' },
-      { icon: 'bot', val: 'Базовый', title: 'AI Ассистент' }
+      { icon: 'bot', val: '5 / день', title: 'AI Ассистент' }
     ]
   },
   'freelancer': {
@@ -2548,7 +2560,7 @@ const PLAN_DETAILS_MAP = {
     features: [
       { icon: 'cloud', val: '10 Проектов', title: 'Облачное хранилище' },
       { icon: 'users', val: 'До 10-ти', title: 'В каждой команде' },
-      { icon: 'bot', val: 'Продвинутый', title: 'AI Ассистент' },
+      { icon: 'bot', val: '30 / день', title: 'AI Ассистент' },
       { icon: 'headphones', val: '24/7', title: 'Саппорт' }
     ]
   },
@@ -2560,7 +2572,18 @@ const PLAN_DETAILS_MAP = {
       { icon: 'cloud', val: 'Безлимит', title: 'Облачные проекты' },
       { icon: 'users', val: 'Безлимит', title: 'Команды и роли' },
       { icon: 'flame', val: 'Сгорающие', title: 'Файлы в чате' },
-      { icon: 'sparkles', val: 'Максимум', title: 'Мощь нейросетей' }
+      { icon: 'sparkles', val: 'Безлимит', title: 'Мощь нейросетей' }
+    ]
+  },
+  'infinity': {
+    name: 'GOD MODE (Infinity)',
+    desc: 'Эксклюзивный доступ для разработчиков и VIP-клиентов. Абсолютный безлимит на все ресурсы системы Blocko Pro.',
+    color: 'purple', icon: 'crown',
+    features: [
+      { icon: 'infinity', val: 'Infinity', title: 'Облачные проекты' },
+      { icon: 'infinity', val: 'Infinity', title: 'Участники и роли' },
+      { icon: 'infinity', val: 'Infinity', title: 'Файлы в чате' },
+      { icon: 'infinity', val: 'Infinity', title: 'Нейросети' }
     ]
   }
 };
