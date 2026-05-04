@@ -3471,30 +3471,128 @@ async function applyFrameColor(frameColor, glowColor) {
         console.log("Redirecting to Knowledge Base...");
     }, 800);
 }
+
+  /**
+ * ЭНТЕРПРАЙЗ ENGINE: Sequence Onboarding Controller
+ * Управляет поочередным отображением карточек при клике в любое место экрана.
+ */
+const OnboardingEngine = {
+    steps: ['knowledge', 'referral', 'plan'],
+    currentIndex: 0,
+    isProcessing: false,
+
+    init() {
+        // Запуск первой карточки через 2 секунды после загрузки
+        setTimeout(() => this.showStep(0), 2000);
+        
+        // Глобальный слушатель клика по экрану
+        window.addEventListener('click', (e) => {
+            // Проверяем, что клик не по кнопке внутри карточки, чтобы не сбивать навигацию
+            if (e.target.closest('#onboardingSequenceContainer')) return;
+            this.handleGlobalClick();
+        });
+    },
+
+    showStep(index) {
+        if (index >= this.steps.length) return;
+        
+        const stepKey = this.steps[index];
+        const card = document.getElementById(`obCard_${stepKey}`);
+        
+        if (card) {
+            // Если это карточка тарифа, обновляем имя текущего плана
+            if (stepKey === 'plan') {
+                const plan = localStorage.getItem('blocko_user_plan') || 'FREE';
+                document.getElementById('obUserPlanName').innerText = plan.toUpperCase();
+            }
+            
+            card.classList.remove('hidden');
+            card.classList.add('flex');
+            lucide.createIcons({ root: card });
+        }
+    },
+
+    hideCurrentStep() {
+        const stepKey = this.steps[this.currentIndex];
+        const card = document.getElementById(`obCard_${stepKey}`);
+        
+        if (card) {
+            card.classList.add('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                card.classList.add('hidden');
+                card.classList.remove('flex', 'opacity-0', 'translate-y-10');
+            }, 500);
+        }
+    },
+
+    handleGlobalClick() {
+        if (this.isProcessing || this.currentIndex >= this.steps.length) return;
+
+        const currentCard = document.getElementById(`obCard_${this.steps[this.currentIndex]}`);
+        // Если текущая карточка отображена, скрываем её и готовим следующую
+        if (currentCard && !currentCard.classList.contains('hidden')) {
+            this.isProcessing = true;
+            this.hideCurrentStep();
+            this.currentIndex++;
+
+            // Если есть следующий шаг, запускаем его через 2.5 секунды
+            if (this.currentIndex < this.steps.length) {
+                setTimeout(() => {
+                    this.showStep(this.currentIndex);
+                    this.isProcessing = false;
+                }, 2500);
+            }
+        }
+    }
+};
+
+// Инициализация при загрузке документа
+document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
   </script>
 
-  <div id="knowledgeBaseCard" class="fixed bottom-8 right-8 z-[60] w-80 animate-fade-in-up">
-  <div class="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-[2.5rem] p-8 shadow-2xl border border-white/20 dark:border-gray-800 relative overflow-hidden group hover:shadow-indigo-500/20 transition-all duration-500 cursor-pointer" onclick="navigateToKnowledgeBase()">
-    
-    <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-colors duration-500"></div>
-    
+<!-- ЭНТЕРПРАЙЗ: Smart Onboarding Engine (Sequence Cards) -->
+<div id="onboardingSequenceContainer" class="fixed bottom-8 right-8 z-[100] w-85 pointer-events-none">
+  <!-- Карточка 1: Академия -->
+  <div id="obCard_knowledge" class="hidden pointer-events-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-2xl border border-white/20 dark:border-gray-800 relative overflow-hidden group hover:shadow-indigo-500/20 transition-all duration-500 animate-fade-in-up cursor-pointer">
+    <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-colors"></div>
     <div class="relative z-10">
       <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/30 group-hover:scale-110 transition-transform duration-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="Vector d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
+        <i data-lucide="book-open" class="w-6 h-6 text-white"></i>
       </div>
-
       <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Академия Blocko</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-        Изучите профессиональные инструменты управления проектами и раскройте потенциал системы на 100%.
-      </p>
-      
-      <div class="flex items-center gap-2 text-indigo-500 dark:text-indigo-400 font-bold text-sm group-hover:gap-4 transition-all italic">
-        Перейти в базу знаний
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-        </svg>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">Изучите профессиональные инструменты и раскройте потенциал системы на 100%.</p>
+      <div onclick="window.location.href='knowledge-base.html'" class="flex items-center gap-2 text-indigo-500 dark:text-indigo-400 font-extrabold text-sm group-hover:gap-4 transition-all italic">
+        Перейти в базу знаний <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Карточка 2: Реферальная программа -->
+  <div id="obCard_referral" class="hidden pointer-events-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-2xl border border-white/20 dark:border-gray-800 relative overflow-hidden group hover:shadow-emerald-500/20 transition-all duration-500 animate-fade-in-up cursor-pointer">
+    <div class="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl group-hover:bg-emerald-500/20 transition-colors"></div>
+    <div class="relative z-10">
+      <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-500">
+        <i data-lucide="users" class="w-6 h-6 text-white"></i>
+      </div>
+      <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Сеть Коллег</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">Приглашайте друзей и получайте бонусные кредиты за каждую активность в системе.</p>
+      <div onclick="openAffiliateModal()" class="flex items-center gap-2 text-emerald-500 dark:text-emerald-400 font-extrabold text-sm group-hover:gap-4 transition-all italic">
+        Партнерская программа <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Карточка 3: Тарифы -->
+  <div id="obCard_plan" class="hidden pointer-events-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-2xl rounded-[2.5rem] p-8 shadow-2xl border border-white/20 dark:border-gray-800 relative overflow-hidden group hover:shadow-amber-500/20 transition-all duration-500 animate-fade-in-up cursor-pointer">
+    <div class="absolute -top-24 -right-24 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-colors"></div>
+    <div class="relative z-10">
+      <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform duration-500">
+        <i data-lucide="zap" class="w-6 h-6 text-white"></i>
+      </div>
+      <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Ваш План: <span id="obUserPlanName" class="text-amber-500">FREE</span></h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">Разблокируйте мощь AI-ассистента и безлимитные облачные проекты на тарифе PRO.</p>
+      <div onclick="openPricingModal()" class="flex items-center gap-2 text-amber-500 dark:text-orange-400 font-extrabold text-sm group-hover:gap-4 transition-all italic">
+        Повысить уровень <i data-lucide="arrow-right" class="w-4 h-4"></i>
       </div>
     </div>
   </div>
