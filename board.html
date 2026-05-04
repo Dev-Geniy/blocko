@@ -3845,45 +3845,81 @@ function toggleChecklistView(index) {
   elements.forEach(el => lucide.createIcons({ root: el }));
 }
 
-// --- ENTERPRISE EVENT DELEGATION ENGINE v4.2 (Secure Routing) ---
+// --- ENTERPRISE EVENT DELEGATION ENGINE v4.3 (Reactive Routing) ---
 /**
  * Единый центр управления событиями Blocko Pro.
- * Решает проблему блокировки кнопок в модальных окнах и оптимизирует потребление памяти.
+ * РЕШЕНО: Исправлен баг, при котором клик по карточке в колонке не открывал модальное окно просмотра.
+ * Внедрена интеллектуальная фильтрация событий для поддержки интерактивных элементов внутри карточки.
  */
 if (!window.blockoDelegationInited) {
-  // Слушатель для всей поверхности документа для корректной работы с динамическими модалками
   document.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-action]');
-    if (!target) return;
+    // Находим ближайшую цель с действием
+    const actionTarget = e.target.closest('[data-action]');
+    
+    if (actionTarget) {
+      const { action, col, card, type, opt } = actionTarget.dataset;
 
-    const { action, col, card, type, opt } = target.dataset;
+      // Если клик внутри доски или по карточке — блокируем стандартное поведение, кроме инпутов
+      if (e.target.closest('#board') || e.target.closest('.card-item')) {
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
 
-    // Прерываем всплытие только для элементов внутри доски, чтобы не ломать нативные инпуты
-    if (e.target.closest('#board') || e.target.closest('.card-item')) {
-      e.preventDefault();
-      e.stopPropagation();
+      switch(action) {
+        case 'viewCard': 
+          if (col && card) openViewModal(col, card); 
+          break;
+        case 'editCard': 
+          openEditModal(col, card); 
+          break;
+        case 'saveCard': 
+          saveCard(); 
+          break;
+        case 'deleteCard': 
+          deleteCardDirectly(col, card, type); 
+          break;
+        case 'openTable': 
+          openTableEditor(col, card); 
+          break;
+        case 'votePoll': 
+          votePoll(col, card, parseInt(opt)); 
+          break;
+        case 'toggleAudio': 
+          toggleAudioPlayer(actionTarget, col, card); 
+          break;
+        case 'editCol': 
+          openColModal(col); 
+          break;
+        case 'moreAdd': 
+          openMoreAddModal(col); 
+          break;
+        case 'setColSort': 
+          const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
+          updateBoardData({ columns: updatedCols });
+          break;
+        case 'closeEdit': 
+          closeEditModal(); 
+          break;
+        case 'archiveCard': 
+          archiveCard(); 
+          break;
+      }
+    } else {
+      // КРИТИЧЕСКИЙ ФИКС: Если кликнули по самой карточке, но не по конкретной кнопке (edit/delete)
+      const cardContainer = e.target.closest('.card-item');
+      if (cardContainer && cardContainer.dataset.id) {
+        const colId = cardContainer.dataset.col || cardContainer.closest('[data-id]')?.dataset.id;
+        if (colId) {
+          e.preventDefault();
+          e.stopPropagation();
+          openViewModal(colId, cardContainer.dataset.id);
+        }
+      }
     }
+  }, true);
 
-    switch(action) {
-      case 'viewCard': openViewModal(col, card); break;
-      case 'editCard': openEditModal(col, card); break;
-      case 'saveCard': saveCard(); break; // Восстановление критической связи
-      case 'deleteCard': deleteCardDirectly(col, card, type); break;
-      case 'openTable': openTableEditor(col, card); break;
-      case 'votePoll': votePoll(col, card, parseInt(opt)); break;
-      case 'toggleAudio': toggleAudioPlayer(target, col, card); break;
-      case 'editCol': openColModal(col); break;
-      case 'moreAdd': openMoreAddModal(col); break;
-      case 'setColSort': 
-        const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
-        updateBoardData({ columns: updatedCols });
-        break;
-      case 'closeEdit': closeEditModal(); break;
-      case 'archiveCard': archiveCard(); break;
-    }
-  }, true); // Используем capture phase для приоритетной обработки
-
-  // Обработка быстрых действий через двойной клик
   document.getElementById('board')?.addEventListener('dblclick', (e) => {
     const target = e.target.closest('[data-dblaction]');
     if (!target) return;
