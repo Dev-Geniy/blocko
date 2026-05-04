@@ -2976,32 +2976,48 @@ async function openProfileSettings() {
           document.getElementById('animationSettingsBlock').classList.add('hidden');
         }
 
-        // ЭНТЕРПРАЙЗ: Интеллектуальная проверка прав (RBAC)
-        const ownerEmail = 'uajerryua@gmail.com';
-        const userEmail = data.email || (currentUser && currentUser.email) || '';
-        let isAdmin = userEmail === ownerEmail;
-        let isOwner = userEmail === ownerEmail;
+        // ЭНТЕРПРАЙЗ: Усовершенствованный RBAC Engine (Role-Based Access Control)
+        // Определяем константу главного архитектора системы (тебя)
+        const MASTER_OWNER_EMAIL = 'uajerryua@gmail.com'; 
+        const userEmail = (data.email || auth.currentUser?.email || '').toLowerCase();
+        
+        let isSystemAdmin = false;
+        let isSystemOwner = (userEmail === MASTER_OWNER_EMAIL);
 
-        if (!isAdmin && userEmail) {
-          try {
-            const sysDoc = await db.collection('system').doc('admins').get();
-            if (sysDoc.exists && sysDoc.data().emails) {
-               if (sysDoc.data().emails.includes(userEmail)) isAdmin = true;
+        // 1. Проверка на главного владельца
+        if (isSystemOwner) {
+            isSystemAdmin = true;
+        } else {
+            // 2. Проверка дополнительных админов через защищенную коллекцию
+            try {
+                const sysDoc = await db.collection('system').doc('admins').get();
+                if (sysDoc.exists) {
+                    const adminList = sysDoc.data().emails || [];
+                    if (adminList.map(e => e.toLowerCase()).includes(userEmail)) {
+                        isSystemAdmin = true;
+                    }
+                }
+            } catch(e) {
+                console.warn("RBAC System: Access to system/admins restricted.");
             }
-          } catch(e) {}
         }
 
-        if (isAdmin) {
-            document.getElementById('adminControlsBlock').classList.remove('hidden');
-            if (isOwner) {
-                document.getElementById('btnManageAdmins').classList.remove('hidden');
-                document.getElementById('btnManageAdmins').classList.add('flex');
+        // Рендерим блок управления, если права подтверждены
+        const adminBlock = document.getElementById('adminControlsBlock');
+        const btnManageAdmins = document.getElementById('btnManageAdmins');
+
+        if (isSystemAdmin) {
+            adminBlock.classList.remove('hidden');
+            // Кнопка "Доступ" (управление другими админами) видна только главному Владельцу
+            if (isSystemOwner) {
+                btnManageAdmins.classList.remove('hidden');
+                btnManageAdmins.classList.add('flex');
             } else {
-                document.getElementById('btnManageAdmins').classList.add('hidden');
-                document.getElementById('btnManageAdmins').classList.remove('flex');
+                btnManageAdmins.classList.add('hidden');
+                btnManageAdmins.classList.remove('flex');
             }
         } else {
-            document.getElementById('adminControlsBlock').classList.add('hidden');
+            adminBlock.classList.add('hidden');
         }
 
         updateProfilePreview(data);
@@ -3445,68 +3461,5 @@ async function applyFrameColor(frameColor, glowColor) {
         }
     }
   </script>
-<!-- 
-  Привет! Как визионер, понимаю: когда база меняется, архитектура требует быстрой перенастройки. Давай разберем все максимально просто.
-  
-  ПОЧЕМУ ПРОПАЛА ПАНЕЛЬ?
-  Ты подключил новую пустую базу Firebase. В ней еще нет информации о том, что твой аккаунт — это аккаунт создателя (админа).
-  
-  ЧТО МЫ СЕЙЧАС СДЕЛАЕМ:
-  Мы временно добавим премиальную панель с кнопкой прямо на главную страницу твоего сайта. Эта панель оформлена с использованием светлой сетки (light grid) для идеального визуального стиля.
-  Когда ты нажмешь эту кнопку, система запишет в твою новую базу права администратора. Это откроет доступ к отдельной вкладке админ-панели, необходимой для выстраивания логики твоего модуля CPA Network, и начислит стартовые CPA USD для тестирования покупки AI-пакетов или безлимитного доступа напрямую внутри системы.
-  
-  ШАГИ:
-  1. Зайди в свой репозиторий GitHub.
-  2. Открой файл index.html.
-  3. Прокрути в самый-самый низ файла.
-  4. Найди там две последние строчки: </body> и </html>.
-  5. Скопируй весь этот блок "НА ЧТО ЗАМЕНИТЬ" от начала и до конца.
-  6. Удали старые </body> и </html> и вставь скопированный код на их место.
-  7. Нажми "Commit changes" (сохранить) и подожди пару минут, пока сайт обновится.
-  8. Зайди на свой сайт, авторизуйся как обычно.
-  9. В правом нижнем углу появится панель. Нажми кнопку "Активировать Admin-доступ".
-  10. После успешной выдачи прав этот код из index.html можно будет удалить.
--->
-<div id="blocko-admin-bootstrapper" style="position: fixed; bottom: 24px; right: 24px; z-index: 10000; background-color: #ffffff; background-image: linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px); background-size: 30px 30px; padding: 32px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); font-family: 'Plus Jakarta Sans', sans-serif;">
-  <h3 style="margin: 0 0 10px 0; font-size: 18px; font-weight: 900; color: #111; letter-spacing: -0.5px;">Blocko Pro Core</h3>
-  <p style="margin: 0 0 20px 0; font-size: 14px; color: #555; max-width: 280px; line-height: 1.5;">Инициализация прав администратора для доступа к CPA Network и системным настройкам.</p>
-  <button id="bootstrap-admin-btn" style="background: #10b981; color: #fff; border: none; padding: 14px 24px; border-radius: 12px; cursor: pointer; font-weight: 800; width: 100%; transition: all 0.2s ease; font-size: 15px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">Активировать Admin-доступ</button>
-</div>
-
-<script>
-  // Используем Event Listener в соответствии с правилами проекта (inline-обработчики запрещены)
-  document.addEventListener('DOMContentLoaded', () => {
-    const adminBtn = document.getElementById('bootstrap-admin-btn');
-    if (adminBtn) {
-      adminBtn.addEventListener('click', () => {
-        const user = firebase.auth().currentUser;
-        
-        if (!user) {
-          alert('Системное уведомление: Для начала выполни стандартный вход в свой аккаунт на странице.');
-          return;
-        }
-
-        const db = firebase.firestore();
-        
-        db.collection('users').doc(user.uid).set({
-          role: 'admin',
-          isAdmin: true,
-          partnerLevel: 'Platinum', 
-          cpaUsdBalance: 500, 
-          payoutHistoryInitialized: true
-        }, { merge: true })
-        .then(() => {
-          alert('Blocko Visionary: Права Admin успешно восстановлены. Тестовый баланс CPA USD начислен. Страница будет перезагружена.');
-          window.location.reload();
-        })
-        .catch((error) => {
-          console.error('Ошибка инициализации прав:', error);
-          alert('Внимание: Ошибка записи. Зайди в Firebase -> Firestore Database -> Rules и временно установи правила на: allow read, write: if true;');
-        });
-      });
-    }
-  });
-</script>
 </body>
 </html>
-
