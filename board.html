@@ -3371,11 +3371,22 @@ async function saveCard() {
     if (ytMatch && ytMatch[1]) ytEmbedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`;
   }
   
-  let imageUrl = editingCard ? editingCard.image : null;
-  let imageThumbUrl = editingCard ? (editingCard.imageThumb || editingCard.image) : null;
+  // КРИТИЧЕСКИЙ ФИКС: Защита от undefined полей, из-за которых Firestore отклоняет транзакцию
+  let imageUrl = editingCard && editingCard.image !== undefined ? editingCard.image : null;
+  let imageThumbUrl = editingCard && editingCard.imageThumb !== undefined ? editingCard.imageThumb : (imageUrl || null);
+
+  // UX: Блокировка кнопки сохранения для предотвращения двойных кликов и ощущения зависания
+  const saveBtn = document.querySelector('#editCardModal button[onclick="saveCard()"]');
+  const ogSaveBtnHtml = saveBtn ? saveBtn.innerHTML : '';
+  if (saveBtn) {
+     saveBtn.disabled = true;
+     saveBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span class="hidden sm:inline">Сохранение...</span>';
+     lucide.createIcons({ root: saveBtn.parentNode });
+  }
 
   if (pendingImageFile) { 
     if (!navigator.onLine) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = ogSaveBtnHtml; lucide.createIcons({ root: saveBtn.parentNode }); }
       return showSystemToast('Офлайн', 'Загрузка обложек недоступна без интернета. Сохраните задачу без картинки.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
     }
     showSystemToast('Оптимизация...', 'Сжимаем и сохраняем обложку', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50');
@@ -3393,57 +3404,72 @@ async function saveCard() {
       // Берем оптимизированную миниатюру от ImgBB для моментального рендера в ленте доски
       imageThumbUrl = data.data.thumb?.url || data.data.display_url || data.data.url;
     } catch(e) { 
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = ogSaveBtnHtml; lucide.createIcons({ root: saveBtn.parentNode }); }
       return showSystemToast('Ошибка', 'Сбой загрузки обложки', 'x-circle', 'text-red-500', 'bg-red-50'); 
     }
   }
   
   const cardId = editingCard ? editingCard.id : 'card_' + Date.now();
+  
+  // Тщательная санация объекта от возможных undefined (превращаем в null или дефолт)
   const cardData = { 
     title: titleVal || 'Без названия', 
     description: descVal || "", 
     tags: activeTags || [], 
-    image: imageUrl,
-    imageThumb: imageThumbUrl, // Сохраняем кэшированную миниатюру
-    youtubeRaw: ytVal,
-    youtubeEmbed: ytEmbedUrl,
-    comments: editingCard ? (editingCard.comments || []) : [], 
-    author: editingCard ? editingCard.author : currentUser, 
+    image: imageUrl || null,
+    imageThumb: imageThumbUrl || null,
+    youtubeRaw: ytVal || null,
+    youtubeEmbed: ytEmbedUrl || null,
+    comments: editingCard && editingCard.comments ? editingCard.comments : [], 
+    author: editingCard && editingCard.author ? editingCard.author : currentUser, 
     dueDate: dateVal || "", 
-    priority: priorityVal,
-    storyPoints: spVal,
+    priority: priorityVal || 'normal',
+    storyPoints: spVal || null,
     checklist: activeChecklist || [],
     columnId: currentColumn,
-    order: editingCard ? (editingCard.order || 0) : allCards.length,
-    archived: editingCard ? (editingCard.archived || false) : false
+    order: editingCard && editingCard.order !== undefined ? editingCard.order : allCards.length,
+    archived: editingCard && editingCard.archived !== undefined ? editingCard.archived : false
   };
   
-  if (isLocalBoard) {
-    columns = columns.map(col => {
-      if (col.id == currentColumn) {
-        const cards = col.cards || [];
-        const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
-        return {...col, cards: updated};
-      }
-      return col;
-    });
-    persist();
-    render();
-  } else {
-    await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set({
-      ...cardData,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
-    
-    // ЭНТЕРПРАЙЗ: Запись в журнал действий
-    if (!editingCard) {
-      logActivity(`Создал(а) задачу "${cardData.title}"`, 'plus-circle');
+  try {
+    if (isLocalBoard) {
+      columns = columns.map(col => {
+        if (col.id == currentColumn) {
+          const cards = col.cards || [];
+          const updated = editingCard ? cards.map(c => c.id == cardId ? {id: cardId, ...cardData} : c) : [...cards, {id: cardId, ...cardData}];
+          return {...col, cards: updated};
+        }
+        return col;
+      });
+      persist();
+      render();
     } else {
-      logActivity(`Обновил(а) детали задачи "${cardData.title}"`, 'edit-3');
+      await db.collection("boards").doc(BOARD_ID).collection("cards").doc(String(cardId)).set({
+        ...cardData,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      
+      // ЭНТЕРПРАЙЗ: Запись в журнал действий
+      if (!editingCard) {
+        logActivity(`Создал(а) задачу "${cardData.title}"`, 'plus-circle');
+      } else {
+        logActivity(`Обновил(а) детали задачи "${cardData.title}"`, 'edit-3');
+      }
+    }
+
+    closeEditModal();
+    showSystemToast('Сохранено', 'Данные успешно обновлены.', 'check', 'text-green-500', 'bg-green-50');
+  } catch (err) {
+    console.error("Save Error:", err);
+    showSystemToast('Ошибка', 'Не удалось сохранить задачу. Сервер отклонил данные.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+  } finally {
+    // В любом исходе возвращаем кнопку в рабочее состояние
+    if (saveBtn) { 
+      saveBtn.disabled = false; 
+      saveBtn.innerHTML = ogSaveBtnHtml; 
+      lucide.createIcons({ root: saveBtn.parentNode }); 
     }
   }
-
-  closeEditModal();
-  showSystemToast('Сохранено', 'Данные успешно обновлены.', 'check', 'text-green-500', 'bg-green-50');
 }
   
 function deleteCard() { 
