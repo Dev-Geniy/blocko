@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Политика конфиденциальности — Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    html { scroll-behavior: smooth; }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
+
+<!-- Фоновые неоновые блики (Изумрудно-синие для Privacy) -->
+<div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
+<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Legal Center</h1>
+      <p class="text-xs text-emerald-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Конфиденциальность
+      </p>
+    </div>
+  </div>
+  <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+  </button>
+</header>
+
+<main class="p-4 sm:p-8 max-w-7xl mx-auto w-full flex-1 mb-20 flex flex-col lg:flex-row gap-10">
+  
+  <!-- Боковая навигация (Sticky) -->
+  <aside class="hidden lg:block w-72 flex-shrink-0">
+    <div class="sticky top-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] shadow-sm">
+      <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Оглавление</h3>
+      <nav class="space-y-3">
+        <a href="#privacy-1" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">1. Сбор информации</a>
+        <a href="#privacy-2" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">2. Использование данных</a>
+        <a href="#privacy-3" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">3. Хранение и Офлайн-режим</a>
+        <a href="#privacy-4" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">4. Передача третьим лицам</a>
+        <a href="#privacy-5" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">5. Ваши права</a>
+      </nav>
+      
+      <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
+         <a href="terms.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
+           Условия сервиса
+           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
+         </a>
+         <a href="cookies.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
+           Cookie политика
+           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
+         </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Контент документа -->
+  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 sm:p-12 rounded-[3rem] shadow-sm relative overflow-hidden">
+    
+    <div class="mb-12 border-b border-gray-100 dark:border-gray-800 pb-10 text-center sm:text-left">
+      <div class="inline-flex items-center justify-center p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400 rounded-2xl mb-6 shadow-sm border border-emerald-200 dark:border-emerald-800/50">
+        <i data-lucide="shield" class="w-8 h-8"></i>
+      </div>
+      <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Политика конфиденциальности</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Последнее обновление: <b class="text-gray-700 dark:text-gray-300">10 Мая 2026 г.</b></p>
+    </div>
+
+    <div class="space-y-12 text-gray-600 dark:text-gray-300 leading-relaxed">
+
+      <!-- Вступление -->
+      <p class="text-lg font-medium text-gray-700 dark:text-gray-200">
+        Ваша приватность — наш абсолютный приоритет. Мы создали Blocko Pro с расчетом на максимальную безопасность данных. В этом документе мы прозрачно объясняем, какие данные мы собираем, как их используем и как вы можете ими управлять.
+      </p>
+
+      <!-- Секция 1 -->
+      <section id="privacy-1" class="scroll-mt-32">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">1</span> Сбор информации
+        </h3>
+        <p class="mb-4">Мы собираем минимально необходимый объем информации для обеспечения работы платформы:</p>
+        <ul class="space-y-3 list-none pl-0">
+          <li class="flex items-start gap-3">
+            <i data-lucide="user" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="text-gray-900 dark:text-white">Учетные данные:</strong> Имя, email и фото профиля (аватар), полученные при авторизации через Google (OAuth).
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <i data-lucide="layout" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="text-gray-900 dark:text-white">Контент Облачных досок (Cloud):</strong> Задачи, комментарии, файлы и структура досок, которые вы осознанно создаете в режиме онлайн-синхронизации.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <i data-lucide="credit-card" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
+            <div>
+              <strong class="text-gray-900 dark:text-white">Транзакции:</strong> История пополнения B-Coins и активации подписок. Важно: мы <b class="text-red-500 dark:text-red-400">не храним</b> данные ваших банковских карт, все платежи обрабатываются на стороне платежных шлюзов (например, PayPal).
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Секция 2 -->
+      <section id="privacy-2" class="scroll-mt-32">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">2</span> Использование данных
+        </h3>
+        <p class="mb-4">Собранные данные используются исключительно для:</p>
+        <ul class="space-y-2 mt-2 list-disc list-inside">
+          <li>Обеспечения работоспособности сервиса (синхронизация досок между участниками команды).</li>
+          <li>Обработки платежей и начисления бонусных баллов (CPA Network).</li>
+          <li>Отправки критических системных уведомлений (например, о скором дедлайне задач).</li>
+          <li>Обеспечения безопасности (предотвращение несанкционированного доступа).</li>
+        </ul>
+        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl">
+           <p class="text-sm text-blue-800 dark:text-blue-300 font-medium">
+             <i data-lucide="bot" class="w-4 h-4 inline mb-0.5 mr-1"></i> Мы <b>не используем</b> данные ваших приватных проектов для обучения моделей искусственного интеллекта (AI).
+           </p>
+        </div>
+      </section>
+
+      <!-- Секция 3 -->
+      <section id="privacy-3" class="scroll-mt-32">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">3</span> Хранение и Офлайн-режим (Device Mode)
+        </h3>
+        <p class="mb-4">Мы используем инфраструктуру <b>Google Firebase</b> для надежного и зашифрованного хранения данных Облачных проектов.</p>
+        
+        <h4 class="font-bold text-gray-900 dark:text-white mb-2 mt-6">Офлайн-доски (Local Mode)</h4>
+        <p class="mb-4">
+          Уникальная особенность Blocko Pro — возможность создавать локальные проекты (Device Mode). Данные таких проектов <b class="text-gray-900 dark:text-white">никогда не покидают ваше устройство</b>. Они хранятся исключительно в Local Storage вашего браузера. Мы не имеем к ним физического доступа, не можем их восстановить при удалении и не можем передать правоохранительным органам.
+        </p>
+
+        <h4 class="font-bold text-gray-900 dark:text-white mb-2">Сгорающие файлы</h4>
+        <p>
+          Файлы, отправленные в чат с атрибутом "Сжечь после прочтения", безвозвратно удаляются с наших серверов сразу после первого скачивания получателем.
+        </p>
+      </section>
+
+      <!-- Секция 4 -->
+      <section id="privacy-4" class="scroll-mt-32">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">4</span> Передача третьим лицам
+        </h3>
+        <p>
+          Мы <b>не продаем</b> и <b>не сдаем в аренду</b> ваши персональные данные. Передача информации возможна только нашим доверенным технологическим партнерам, строго необходимым для работы сервиса (например, провайдеры хостинга или платежные системы).
+        </p>
+      </section>
+
+      <!-- Секция 5 -->
+      <section id="privacy-5" class="scroll-mt-32">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">5</span> Ваши права (GDPR / CCPA)
+        </h3>
+        <p class="mb-4">В соответствии с мировыми стандартами защиты данных, вы имеете право:</p>
+        <ul class="space-y-2 list-disc list-inside mb-6">
+          <li>Запросить копию всех ваших данных (Экспорт в JSON).</li>
+          <li>Отозвать согласие на обработку данных.</li>
+          <li>Запросить полное и безвозвратное удаление вашего аккаунта и всех связанных облачных досок (Право быть забытым).</li>
+        </ul>
+      </section>
+
+    </div>
+    
+    <!-- Footer CTA -->
+    <div class="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6 bg-gray-50 dark:bg-gray-800/30 p-6 rounded-3xl">
+      <div class="flex flex-col">
+         <span class="text-sm font-bold text-gray-900 dark:text-white mb-1">Служба защиты данных (DPO)</span>
+         <span class="text-xs text-gray-500 dark:text-gray-400">Напишите нам, если хотите запросить удаление аккаунта.</span>
+      </div>
+      <a href="mailto:privacy@blocko.cloud" class="px-6 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 flex-shrink-0">
+        <i data-lucide="shield-check" class="w-4 h-4"></i> privacy@blocko.cloud
+      </a>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  }
+  lucide.createIcons();
+</script>
+</body>
+</html>
