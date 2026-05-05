@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Глобальный Календарь — Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Анимации загрузки */
+    @keyframes block-stretch {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(2.5); opacity: 1; }
+    }
+    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-400 { animation-delay: 0.4s; }
+
+    /* Drag & Drop Стили */
+    .sortable-ghost { opacity: 0.4; transform: scale(0.95); border: 2px dashed #8b5cf6; background: rgba(139, 92, 246, 0.1); }
+    .sortable-drag { cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); transform: rotate(2deg) scale(1.05); z-index: 100; }
+    
+    .calendar-cell-active { box-shadow: inset 0 0 0 2px #3b82f6; background-color: rgba(59, 130, 246, 0.05) !important; }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-hidden">
+
+<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ -->
+<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+  <div class="flex flex-col items-center scale-110">
+    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-3xl text-white shadow-2xl shadow-indigo-500/40 mb-6">
+      <i data-lucide="calendar-days" class="w-12 h-12"></i>
+    </div>
+    <h2 class="text-3xl font-black tracking-tighter mb-10">CALENDAR <span class="text-indigo-500">PRO</span></h2>
+    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
+       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-indigo-500 rounded-full"></div>
+       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-purple-500 rounded-full"></div>
+       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-indigo-400 rounded-full"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Неоновые блики -->
+<div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Глобальный Календарь</h1>
+      <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Дедлайны со всех досок
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button onclick="fetchCalendarTasks()" class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95">
+      <i data-lucide="refresh-cw" class="w-4 h-4"></i> Синхронизация
+    </button>
+    <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
+  </div>
+</header>
+
+<main class="p-4 sm:p-8 max-w-[1400px] mx-auto w-full flex-1 flex flex-col h-[calc(100vh-85px)]">
+  
+  <!-- Панель управления календарем -->
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md">
+    
+    <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+      <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+      <h2 id="currentMonthYear" class="text-lg font-black text-gray-900 dark:text-white w-40 text-center tracking-tight">Загрузка...</h2>
+      <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button onclick="goToToday()" class="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all shadow-sm border border-indigo-200 dark:border-indigo-800/50 active:scale-95">
+        Сегодня
+      </button>
+      <div class="flex items-center bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+        <button class="px-4 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-bold text-xs rounded-xl shadow-sm transition-all">Месяц</button>
+        <button class="px-4 py-2 text-gray-500 hover:text-gray-900 dark:hover:text-white font-bold text-xs rounded-xl transition-all opacity-50 cursor-not-allowed" title="В разработке">Неделя</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Сетка календаря -->
+  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative z-10">
+    <div class="w-full overflow-x-auto hide-scroll flex-1 flex flex-col">
+       <div class="min-w-[900px] flex-1 flex flex-col">
+          
+          <!-- Заголовки дней недели -->
+          <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 backdrop-blur-md">
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10">Сб</div>
+            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10">Вс</div>
+          </div>
+
+          <!-- Ячейки дней -->
+          <div id="calendarGrid" class="flex-1 grid grid-cols-7 grid-rows-5 bg-gray-200 dark:bg-gray-800 gap-px">
+             <!-- Рендерится через JS -->
+          </div>
+
+       </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
+  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+</div>
+
+<script>
+  // Инициализация темы
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  }
+  lucide.createIcons();
+
+  let currentUser = null;
+  let allTasks = []; // Задачи с дедлайном
+  let currentViewDate = new Date(); // Месяц, который сейчас отображается
+  let sortableZones = [];
+
+  auth.onAuthStateChanged(async (user) => {
+    const loader = document.getElementById('globalLoader');
+    if (user) {
+      currentUser = user;
+      await fetchCalendarTasks();
+      
+      loader.style.opacity = '0';
+      setTimeout(() => loader.classList.add('hidden'), 700);
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  // Извлечение всех задач из Firebase и LocalStorage
+  async function fetchCalendarTasks() {
+      if (!currentUser) return;
+      allTasks = [];
+      const loader = document.getElementById('globalLoader');
+      if (loader.classList.contains('hidden')) {
+          showSystemToast('Синхронизация...', 'Собираем задачи со всех проектов.', 'loader-2', 'text-indigo-500 animate-spin', 'bg-indigo-50 dark:bg-indigo-900/30');
+      }
+
+      // 1. ОФЛАЙН ДОСКИ (Local Storage)
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      Object.values(localBoards).forEach(board => {
+          if (board.columns) {
+              board.columns.forEach(col => {
+                  if (col.cards) {
+                      col.cards.forEach(card => {
+                          if (card.dueDate && !card.archived) {
+                              allTasks.push({
+                                  ...card,
+                                  boardId: board.id,
+                                  boardTitle: board.title,
+                                  colId: col.id,
+                                  isLocal: true
+                              });
+                          }
+                      });
+                  }
+              });
+          }
+      });
+
+      // 2. ОБЛАЧНЫЕ ДОСКИ (Firestore)
+      if (navigator.onLine) {
+          try {
+              // Ищем все доски, где пользователь является участником
+              const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
+              
+              const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
+                  const boardId = bDoc.id;
+                  const boardData = bDoc.data();
+                  
+                  // Получаем все активные карточки из подколлекции 'cards'
+                  const cardsSnap = await db.collection("boards").doc(boardId).collection("cards").where("archived", "==", false).get();
+                  
+                  cardsSnap.forEach(cDoc => {
+                      const card = cDoc.data();
+                      if (card.dueDate) {
+                          allTasks.push({
+                              ...card,
+                              id: cDoc.id,
+                              boardId: boardId,
+                              boardTitle: boardData.title,
+                              colId: card.columnId,
+                              isLocal: false
+                          });
+                      }
+                  });
+              });
+
+              await Promise.all(fetchPromises);
+              if (loader.classList.contains('hidden')) {
+                 showSystemToast('Успех', 'Синхронизация завершена.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+              }
+          } catch (e) {
+              console.error("Calendar fetch error:", e);
+              showSystemToast('Внимание', 'Не удалось загрузить часть облачных задач.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+          }
+      }
+
+      renderCalendar();
+  }
+
+  // --- ЛОГИКА КАЛЕНДАРЯ ---
+  function changeMonth(offset) {
+      currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+      renderCalendar();
+  }
+
+  function goToToday() {
+      currentViewDate = new Date();
+      renderCalendar();
+  }
+
+  function renderCalendar() {
+      const grid = document.getElementById('calendarGrid');
+      const monthYearTitle = document.getElementById('currentMonthYear');
+      
+      const year = currentViewDate.getFullYear();
+      const month = currentViewDate.getMonth(); // 0-11
+
+      const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+      monthYearTitle.innerText = `${monthNames[month]} ${year}`;
+
+      // Уничтожаем старые инстансы Sortable
+      sortableZones.forEach(z => z.destroy());
+      sortableZones = [];
+
+      grid.innerHTML = '';
+
+      // Получаем первый день месяца
+      const firstDay = new Date(year, month, 1);
+      // Определяем день недели (0 = Вс, 1 = Пн). Сдвигаем, чтобы Пн был 0
+      let startDay = firstDay.getDay() - 1;
+      if (startDay === -1) startDay = 6; // Если было Воскресенье
+
+      // Количество дней в месяце
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+      const today = new Date();
+      const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
+      const todayDate = today.getDate();
+
+      let html = '';
+      let cellCount = 0;
+
+      // 1. Дни предыдущего месяца (бледные)
+      for (let i = startDay - 1; i >= 0; i--) {
+          const d = daysInPrevMonth - i;
+          html += createDayCell(null, d, true);
+          cellCount++;
+      }
+
+      // 2. Дни текущего месяца
+      for (let d = 1; d <= daysInMonth; d++) {
+          const isToday = isCurrentMonth && d === todayDate;
+          // Форматируем дату в YYYY-MM-DD для поиска задач
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          html += createDayCell(dateStr, d, false, isToday);
+          cellCount++;
+      }
+
+      // 3. Заполняем сетку до конца (следующий месяц)
+      const totalCells = cellCount <= 35 ? 35 : 42; // 5 или 6 строк
+      let nextMonthDay = 1;
+      while (cellCount < totalCells) {
+          html += createDayCell(null, nextMonthDay, true);
+          nextMonthDay++;
+          cellCount++;
+      }
+
+      // Если 42 ячейки, меняем grid-rows-5 на grid-rows-6
+      grid.className = `flex-1 grid grid-cols-7 ${totalCells === 42 ? 'grid-rows-6' : 'grid-rows-5'} bg-gray-200 dark:bg-gray-800 gap-px`;
+      grid.innerHTML = html;
+
+      // Инициализация Drag and Drop для активных ячеек
+      document.querySelectorAll('.calendar-day-dropzone').forEach(zone => {
+          sortableZones.push(new Sortable(zone, {
+              group: 'calendar-tasks',
+              animation: 150,
+              ghostClass: 'opacity-50',
+              dragClass: 'sortable-drag',
+              easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+              onAdd: function (evt) {
+                  const itemEl = evt.item;
+                  const newDate = evt.to.dataset.date;
+                  const taskId = itemEl.dataset.taskId;
+                  const boardId = itemEl.dataset.boardId;
+                  const isLocal = itemEl.dataset.isLocal === 'true';
+                  
+                  if (newDate) {
+                      updateTaskDate(boardId, taskId, newDate, isLocal);
+                  }
+              }
+          }));
+      });
+
+      lucide.createIcons();
+  }
+
+  function createDayCell(dateStr, dayNum, isFiller, isToday = false) {
+      if (isFiller) {
+          return `
+            <div class="bg-gray-50/50 dark:bg-gray-900/30 p-2 opacity-40">
+              <span class="text-xs font-bold text-gray-400">${dayNum}</span>
+            </div>`;
+      }
+
+      const tasksForDay = allTasks.filter(t => t.dueDate === dateStr);
+      
+      const badgeClass = isToday 
+          ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30 w-7 h-7 flex items-center justify-center rounded-lg" 
+          : "text-gray-700 dark:text-gray-300 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors";
+
+      const bgClass = isToday ? "bg-indigo-50/30 dark:bg-indigo-900/10" : "bg-white dark:bg-gray-900";
+
+      let tasksHtml = tasksForDay.map(t => {
+          let priorityColor = "border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50";
+          if (t.priority === 'high') priorityColor = "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50";
+          if (t.priority === 'critical') priorityColor = "border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50 shadow-sm";
+
+          return `
+            <a href="board.html?b=${t.boardId}&c=${t.id}" target="_blank" data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block p-2 mb-1.5 border rounded-xl text-[10px] font-bold truncate cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-transform ${priorityColor}">
+               <div class="flex items-center gap-1 mb-0.5 opacity-60">
+                 ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
+                 <span class="truncate max-w-[80px]">${t.boardTitle}</span>
+               </div>
+               ${t.title}
+            </a>`;
+      }).join('');
+
+      return `
+        <div class="flex flex-col ${bgClass} transition-colors group">
+          <div class="p-2 flex justify-between items-center border-b border-transparent group-hover:border-gray-100 dark:group-hover:border-gray-800/50 transition-colors">
+            <span class="text-sm font-black ${badgeClass}">${dayNum}</span>
+            ${tasksForDay.length > 0 ? `<span class="text-[9px] font-black text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">${tasksForDay.length}</span>` : ''}
+          </div>
+          <div class="flex-1 p-1.5 overflow-y-auto hide-scroll calendar-day-dropzone min-h-[60px]" data-date="${dateStr}">
+            ${tasksHtml}
+          </div>
+        </div>`;
+  }
+
+  // --- ДВИЖОК ОБНОВЛЕНИЯ ДАТЫ ПРИ DRAG & DROP ---
+  async function updateTaskDate(boardId, taskId, newDateStr, isLocal) {
+      // 1. Обновляем локальный массив для мгновенного отклика
+      const taskIndex = allTasks.findIndex(t => t.id === taskId);
+      if (taskIndex !== -1) {
+          allTasks[taskIndex].dueDate = newDateStr;
+      }
+
+      // 2. Отправляем в базу
+      if (isLocal) {
+          const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+          const board = localBoards[boardId];
+          if (board) {
+              board.columns.forEach(col => {
+                  if (col.cards) {
+                      const cIdx = col.cards.findIndex(c => c.id === taskId);
+                      if (cIdx !== -1) col.cards[cIdx].dueDate = newDateStr;
+                  }
+              });
+              localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
+              showSystemToast('Дедлайн изменен', `Офлайн задача перенесена на ${newDateStr}.`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+          }
+      } else {
+          try {
+              await db.collection("boards").doc(boardId).collection("cards").doc(taskId).update({
+                  dueDate: newDateStr,
+                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              showSystemToast('Дедлайн изменен', `Задача перенесена на ${newDateStr}.`, 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+          } catch (e) {
+              console.error(e);
+              showSystemToast('Ошибка', 'Не удалось обновить дату в облаке.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+          }
+      }
+      
+      // Ререндер для обновления счетчиков
+      renderCalendar();
+  }
+
+  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+      const toast = document.getElementById('globalToast');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastDesc').innerText = desc;
+      const iconEl = document.getElementById('toastIcon');
+      iconEl.setAttribute('data-lucide', iconName);
+      iconEl.className = `w-5 h-5 ${iconColor}`;
+      document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+      lucide.createIcons({ root: toast });
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 4000);
+  }
+</script>
+</body>
+</html>
