@@ -2448,9 +2448,9 @@ function toggleShareMenu() {
 }
 
 function copyShareLink(role = 'editor') {
-  // ЭНТЕРПРАЙЗ: Формируем ссылку с параметром выбранной роли
-  const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID + '&r=' + role;
-  navigator.clipboard.writeText(url); 
+  // ЭНТЕРПРАЙЗ: Формируем ссылку с параметром выбранной роли + пришиваем реферальный код владельца ссылки
+  const url = window.location.origin + window.location.pathname.replace('board.html', '').replace('index.html', '') + '?join=' + BOARD_ID + '&r=' + role + '&ref=' + currentUser.id;
+  navigator.clipboard.writeText(url);
   
   const menu = document.getElementById('shareMenuDropdown');
   if (menu) menu.classList.add('hidden');
