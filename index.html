@@ -180,7 +180,7 @@
        
        <div class="relative z-10 flex-1 w-full text-center lg:text-left">
           <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-[10px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-4 border border-blue-100 dark:border-blue-800/50 shadow-sm">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Экосистема Blocko Pro
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i> <span id="dashDateTimeBadge">Загрузка времени...</span>
           </div>
           <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3 text-gray-900 dark:text-white">
             <span id="dashWelcomeGreeting">Добро пожаловать</span>, <span id="dashWelcomeName" class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Пользователь</span>!
@@ -425,6 +425,7 @@
   <div class="max-w-7xl mx-auto">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
       
+      <!-- Колонка 1: Бренд и Донат -->
       <div class="flex flex-col gap-6">
         <div class="flex items-center gap-3 select-none">
           <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
@@ -442,9 +443,9 @@
             <i data-lucide="download-cloud" class="w-4 h-4"></i> Установить приложение
           </button>
           
-          <!-- ЭНТЕРПРАЙЗ: Блок донатов с QR-кодом -->
+          <!-- Блок донатов с кликабельным QR-кодом -->
           <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/80 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm w-fit group hover:border-rose-300 dark:hover:border-rose-700/50 transition-colors">
-             <img src="https://i.ibb.co/chVdT5RP/qr.png" alt="Donate QR" class="w-12 h-12 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 group-hover:scale-105 transition-transform" />
+             <img src="https://i.ibb.co/chVdT5RP/qr.png" alt="Donate QR" onclick="openDonateQrModal('https://i.ibb.co/chVdT5RP/qr.png')" class="w-12 h-12 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 group-hover:scale-105 transition-transform cursor-pointer" title="Нажмите, чтобы увеличить" />
              <div class="flex flex-col pr-2">
                 <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3 fill-current"></i> Поддержать нас</span>
                 <a href="https://www.paypal.com/ncp/payment/6WARL883XJQG6" target="_blank" class="text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center gap-1.5">
@@ -455,6 +456,7 @@
         </div>
       </div>
 
+      <!-- Колонка 2: Продукт -->
       <div class="flex flex-col gap-6">
         <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Продукт</h4>
         <nav class="flex flex-col gap-4">
@@ -465,13 +467,16 @@
             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Магазин
           </a>
           <a href="javascript:void(0)" onclick="openAffiliateModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Реферальная сеть друзей и коллег
+             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Реферальная сеть
           </a>
           <a href="affiliates-money.html" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors flex items-center gap-3 group">
              <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div> CPA Network
           </a>
-          <a href="products.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Продукты Blocko
+          <a href="knowledge-base.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> База знаний
+          </a>
+          <a href="blog.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Блог
           </a>
           <a href="updates.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Обновления
@@ -479,50 +484,51 @@
         </nav>
       </div>
 
+      <!-- Колонка 3: Legal Center -->
       <div class="flex flex-col gap-6">
-        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Пригласить коллег</h4>
-        <div class="flex flex-col gap-4">
-          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Быстрая ссылка для команды:</p>
-          <div class="flex gap-3">
-            <button onclick="shareVia('telegram')" class="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100" title="Telegram"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
-            <button onclick="shareVia('whatsapp')" class="p-3.5 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-green-100 dark:border-green-800/50 hover:bg-green-100" title="WhatsApp"><i data-lucide="phone" class="w-5 h-5"></i></button>
-            <button onclick="shareVia('viber')" class="p-3.5 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-purple-100 dark:border-purple-800/50 hover:bg-purple-100" title="Viber"><i data-lucide="message-square" class="w-5 h-5"></i></button>
-          </div>
-        </div>
+        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Legal Center</h4>
+        <nav class="flex flex-col gap-4">
+          <a href="terms.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Условия сервиса
+          </a>
+          <a href="privacy.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Конфиденциальность
+          </a>
+          <a href="cookies.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
+            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Cookie политика
+          </a>
+        </nav>
       </div>
 
-      <div class="flex flex-col gap-6">
-        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Поделиться в сети</h4>
-        <div class="flex flex-col gap-4">
+      <!-- Колонка 4: Поделиться + Пригласить -->
+      <div class="flex flex-col gap-10">
+        
+        <div class="flex flex-col gap-5">
+          <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Поделиться в сети</h4>
           <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Расскажите о своем опыте:</p>
           <div class="flex gap-3">
-            
-            <button onclick="shareVia('twitter')" class="p-3.5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl hover:scale-110 transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200" title="X (Twitter)">
+            <button onclick="shareVia('twitter')" class="p-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl hover:scale-110 transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200" title="X (Twitter)">
               <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.005 4.25H5.078z"/></svg>
             </button>
-            
-            <button onclick="shareVia('facebook')" class="p-3.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-200 dark:border-blue-800 hover:bg-blue-200" title="Facebook">
+            <button onclick="shareVia('facebook')" class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-200 dark:border-blue-800 hover:bg-blue-200" title="Facebook">
               <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
             </button>
-            
-            <button onclick="shareVia('linkedin')" class="p-3.5 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-sky-100 dark:border-sky-800 hover:bg-sky-100" title="LinkedIn">
+            <button onclick="shareVia('linkedin')" class="p-3 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-sky-100 dark:border-sky-800 hover:bg-sky-100" title="LinkedIn">
               <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.847-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.353V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
             </button>
-            
           </div>
         </div>
-      </div>
 
-    </div>
+        <div class="flex flex-col gap-5">
+          <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Пригласить коллег</h4>
+          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Быстрая ссылка для команды:</p>
+          <div class="flex gap-3">
+            <button onclick="shareVia('telegram')" class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100" title="Telegram"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('whatsapp')" class="p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-green-100 dark:border-green-800/50 hover:bg-green-100" title="WhatsApp"><i data-lucide="phone" class="w-5 h-5"></i></button>
+            <button onclick="shareVia('viber')" class="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-purple-100 dark:border-purple-800/50 hover:bg-purple-100" title="Viber"><i data-lucide="message-square" class="w-5 h-5"></i></button>
+          </div>
+        </div>
 
-    <div class="pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-6">
-      <div class="flex items-center gap-8 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-        <span class="flex items-center gap-2"><i data-lucide="layout" class="w-3 h-3"></i> Проектов: <b id="statTotalBoards" class="text-gray-900 dark:text-white ml-1">0</b></span>
-        <span class="flex items-center gap-2"><i data-lucide="check-square" class="w-3 h-3"></i> Задач: <b id="statTotalTasks" class="text-gray-900 dark:text-white ml-1">0</b></span>
-        <button onclick="openSupportModal()" class="flex items-center gap-2 hover:text-blue-500 transition-colors cursor-pointer"><i data-lucide="life-buoy" class="w-3 h-3"></i> Поддержка</button>
-      </div>
-      <div class="text-[10px] font-mono text-gray-400 tracking-wider">
-        BLOCKO PRO • ECOSYSTEM © 2026
       </div>
     </div>
   </div>
@@ -3737,6 +3743,53 @@ const OnboardingEngine = {
 
 // Инициализация при загрузке документа
 document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
+
+// --- ЛОГИКА ЖИВОГО ВРЕМЕНИ ДЛЯ ДАШБОРДА ---
+function updateDashTime() {
+  const el = document.getElementById('dashDateTimeBadge');
+  if(!el) return;
+  const now = new Date();
+  let dateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  // Делаем первую букву заглавной (например: "Среда, 6 мая")
+  dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+  el.innerText = dateStr;
+}
+// Обновляем раз в минуту и сразу при запуске
+setInterval(updateDashTime, 60000);
+updateDashTime();
+
+// --- ЛОГИКА МОДАЛЬНОГО ОКНА ДЛЯ QR ДОНАТОВ ---
+function openDonateQrModal(url) {
+  const overlay = document.getElementById('donateQrOverlay');
+  const img = document.getElementById('donateQrSrc');
+  const wrap = document.getElementById('donateQrSrcWrap');
+  img.src = url;
+  overlay.classList.remove('hidden');
+  setTimeout(() => {
+     overlay.classList.remove('opacity-0');
+     wrap.classList.remove('scale-95');
+     wrap.classList.add('scale-100');
+  }, 10);
+  lucide.createIcons({ root: wrap });
+}
+
+function closeDonateQrModal() {
+  const overlay = document.getElementById('donateQrOverlay');
+  const wrap = document.getElementById('donateQrSrcWrap');
+  overlay.classList.add('opacity-0');
+  wrap.classList.remove('scale-100');
+  wrap.classList.add('scale-95');
+  setTimeout(() => { overlay.classList.add('hidden'); document.getElementById('donateQrSrc').src = ''; }, 300);
+}
+
+// Добавляем закрытие Donate QR окна по кнопке ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!document.getElementById('donateQrOverlay')?.classList.contains('hidden')) {
+      closeDonateQrModal();
+    }
+  }
+});
 </script>
 
 <!-- ЭНТЕРПРАЙЗ: High-Density Smart Onboarding Engine -->
@@ -3792,6 +3845,15 @@ document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
       </div>
     </div>
   </div>
+</div>
+
+<!-- Lightbox для увеличения QR Донатов -->
+<div id="donateQrOverlay" onclick="closeDonateQrModal()" class="hidden fixed inset-0 z-[1000] bg-black/95 backdrop-blur-md flex items-center justify-center cursor-zoom-out opacity-0 transition-opacity duration-300">
+   <button class="absolute top-6 right-6 text-white/70 hover:text-white bg-white/10 p-3 rounded-full backdrop-blur-lg transition-colors z-50 hover:bg-white/20 active:scale-95 border border-white/20"><i data-lucide="x" class="w-6 h-6 pointer-events-none"></i></button>
+   <div class="bg-white p-6 rounded-3xl flex flex-col items-center shadow-2xl scale-95 transition-transform duration-300 pointer-events-none" id="donateQrSrcWrap">
+     <img id="donateQrSrc" src="" class="w-64 h-64 sm:w-80 sm:h-80 object-contain rounded-xl" />
+     <span class="mt-5 text-gray-800 font-black text-sm uppercase tracking-widest flex items-center gap-2"><i data-lucide="heart" class="w-4 h-4 text-rose-500 fill-current"></i> Спасибо за поддержку</span>
+   </div>
 </div>
   
 </body>
