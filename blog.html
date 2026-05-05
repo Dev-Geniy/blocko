@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Блог — Новости и Кейсы Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
+
+<!-- Фоновые неоновые блики (Изумрудно-синие для Блога) -->
+<div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
+
+<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Блог</h1>
+      <p class="text-xs text-blue-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="newspaper" class="w-3.5 h-3.5"></i> Новости и Статьи
+      </p>
+    </div>
+  </div>
+  <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+  </button>
+</header>
+
+<main class="p-8 max-w-6xl mx-auto w-full flex-1 mb-20">
+  
+  <!-- Hero Section & Поиск -->
+  <div class="text-center mb-16 mt-8 relative z-10">
+    <div class="inline-flex items-center justify-center p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl mb-6 shadow-sm border border-blue-100 dark:border-blue-800/50">
+      <i data-lucide="rss" class="w-8 h-8"></i>
+    </div>
+    <h2 class="text-4xl sm:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-6">Наш <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-emerald-500">Журнал</span></h2>
+    <p class="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto font-medium leading-relaxed mb-10">
+      Инсайды разработки, масштабные релизы, кейсы B2B-клиентов и советы по достижению дзена в продуктивности.
+    </p>
+
+    <div class="relative max-w-3xl mx-auto group">
+      <div class="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none">
+        <i data-lucide="search" class="w-6 h-6 text-gray-400 group-focus-within:text-blue-500 transition-colors"></i>
+      </div>
+      <input type="text" placeholder="Поиск по статьям и кейсам..." class="w-full pl-16 pr-6 py-5 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-800 rounded-3xl outline-none text-lg font-bold dark:text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-xl hover:shadow-2xl">
+      <button class="absolute inset-y-2 right-2 px-8 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-md active:scale-95 transition-all">
+        Найти
+      </button>
+    </div>
+  </div>
+
+  <!-- Главная статья (Featured Post) -->
+  <div class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[3rem] relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:border-blue-300 dark:hover:border-blue-700/50 cursor-pointer mb-16 shadow-sm hover:-translate-y-1 flex flex-col md:flex-row gap-8 items-center">
+    
+    <!-- Декоративная картинка (CSS градиент вместо внешних файлов для скорости и стиля) -->
+    <div class="w-full md:w-1/2 h-64 md:h-80 rounded-[2rem] bg-gradient-to-br from-indigo-500 via-blue-500 to-emerald-500 relative overflow-hidden shadow-inner flex-shrink-0 group-hover:scale-[1.02] transition-transform duration-500">
+       <div class="absolute inset-0 bg-black/20"></div>
+       <div class="absolute inset-0 flex items-center justify-center">
+          <i data-lucide="zap" class="w-24 h-24 text-white opacity-90 drop-shadow-2xl"></i>
+       </div>
+    </div>
+
+    <div class="flex-1">
+       <div class="flex flex-wrap gap-2 mb-4">
+         <span class="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-800/50 shadow-sm">Релизы</span>
+         <span class="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 shadow-sm">AI Ассистент</span>
+       </div>
+       <h3 class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-4 leading-tight group-hover:text-blue-500 transition-colors">
+         Blocko Pro 2.0: Релиз масштабного обновления с AI-автопилотом
+       </h3>
+       <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
+         Мы представляем самое крупное обновление платформы за всю историю. Узнайте, как новый "God Mode" и автоматизация на базе нейросетей изменят ваш подход к управлению задачами.
+       </p>
+       <div class="flex items-center justify-between mt-auto">
+         <div class="flex items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+            <span class="flex items-center gap-1.5"><i data-lucide="calendar" class="w-4 h-4"></i> 14 Мая 2026</span>
+            <span class="flex items-center gap-1.5"><i data-lucide="clock" class="w-4 h-4"></i> 8 мин чтения</span>
+         </div>
+         <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+         </div>
+       </div>
+    </div>
+  </div>
+
+  <!-- Категории Блога -->
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="text-2xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+      <i data-lucide="layers" class="w-6 h-6 text-gray-400"></i> Рубрики
+    </h3>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 relative z-10 mb-16">
+    
+    <div class="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700/50 cursor-pointer flex flex-col gap-4 hover:-translate-y-1 text-center sm:text-left">
+      <div class="w-12 h-12 mx-auto sm:mx-0 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-xl flex items-center justify-center shadow-inner border border-emerald-100 dark:border-emerald-800/50 group-hover:scale-110 transition-transform">
+        <i data-lucide="briefcase" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Кейсы (B2B)</h3>
+      </div>
+    </div>
+
+    <div class="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-700/50 cursor-pointer flex flex-col gap-4 hover:-translate-y-1 text-center sm:text-left">
+      <div class="w-12 h-12 mx-auto sm:mx-0 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-xl flex items-center justify-center shadow-inner border border-purple-100 dark:border-purple-800/50 group-hover:scale-110 transition-transform">
+        <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Нейросети</h3>
+      </div>
+    </div>
+
+    <div class="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-amber-300 dark:hover:border-amber-700/50 cursor-pointer flex flex-col gap-4 hover:-translate-y-1 text-center sm:text-left">
+      <div class="w-12 h-12 mx-auto sm:mx-0 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl flex items-center justify-center shadow-inner border border-amber-100 dark:border-amber-800/50 group-hover:scale-110 transition-transform">
+        <i data-lucide="target" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Продуктивность</h3>
+      </div>
+    </div>
+
+    <div class="group bg-white dark:bg-gray-800/50 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700/50 cursor-pointer flex flex-col gap-4 hover:-translate-y-1 text-center sm:text-left">
+      <div class="w-12 h-12 mx-auto sm:mx-0 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl flex items-center justify-center shadow-inner border border-blue-100 dark:border-blue-800/50 group-hover:scale-110 transition-transform">
+        <i data-lucide="megaphone" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest">Анонсы</h3>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Список статей -->
+  <div>
+    <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+      <i data-lucide="clock-3" class="w-6 h-6 text-gray-400"></i> Последние публикации
+    </h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Статья 1 -->
+      <a href="#" class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] hover:shadow-xl hover:border-emerald-300 dark:hover:border-emerald-700 transition-all duration-300 flex flex-col h-full shadow-sm hover:-translate-y-1">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest border border-emerald-100 dark:border-emerald-800/50">Продуктивность</span>
+        </div>
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-tight">
+          Как сократить время на планирование спринтов в 3 раза
+        </h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1 line-clamp-3 leading-relaxed">
+          Практическое руководство по внедрению Smart-сортировки колонок и автоматическому расчету Story Points. Отказываемся от рутины в пользу творчества.
+        </p>
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+             <span>10 Мая 2026</span>
+             <span class="opacity-30">|</span>
+             <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5"></i> 4 мин</span>
+          </div>
+          <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-300 group-hover:text-emerald-500 transition-transform"></i>
+        </div>
+      </a>
+
+      <!-- Статья 2 -->
+      <a href="#" class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] hover:shadow-xl hover:border-amber-300 dark:hover:border-amber-700 transition-all duration-300 flex flex-col h-full shadow-sm hover:-translate-y-1">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-800/50">Кейсы (B2B)</span>
+        </div>
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors leading-tight">
+          Интеграция Blocko Pro в маркетинговое агентство (50+ человек)
+        </h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1 line-clamp-3 leading-relaxed">
+          Реальный опыт перехода с Jira на Blocko. Как настройка уровней доступа (Editor/Viewer) спасла клиентские проекты от хаоса.
+        </p>
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+             <span>28 Апр 2026</span>
+             <span class="opacity-30">|</span>
+             <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5"></i> 12 мин</span>
+          </div>
+          <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-300 group-hover:text-amber-500 transition-transform"></i>
+        </div>
+      </a>
+
+      <!-- Статья 3 -->
+      <a href="#" class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] hover:shadow-xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-300 flex flex-col h-full shadow-sm hover:-translate-y-1">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="px-2.5 py-1 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-[9px] font-black uppercase tracking-widest border border-purple-100 dark:border-purple-800/50">Нейросети</span>
+        </div>
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">
+          Как правильно писать промпты для AI-ассистента доски
+        </h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1 line-clamp-3 leading-relaxed">
+          Изучаем "Словарь Команд". Учимся генерировать сложные таблицы, создавать опросы и делегировать рутину искусственному интеллекту в два клика.
+        </p>
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+             <span>15 Апр 2026</span>
+             <span class="opacity-30">|</span>
+             <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5"></i> 6 мин</span>
+          </div>
+          <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-300 group-hover:text-purple-500 transition-transform"></i>
+        </div>
+      </a>
+      
+      <!-- Статья 4 -->
+      <a href="#" class="group bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2.5rem] hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-700 transition-all duration-300 flex flex-col h-full shadow-sm hover:-translate-y-1">
+        <div class="flex flex-wrap gap-2 mb-4">
+          <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700">Анонсы</span>
+        </div>
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+          Сгорающие файлы: Максимальная приватность ваших корпоративных данных
+        </h4>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-6 flex-1 line-clamp-3 leading-relaxed">
+          Разбираем новую функцию тарифа Company. Как работает архитектура "Сжечь после прочтения" и почему это безопасно.
+        </p>
+        <div class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div class="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+             <span>2 Мар 2026</span>
+             <span class="opacity-30">|</span>
+             <span><i data-lucide="clock" class="w-3 h-3 inline pb-0.5"></i> 5 мин</span>
+          </div>
+          <i data-lucide="arrow-up-right" class="w-5 h-5 text-gray-300 group-hover:text-blue-500 transition-transform"></i>
+        </div>
+      </a>
+
+    </div>
+    
+    <div class="mt-10 text-center">
+       <button class="px-8 py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm border border-gray-200 dark:border-gray-700">
+          Загрузить еще статьи
+       </button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  }
+  lucide.createIcons();
+</script>
+</body>
+</html>
