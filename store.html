@@ -11,6 +11,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <!-- ЭНТЕРПРАЙЗ: Ядро для генерации QR-кодов на стороне клиента (Zero-latency) -->
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- Client ID -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -207,8 +209,8 @@
       <p class="text-sm text-gray-500 mt-2">Приобретайте реальные монеты для оплаты услуг.</p>
     </div>
 
-    <div class="space-y-4">
-      <button onclick="buyCoinsPack(1000, 10)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+    <div id="packsContainer" class="space-y-4 block">
+      <button onclick="preparePayPalPayment(1000, 10, 'Набор Новичка')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
         <div class="flex items-center gap-3">
           <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
           <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
@@ -216,7 +218,7 @@
         <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
       </button>
 
-      <button onclick="buyCoinsPack(5000, 45)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
+      <button onclick="preparePayPalPayment(5000, 45, 'Популярный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
         <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
         <div class="flex items-center gap-3 relative z-10">
           <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
@@ -225,7 +227,7 @@
         <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
       </button>
 
-      <button onclick="buyCoinsPack(12000, 100)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+      <button onclick="preparePayPalPayment(12000, 100, 'Максимальный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
         <div class="flex items-center gap-3">
           <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
           <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
@@ -233,6 +235,22 @@
         <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
       </button>
     </div>
+
+    <!-- БЛОК ОПЛАТЫ PAYPAL (Скрыт по умолчанию) -->
+    <div id="paypalPaymentContainer" class="hidden flex-col items-center">
+       <button onclick="backToPacks()" class="mb-4 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 self-start transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i> Назад к выбору</button>
+       
+       <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl w-full text-center mb-6">
+         <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">К оплате</p>
+         <div class="text-2xl font-black text-blue-600 dark:text-blue-400" id="checkoutTotal">$0.00</div>
+         <div class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="checkoutItemName">Набор</div>
+       </div>
+       
+       <div id="paypal-button-container" class="w-full relative min-h-[150px]">
+          <!-- Сюда скрипт вставит кнопки PayPal -->
+       </div>
+    </div>
+
   </div>
 </div>
 
@@ -925,34 +943,107 @@
     });
   }
 
-  // --- ЛОГИКА ПОПОЛНЕНИЯ (ИМИТАЦИЯ ОПЛАТЫ) ---
+  // --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
   function openTopUpModal() {
     const el = document.getElementById('topUpModal');
+    backToPacks(); // Сбрасываем вид на выбор пакетов при открытии
     el.classList.remove('hidden');
     setTimeout(() => el.classList.remove('opacity-0'), 10);
   }
+
   function closeTopUpModal() {
     const el = document.getElementById('topUpModal');
     el.classList.add('opacity-0');
-    setTimeout(() => el.classList.add('hidden'), 300);
+    setTimeout(() => { 
+        el.classList.add('hidden'); 
+        backToPacks();
+    }, 300);
   }
 
-  async function buyCoinsPack(amount, usdPrice) {
-    // Вызываем нашу премиальную модалку вместо системного confirm
-    openConfirmModal('Пополнить счет', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} B-Coins?`, 'Оплатить', false, async () => {
-      closeTopUpModal();
-      try {
-        const userRef = db.collection('users').doc(currentUser.uid);
-        await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
-        if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
-        showSystemToast('Счет пополнен!', `Начислено ${amount} монет.`, 'coins', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-        loadBalances();
-      } catch(e) {
-        showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-      }
-    });
+  function backToPacks() {
+     document.getElementById('packsContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('flex');
+     document.getElementById('paypal-button-container').innerHTML = ''; // Очищаем старые кнопки
   }
 
+  function preparePayPalPayment(amountCoins, usdPrice, itemName) {
+     document.getElementById('packsContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('flex');
+     
+     document.getElementById('checkoutTotal').innerText = `$${usdPrice.toFixed(2)}`;
+     document.getElementById('checkoutItemName').innerText = `${itemName} (${amountCoins} Монет)`;
+
+     const container = document.getElementById('paypal-button-container');
+     container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i></div>';
+     lucide.createIcons({ root: container });
+
+     if (typeof paypal === 'undefined') {
+         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Ошибка: скрипт PayPal не загружен. Укажите Client ID.</div>';
+         return;
+     }
+
+     setTimeout(() => {
+         container.innerHTML = ''; // Убираем лоадер
+         
+         // Инициализация Smart Buttons
+         paypal.Buttons({
+            style: {
+                color:  'gold',
+                shape:  'rect',
+                label:  'paypal',
+                height: 45
+            },
+            // 1. Создаем ордер
+            createOrder: function(data, actions) {
+              return actions.order.create({
+                purchase_units: [{
+                  description: `Blocko Pro: ${itemName} (${amountCoins} Coins)`,
+                  amount: {
+                    currency_code: "USD",
+                    value: usdPrice.toString()
+                  }
+                }]
+              });
+            },
+            // 2. Обработка успешного подтверждения от PayPal
+            onApprove: function(data, actions) {
+              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Транзакция подтверждена. Начисляем монеты...</p></div>';
+              lucide.createIcons({ root: container });
+
+              // Вызов capture() - это финальная фиксация оплаты. Она пройдет ТОЛЬКО если деньги списаны.
+              return actions.order.capture().then(async function(details) {
+                console.log('Оплата успешна:', details);
+                try {
+                  // Начисляем монеты в Firebase
+                  const userRef = db.collection('users').doc(currentUser.uid);
+                  await userRef.set({ coins: firebase.firestore.FieldValue.increment(amountCoins) }, { merge: true });
+                  
+                  closeTopUpModal();
+                  
+                  if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+                  showSystemToast('Оплата прошла успешно!', `Вам начислено ${amountCoins} B-Coins. Спасибо за покупку!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+                  
+                  loadBalances();
+                } catch(e) {
+                  console.error("DB Error:", e);
+                  showSystemToast('Сбой зачисления', 'Оплата прошла, но база данных не ответила. Напишите в поддержку.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+                }
+              });
+            },
+            // 3. Если пользователь закрыл окно оплаты
+            onCancel: function (data) {
+              showSystemToast('Отменено', 'Вы закрыли окно оплаты.', 'info', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
+            },
+            // 4. Критическая ошибка PayPal
+            onError: function (err) {
+              console.error("PayPal Error:", err);
+              showSystemToast('Ошибка PayPal', 'Не удалось инициализировать платеж.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+            }
+         }).render('#paypal-button-container');
+     }, 300);
+  }
   function showSystemToast(title, desc, icon, color, bg) {
     const t = document.getElementById('globalToast');
     document.getElementById('toastTitle').innerText = title;
@@ -1266,18 +1357,13 @@
            let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
            
            updates.plan = planToSet;
-           
-           // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Тариф Infinity выдается навсегда (GOD MODE)
-           if (durMonths === 999 || planToSet === 'infinity') {
+           if (durMonths === 999) {
                updates.planExpiresAt = firebase.firestore.FieldValue.delete();
-               if (planToSet === 'infinity') successMsg = `Активирован GOD MODE (Infinity)!`;
-               else successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
            } else {
                const currentExpiry = userDoc.data().planExpiresAt || now;
                updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
-               successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
            }
-           
+           successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
            localStorage.setItem('blocko_user_plan', planToSet);
        } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
            let coinsToAdd = promo.rewardCoins || 1000;
