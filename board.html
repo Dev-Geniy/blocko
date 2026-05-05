@@ -873,16 +873,25 @@
 </div>
 
 <div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
-    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
-      <i data-lucide="x" class="w-6 h-6"></i>
-    </button>
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
+      <i data-lucide="x" class="w-6 h-6"></i>
+    </button>
 
-    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
-      <div id="cvHeader" class="mb-6"></div>
-      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"></h2>
-      
-      <div id="cvBody" class="mb-8"></div>
+    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
+      <div id="cvHeader" class="mb-6"></div>
+      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight"></h2>
+      
+      <!-- БЛОК ИНФОРМАЦИИ ОБ АВТОРЕ -->
+      <div class="flex items-center gap-2.5 mb-6 bg-gray-50 dark:bg-gray-900/50 w-fit px-3 py-1.5 rounded-2xl border border-gray-100 dark:border-gray-700">
+          <div id="viewAuthorAvatarWrap" class="flex-shrink-0"></div>
+          <div class="text-xs font-medium text-gray-500">
+              Создал(а): <span id="viewAuthorName" class="font-bold text-gray-900 dark:text-white"></span>
+          </div>
+      </div>
+      <!-- /КОНЕЦ БЛОКА АВТОРА -->
+
+      <div id="cvBody" class="mb-8"></div>
 
       <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
         <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -3005,24 +3014,29 @@ function toggleModal(modalId, show) {
 
 // ЭКСПЕРТНОЕ РЕШЕНИЕ: УНИФИЦИРОВАННЫЙ КОНТРОЛЛЕР МОДАЛЬНЫХ ОКОН
 function openViewModal(colId, cardId) {
-    const col = columns.find(c => c.id == colId);
-    const card = col.cards.find(c => c.id == cardId);
-    if (!card) return;
+    const col = columns.find(c => c.id == colId);
+    if (!col) return; // БЕЗОПАСНОСТЬ: если колонка не найдена
+    
+    const card = col.cards?.find(c => c.id == cardId);
+    if (!card) return; // БЕЗОПАСНОСТЬ: если карточка не найдена
 
-    activeContentView = { colId, cardId, type: card.type || 'task' };
-    viewingCard = card; 
-    currentColumn = colId;
+    activeContentView = { colId, cardId, type: card.type || 'task' };
+    viewingCard = card; 
+    currentColumn = colId;
 
-    const body = document.getElementById('cvBody');
-    const header = document.getElementById('cvHeader');
-    document.getElementById('cvTitle').innerText = card.title;
-    
-    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
-    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
-    if (actualAuthor) {
-       document.getElementById('viewAuthorAvatarWrap').innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
-       document.getElementById('viewAuthorName').innerText = actualAuthor.name;
-    }
+    const body = document.getElementById('cvBody');
+    const header = document.getElementById('cvHeader');
+    document.getElementById('cvTitle').innerText = card.title;
+    
+    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
+    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
+    if (actualAuthor) {
+       const avatarWrap = document.getElementById('viewAuthorAvatarWrap');
+       const nameEl = document.getElementById('viewAuthorName');
+       
+       if (avatarWrap) avatarWrap.innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
+       if (nameEl) nameEl.innerText = actualAuthor.name;
+    }
 
     if (card.type === 'poll') {
             header.innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
