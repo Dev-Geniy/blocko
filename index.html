@@ -437,10 +437,21 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
           Профессиональная экосистема для управления проектами, объединяющая AI и Real-time технологии для команд.
         </p>
-        <div class="flex gap-3 mt-2">
-          <button id="installPwaBtn" class="hidden px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all items-center gap-2 text-sm border border-gray-800 dark:border-gray-200">
+        <div class="flex flex-col gap-4 mt-2">
+          <button id="installPwaBtn" class="hidden px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all items-center gap-2 text-sm border border-gray-800 dark:border-gray-200 w-fit">
             <i data-lucide="download-cloud" class="w-4 h-4"></i> Установить приложение
           </button>
+          
+          <!-- ЭНТЕРПРАЙЗ: Блок донатов с QR-кодом -->
+          <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/80 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm w-fit group hover:border-rose-300 dark:hover:border-rose-700/50 transition-colors">
+             <img src="https://i.ibb.co/chVdT5RP/qr.png" alt="Donate QR" class="w-12 h-12 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 group-hover:scale-105 transition-transform" />
+             <div class="flex flex-col pr-2">
+                <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3 fill-current"></i> Поддержать нас</span>
+                <a href="https://www.paypal.com/ncp/payment/6WARL883XJQG6" target="_blank" class="text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center gap-1.5">
+                  Задонатить PayPal <i data-lucide="external-link" class="w-3 h-3"></i>
+                </a>
+             </div>
+          </div>
         </div>
       </div>
 
@@ -1295,12 +1306,21 @@ async function loginWithGoogle() {
       });
       
       if (savedRefId) {
+        // 1. Начисляем в базовую реферальную систему (Друзья)
         const affiliateRef = db.collection('affiliates').doc(savedRefId);
-        // +1 к регистрациям и +10 бонусных баллов (кредитов)
         await affiliateRef.set({
           signups: firebase.firestore.FieldValue.increment(1),
           earnedCredits: firebase.firestore.FieldValue.increment(10)
         }, { merge: true });
+
+        // 2. Начисляем в CPA Network (Если у партнера активирован CPA-кабинет)
+        const cpaRef = db.collection('affiliates_cpa').doc(savedRefId);
+        const cpaDoc = await cpaRef.get();
+        if (cpaDoc.exists && cpaDoc.data().isActive) {
+           await cpaRef.set({
+               signups: firebase.firestore.FieldValue.increment(1)
+           }, { merge: true });
+        }
       }
     }
   } catch (error) {
@@ -1973,11 +1993,14 @@ async function confirmCreateBoard() {
   if (type === 'online') {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
     
-    // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Ищем тариф по его реальному ID, чтобы не зависеть от ключей объекта
-    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE;
+    // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Безопасный поиск тарифа
+    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || { boardsLimit: 1 }; 
     
-    if (ownedOnlineCount >= planLimits.boardsLimit) {
-      if (submitBtn) { 
+    // ЭНТЕРПРАЙЗ: Полный безлимит для Infinity и Pro (God Mode)
+    const isUnlimited = userPlan === 'infinity' || userPlan === 'pro';
+    
+    if (!isUnlimited && ownedOnlineCount >= planLimits.boardsLimit) {
+      if (submitBtn) {
         submitBtn.disabled = false; 
         submitBtn.innerHTML = originalBtnHTML; 
         lucide.createIcons({ root: submitBtn.parentNode }); 
@@ -3642,6 +3665,12 @@ const OnboardingEngine = {
     isProcessing: false,
 
     init() {
+        // ЭНТЕРПРАЙЗ: Скрываем карточку апгрейда тарифа для премиум-пользователей
+        const currentPlan = localStorage.getItem('blocko_user_plan') || 'free';
+        if (currentPlan === 'pro' || currentPlan === 'infinity') {
+            this.steps = ['knowledge', 'referral'];
+        }
+
         // Запуск первой карточки через 2 секунды после загрузки
         setTimeout(() => this.showStep(0), 2000);
         
