@@ -59,7 +59,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  
+    <!-- Client ID -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -1028,8 +1029,8 @@
       </button>
     </div>
 
-    <div class="space-y-4">
-      <button onclick="buyCoinsPack(1000, 10)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+    <div id="packsContainer" class="space-y-4 block">
+      <button onclick="preparePayPalPayment(1000, 10, 'Набор Новичка')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
         <div class="flex items-center gap-3">
           <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
           <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
@@ -1037,7 +1038,7 @@
         <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
       </button>
 
-      <button onclick="buyCoinsPack(5000, 45)" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
+      <button onclick="preparePayPalPayment(5000, 45, 'Популярный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
         <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
         <div class="flex items-center gap-3 relative z-10">
           <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
@@ -1045,6 +1046,29 @@
         </div>
         <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
       </button>
+
+      <button onclick="preparePayPalPayment(12000, 100, 'Максимальный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
+        <div class="flex items-center gap-3">
+          <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
+          <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
+        </div>
+        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
+      </button>
+    </div>
+
+    <!-- БЛОК ОПЛАТЫ PAYPAL (Скрыт по умолчанию) -->
+    <div id="paypalPaymentContainer" class="hidden flex-col items-center">
+       <button onclick="backToPacks()" class="mb-4 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 self-start transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i> Назад к выбору</button>
+       
+       <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl w-full text-center mb-6">
+         <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">К оплате</p>
+         <div class="text-2xl font-black text-blue-600 dark:text-blue-400" id="checkoutTotal">$0.00</div>
+         <div class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="checkoutItemName">Набор</div>
+       </div>
+       
+       <div id="paypal-button-container" class="w-full relative min-h-[150px]">
+          <!-- Сюда скрипт вставит кнопки PayPal -->
+       </div>
     </div>
   </div>
 </div>
@@ -1657,27 +1681,100 @@ async function upgradeTo(planId) {
   }
 }
 
-// --- ЛОГИКА ПОПОЛНЕНИЯ И АКТИВАЦИИ ПРОМОКОДОВ ---
-function openTopUpModal() {
-  const el = document.getElementById('topUpModal');
-  const content = document.getElementById('topUpContent');
-  document.getElementById('promoCodeInput').value = '';
-  el.classList.remove('hidden');
-  setTimeout(() => {
-     el.classList.remove('opacity-0');
-     content.classList.remove('scale-95');
-     content.classList.add('scale-100');
-  }, 10);
-}
+// --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
+  function openTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    backToPacks(); // Сбрасываем вид на выбор пакетов при открытии
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
 
-function closeTopUpModal() {
-  const el = document.getElementById('topUpModal');
-  const content = document.getElementById('topUpContent');
-  el.classList.add('opacity-0');
-  content.classList.remove('scale-100');
-  content.classList.add('scale-95');
-  setTimeout(() => el.classList.add('hidden'), 300);
-}
+  function closeTopUpModal() {
+    const el = document.getElementById('topUpModal');
+    el.classList.add('opacity-0');
+    setTimeout(() => { 
+        el.classList.add('hidden'); 
+        backToPacks();
+    }, 300);
+  }
+
+  function backToPacks() {
+     document.getElementById('packsContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('flex');
+     document.getElementById('paypal-button-container').innerHTML = ''; // Очищаем старые кнопки
+  }
+
+  function preparePayPalPayment(amountCoins, usdPrice, itemName) {
+     document.getElementById('packsContainer').classList.add('hidden');
+     document.getElementById('paypalPaymentContainer').classList.remove('hidden');
+     document.getElementById('paypalPaymentContainer').classList.add('flex');
+     
+     document.getElementById('checkoutTotal').innerText = `$${usdPrice.toFixed(2)}`;
+     document.getElementById('checkoutItemName').innerText = `${itemName} (${amountCoins} Монет)`;
+
+     const container = document.getElementById('paypal-button-container');
+     container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i></div>';
+     lucide.createIcons({ root: container });
+
+     if (typeof paypal === 'undefined') {
+         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Ошибка: скрипт PayPal не загружен. Проверьте интернет или блокировщики рекламы.</div>';
+         return;
+     }
+
+     setTimeout(() => {
+         container.innerHTML = ''; // Убираем лоадер
+         
+         // Инициализация Smart Buttons
+         paypal.Buttons({
+            style: {
+                color:  'gold',
+                shape:  'rect',
+                label:  'paypal',
+                height: 45
+            },
+            createOrder: function(data, actions) {
+              return actions.order.create({
+                purchase_units: [{
+                  description: `Blocko Pro: ${itemName} (${amountCoins} Coins)`,
+                  amount: {
+                    currency_code: "USD",
+                    value: usdPrice.toString()
+                  }
+                }]
+              });
+            },
+            onApprove: function(data, actions) {
+              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Транзакция подтверждена. Начисляем монеты...</p></div>';
+              lucide.createIcons({ root: container });
+
+              return actions.order.capture().then(async function(details) {
+                try {
+                  const userRef = db.collection('users').doc(currentUser.uid);
+                  await userRef.set({ coins: firebase.firestore.FieldValue.increment(amountCoins) }, { merge: true });
+                  
+                  closeTopUpModal();
+                  
+                  if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+                  showSystemToast('Оплата прошла успешно!', `Вам начислено ${amountCoins} B-Coins. Открываем окно тарифов...`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+                  
+                  // В index.html возвращаем пользователя к окну тарифов после пополнения
+                  setTimeout(() => openPricingModal(), 2000);
+
+                } catch(e) {
+                  showSystemToast('Сбой зачисления', 'Оплата прошла, но база данных не ответила. Напишите в поддержку.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+                }
+              });
+            },
+            onCancel: function (data) {
+              showSystemToast('Отменено', 'Вы закрыли окно оплаты.', 'info', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
+            },
+            onError: function (err) {
+              showSystemToast('Ошибка PayPal', 'Не удалось инициализировать платеж.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+            }
+         }).render('#paypal-button-container');
+     }, 300);
+  }
 
 async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePromoBtn') {
   if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
@@ -1773,22 +1870,6 @@ async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePr
      btn.innerHTML = ogBtn;
      lucide.createIcons({ root: btn.parentElement });
   }
-}
-
-async function buyCoinsPack(amount, usdPrice) {
-  openConfirmModal('Пополнить счет?', `Имитация оплаты $${usdPrice}. Подтвердить начисление ${amount} монет?`, 'Оплатить', false, async () => {
-    closeTopUpModal();
-    try {
-      // ИСПРАВЛЕНИЕ: здесь тоже используем currentUser.id
-      const userRef = db.collection('users').doc(currentUser.id);
-      await userRef.set({ coins: firebase.firestore.FieldValue.increment(amount) }, { merge: true });
-      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
-      showSystemToast('Счет пополнен!', `Начислено ${amount} монет. Вы можете вернуться к оплате тарифа.`, 'coins', 'text-amber-500', 'bg-amber-50');
-      setTimeout(() => openPricingModal(), 2000); 
-    } catch(e) {
-      showSystemToast('Ошибка', 'Не удалось пополнить счет.', 'x-circle', 'text-red-500', 'bg-red-50');
-    }
-  });
 }
 
 // Открытие модалки тарифов
