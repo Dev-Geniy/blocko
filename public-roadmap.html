@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Портал Идей и Roadmap — Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    html { scroll-behavior: smooth; }
+    
+    .animate-fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
+
+<!-- Фоновые неоновые блики (Фуксия и Индиго) -->
+<div class="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
+<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Roadmap</h1>
+      <p class="text-xs text-fuchsia-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Портал Идей
+      </p>
+    </div>
+  </div>
+  <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+  </button>
+</header>
+
+<main class="p-4 sm:p-8 max-w-5xl mx-auto w-full flex-1 mb-20 flex flex-col gap-10 relative z-10">
+  
+  <!-- Hero Section -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 sm:p-12 rounded-[3rem] shadow-sm relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left transition-colors">
+    <div class="absolute -right-20 -bottom-20 w-64 h-64 bg-fuchsia-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    
+    <div class="relative z-10 max-w-xl">
+      <div class="inline-flex items-center justify-center p-3 bg-fuchsia-50 dark:bg-fuchsia-900/20 text-fuchsia-600 dark:text-fuchsia-400 rounded-2xl mb-6 shadow-sm border border-fuchsia-100 dark:border-fuchsia-800/50">
+        <i data-lucide="rocket" class="w-8 h-8"></i>
+      </div>
+      <h2 class="text-3xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4 leading-tight">
+        Повлияйте на будущее <span class="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-500 to-indigo-500">Blocko Pro</span>
+      </h2>
+      <p class="text-base text-gray-500 dark:text-gray-400 font-medium leading-relaxed mb-8">
+        Мы строим экосистему вместе с вами. Предлагайте новые функции, голосуйте за идеи коллег и следите за тем, как мы воплощаем их в реальность.
+      </p>
+      
+      <button onclick="openIdeaModal()" class="w-full sm:w-auto px-8 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="plus" class="w-5 h-5"></i> Предложить идею
+      </button>
+    </div>
+    
+    <!-- Мини-статистика в шапке -->
+    <div class="relative z-10 grid grid-cols-2 gap-4 w-full md:w-auto flex-shrink-0">
+       <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 p-5 rounded-[2rem] text-center shadow-inner">
+          <div class="text-3xl font-black text-indigo-500 mb-1">24</div>
+          <div class="text-[9px] font-black uppercase tracking-widest text-gray-500">Реализовано</div>
+       </div>
+       <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700/50 p-5 rounded-[2rem] text-center shadow-inner">
+          <div class="text-3xl font-black text-fuchsia-500 mb-1">142</div>
+          <div class="text-[9px] font-black uppercase tracking-widest text-gray-500">Идей в очереди</div>
+       </div>
+    </div>
+  </div>
+
+  <!-- Фильтры / Вкладки -->
+  <div class="flex flex-wrap gap-3 items-center bg-white dark:bg-gray-900 p-2 rounded-[2rem] border border-gray-200 dark:border-gray-800 shadow-sm w-fit mx-auto sm:mx-0">
+    <button class="px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold text-sm rounded-xl shadow-sm transition-all">Trending</button>
+    <button class="px-5 py-2.5 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white font-bold text-sm rounded-xl transition-all">Новые</button>
+    <div class="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+    <button class="px-5 py-2.5 bg-transparent hover:bg-amber-50 dark:hover:bg-amber-900/20 text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 font-bold text-sm rounded-xl transition-all flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-amber-500"></div> В работе</button>
+    <button class="px-5 py-2.5 bg-transparent hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 font-bold text-sm rounded-xl transition-all flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Планируется</button>
+    <button class="px-5 py-2.5 bg-transparent hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 font-bold text-sm rounded-xl transition-all flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Готово</button>
+  </div>
+
+  <!-- Список Идей -->
+  <div class="flex flex-col gap-5">
+    
+    <!-- Идея 1 (В работе) -->
+    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-300 group animate-fade-in-up">
+       
+       <!-- Upvote Блок -->
+       <div class="flex flex-row sm:flex-col items-center gap-1 sm:gap-1.5 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 sm:p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors w-full sm:w-auto justify-center" onclick="toggleUpvote(this)">
+          <i data-lucide="chevron-up" class="w-6 h-6 sm:w-7 sm:h-7 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+          <span class="font-black text-lg sm:text-xl text-gray-900 dark:text-white vote-count">482</span>
+       </div>
+
+       <!-- Контент -->
+       <div class="flex-1 min-w-0 w-full">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+             <span class="px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[9px] font-black uppercase tracking-widest border border-amber-100 dark:border-amber-800/50 shadow-sm flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div> В работе</span>
+             <span class="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 shadow-sm">Мобильная версия</span>
+          </div>
+          
+          <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Полноценное мобильное приложение iOS/Android</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">
+            PWA работает отлично, но хочется нативного приложения с системными push-уведомлениями, виджетами на главном экране и офлайн-кэшированием облачных досок.
+          </p>
+          
+          <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
+             <div class="flex items-center gap-2.5">
+                <img src="https://ui-avatars.com/api/?name=Олег&background=3b82f6&color=fff" class="w-7 h-7 rounded-full shadow-sm">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Олег С.</span>
+             </div>
+             <button class="flex items-center gap-1.5 text-gray-400 hover:text-blue-500 transition-colors text-xs font-bold">
+               <i data-lucide="message-square" class="w-4 h-4"></i> 34 комментария
+             </button>
+          </div>
+       </div>
+    </div>
+
+    <!-- Идея 2 (Запланировано) -->
+    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-300 group animate-fade-in-up" style="animation-delay: 0.1s;">
+       <div class="flex flex-row sm:flex-col items-center gap-1 sm:gap-1.5 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 sm:p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors w-full sm:w-auto justify-center" onclick="toggleUpvote(this)">
+          <i data-lucide="chevron-up" class="w-6 h-6 sm:w-7 sm:h-7 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+          <span class="font-black text-lg sm:text-xl text-gray-900 dark:text-white vote-count">315</span>
+       </div>
+       <div class="flex-1 min-w-0 w-full">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+             <span class="px-2.5 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-widest border border-blue-100 dark:border-blue-800/50 shadow-sm">Запланировано</span>
+             <span class="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 shadow-sm">Интеграции</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Синхронизация с Telegram ботом</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">Было бы невероятно удобно создавать новые задачи в проекте, просто отправляя сообщение или голосовое в специального Telegram бота. И получать туда же уведомления о тегах.</p>
+          <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
+             <div class="flex items-center gap-2.5">
+                <img src="https://ui-avatars.com/api/?name=Anna&background=ec4899&color=fff" class="w-7 h-7 rounded-full shadow-sm">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Anna K.</span>
+             </div>
+             <button class="flex items-center gap-1.5 text-gray-400 hover:text-blue-500 transition-colors text-xs font-bold">
+               <i data-lucide="message-square" class="w-4 h-4"></i> 12
+             </button>
+          </div>
+       </div>
+    </div>
+
+    <!-- Идея 3 (Новая идея) -->
+    <div class="flex flex-col sm:flex-row items-start gap-4 sm:gap-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:border-indigo-300 dark:hover:border-indigo-700/50 transition-all duration-300 group animate-fade-in-up" style="animation-delay: 0.2s;">
+       <div class="flex flex-row sm:flex-col items-center gap-1 sm:gap-1.5 bg-gray-50 dark:bg-gray-800/50 px-4 py-2 sm:p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:border-indigo-200 dark:hover:border-indigo-800 transition-colors w-full sm:w-auto justify-center" onclick="toggleUpvote(this)">
+          <i data-lucide="chevron-up" class="w-6 h-6 sm:w-7 sm:h-7 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+          <span class="font-black text-lg sm:text-xl text-gray-900 dark:text-white vote-count">42</span>
+       </div>
+       <div class="flex-1 min-w-0 w-full">
+          <div class="flex flex-wrap items-center gap-2 mb-3">
+             <span class="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 shadow-sm">Идея на голосовании</span>
+             <span class="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 shadow-sm">UI / UX</span>
+          </div>
+          <h3 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 leading-tight">Диаграмма Ганта (Timeline)</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-5">Календарь — это хорошо, но для больших релизов критически не хватает Roadmap-отображения (Диаграммы Ганта), чтобы визуально связывать задачи стрелочками (зависимости).</p>
+          <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
+             <div class="flex items-center gap-2.5">
+                <img src="https://ui-avatars.com/api/?name=Denis&background=8b5cf6&color=fff" class="w-7 h-7 rounded-full shadow-sm">
+                <span class="text-xs font-bold text-gray-600 dark:text-gray-300">Denis M.</span>
+             </div>
+             <button class="flex items-center gap-1.5 text-gray-400 hover:text-blue-500 transition-colors text-xs font-bold">
+               <i data-lucide="message-square" class="w-4 h-4"></i> 2
+             </button>
+          </div>
+       </div>
+    </div>
+
+  </div>
+
+  <div class="mt-8 text-center">
+    <button class="px-8 py-4 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-bold rounded-2xl transition-all shadow-sm active:scale-95 text-sm border border-gray-200 dark:border-gray-700">
+       Показать еще
+    </button>
+  </div>
+</main>
+
+<!-- Модальное окно "Предложить идею" -->
+<div id="ideaModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-xl shadow-2xl relative border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="ideaModalContent">
+    <button onclick="closeIdeaModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
+
+    <div class="flex items-center gap-4 mb-8">
+      <div class="p-3 bg-fuchsia-50 dark:bg-fuchsia-900/30 text-fuchsia-500 rounded-2xl border border-fuchsia-100 dark:border-fuchsia-800/50 shadow-sm"><i data-lucide="zap" class="w-6 h-6"></i></div>
+      <div>
+        <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Новая идея</h2>
+        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Опишите, чего вам не хватает</p>
+      </div>
+    </div>
+
+    <div class="space-y-5">
+      <div>
+        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Суть коротко</label>
+        <input type="text" id="ideaTitle" placeholder="Например: Интеграция с Telegram..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition-all font-bold dark:text-white">
+      </div>
+      
+      <div>
+        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Категория</label>
+        <select class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-fuchsia-500 transition-colors appearance-none cursor-pointer">
+           <option>UI / UX Дизайн</option>
+           <option>Интеграции</option>
+           <option>Мобильное приложение</option>
+           <option>AI Функции</option>
+           <option>Другое</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Подробное описание</label>
+        <textarea id="ideaDesc" rows="4" placeholder="Почему это важно для вас? Как это поможет в работе?" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm dark:text-white focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20 transition-all resize-none shadow-inner"></textarea>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-8">
+      <button onclick="closeIdeaModal()" class="flex-1 py-4 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors hover:bg-gray-200 dark:hover:bg-gray-700">Отмена</button>
+      <button onclick="submitIdea()" class="flex-1 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="send" class="w-4 h-4"></i> Опубликовать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Тосты уведомлений -->
+<div id="globalToast" class="fixed bottom-6 right-6 z-[1000] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-fuchsia-50 dark:bg-fuchsia-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-fuchsia-500"></i></div>
+  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+</div>
+
+<script>
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  }
+  lucide.createIcons();
+
+  // Логика визуального Upvote (голосования)
+  function toggleUpvote(el) {
+    const isVoted = el.classList.contains('border-indigo-500');
+    const icon = el.querySelector('i');
+    const counter = el.querySelector('.vote-count');
+    let currentCount = parseInt(counter.innerText);
+
+    if (isVoted) {
+      // Снимаем голос
+      el.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+      el.classList.add('border-gray-100', 'dark:border-gray-700/50', 'bg-gray-50', 'dark:bg-gray-800/50');
+      icon.classList.remove('text-indigo-500');
+      icon.classList.add('text-gray-400');
+      counter.innerText = currentCount - 1;
+      counter.classList.remove('text-indigo-600', 'dark:text-indigo-400');
+      counter.classList.add('text-gray-900', 'dark:text-white');
+    } else {
+      // Голосуем
+      el.classList.remove('border-gray-100', 'dark:border-gray-700/50', 'bg-gray-50', 'dark:bg-gray-800/50');
+      el.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+      icon.classList.remove('text-gray-400');
+      icon.classList.add('text-indigo-500');
+      counter.innerText = currentCount + 1;
+      counter.classList.remove('text-gray-900', 'dark:text-white');
+      counter.classList.add('text-indigo-600', 'dark:text-indigo-400');
+      
+      confetti({ particleCount: 100, spread: 60, origin: { y: 0.8 }, zIndex: 9999 });
+    }
+  }
+
+  // Логика модального окна добавления идеи
+  function openIdeaModal() {
+    const modal = document.getElementById('ideaModal');
+    const content = document.getElementById('ideaModalContent');
+    document.getElementById('ideaTitle').value = '';
+    document.getElementById('ideaDesc').value = '';
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        content.classList.remove('scale-95');
+        content.classList.add('scale-100');
+    }, 10);
+  }
+
+  function closeIdeaModal() {
+    const modal = document.getElementById('ideaModal');
+    const content = document.getElementById('ideaModalContent');
+    modal.classList.add('opacity-0');
+    content.classList.remove('scale-100');
+    content.classList.add('scale-95');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+  }
+
+  function submitIdea() {
+    const title = document.getElementById('ideaTitle').value.trim();
+    if (!title) {
+        return showSystemToast('Внимание', 'Пожалуйста, введите название вашей идеи.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+    }
+    
+    closeIdeaModal();
+    showSystemToast('Идея опубликована!', 'Спасибо за вклад в развитие проекта. Идея отправлена на модерацию.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+    setTimeout(() => { confetti({ particleCount: 150, spread: 80, origin: { y: 0.5 }, zIndex: 9999 }); }, 300);
+  }
+
+  // Toast System
+  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+      const toast = document.getElementById('globalToast');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastDesc').innerText = desc;
+      const iconEl = document.getElementById('toastIcon');
+      iconEl.setAttribute('data-lucide', iconName);
+      iconEl.className = `w-5 h-5 ${iconColor}`;
+      document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+      lucide.createIcons({ root: toast });
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 4000);
+  }
+
+  // Закрытие модалок по клику на фон и ESC
+  window.addEventListener('click', (e) => {
+      if (e.target.id === 'ideaModal') closeIdeaModal();
+  });
+  document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !document.getElementById('ideaModal').classList.contains('hidden')) {
+          closeIdeaModal();
+      }
+  });
+</script>
+</body>
+</html>
