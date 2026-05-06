@@ -1532,7 +1532,7 @@ function subscribeToBoards(userId) {
 
 function renderBoardsGrid() {
   const grid = document.getElementById('boardsGrid');
-  const query = document.getElementById('boardSearchInput')?.value.toLowerCase() || '';
+  const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
   const localBoardsObj = getLocalBoards() || {};
   const localBoardsArr = Object.values(localBoardsObj);
   const combinedBoards = [...onlineBoards, ...localBoardsArr];
@@ -3786,25 +3786,24 @@ const OnboardingEngine = {
 // Инициализация при загрузке документа
 document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
 
-// Функция задержки для поиска (добавляем, если удалили)
-function debounce(func, timeout = 300) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { func.apply(this, args); }, timeout);
-  };
-}
-const debouncedRender = debounce(() => renderBoardsGrid());
-
 // --- ЛОГИКА ЖИВОГО ВРЕМЕНИ ДЛЯ ДАШБОРДА ---
 function updateDashTime() {
   const el = document.getElementById('dashDateTimeBadge');
   if(!el) return;
-  const now = new Date();
-  // Добавили second: '2-digit'
-  let dateStr = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  dateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
-  el.innerText = dateStr;
+  
+  const d = new Date();
+  const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+  
+  const dayName = days[d.getDay()];
+  const day = d.getDate();
+  const month = months[d.getMonth()];
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  
+  // Формат: СРЕДА, 6 МАЯ В 11:14:30
+  el.innerText = `${dayName}, ${day} ${month} В ${h}:${m}:${s}`.toUpperCase();
 }
 // Обновляем каждую секунду
 setInterval(updateDashTime, 1000);
