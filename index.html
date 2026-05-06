@@ -198,12 +198,15 @@
        <!-- Левая часть: Текст -->
        <div class="relative z-10 flex flex-col flex-1 w-full text-center lg:text-left">
           <div class="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-6">
-             <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800/80 text-[11px] sm:text-xs font-bold tracking-widest text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 shadow-sm">
-               <i data-lucide="clock" class="w-3.5 h-3.5 text-blue-500"></i> <span id="dashDateTimeBadge">ЗАГРУЗКА...</span>
+             <!-- Время (С секундами, tabular-nums и фиксированной шириной от дергания) -->
+             <div class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 shadow-sm min-w-[260px] sm:min-w-[290px]">
+               <i data-lucide="clock" class="w-4 h-4 text-blue-500 flex-shrink-0"></i> 
+               <div id="dashDateTimeBadge" class="flex items-center w-full justify-between">ЗАГРУЗКА...</div>
              </div>
-             <a href="#" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-[11px] sm:text-xs font-bold tracking-widest text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm">
-               <i data-lucide="zap" class="w-3.5 h-3.5"></i> ПРОДУКТИВНОСТЬ
-             </a>
+             <!-- Кнопка Продуктивности -> Вызов Помодоро -->
+             <button onclick="openPomodoroApp()" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-[11px] sm:text-xs font-bold tracking-widest text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/50 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm active:scale-95 cursor-pointer">
+               <i data-lucide="zap" class="w-4 h-4"></i> ПРОДУКТИВНОСТЬ
+             </button>
           </div>
 
           <h2 class="text-3xl sm:text-4xl xl:text-5xl font-extrabold tracking-tight mb-4 text-gray-900 dark:text-white leading-tight">
@@ -3792,19 +3795,34 @@ function updateDashTime() {
   const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
   const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   
-  const dayName = days[d.getDay()];
+  const dayName = days[d.getDay()].toUpperCase();
   const day = d.getDate();
-  const month = months[d.getMonth()];
+  const month = months[d.getMonth()].toUpperCase();
+  
   const h = String(d.getHours()).padStart(2, '0');
   const m = String(d.getMinutes()).padStart(2, '0');
   const s = String(d.getSeconds()).padStart(2, '0');
   
-  // Формат: СРЕДА, 6 МАЯ В 11:14:30
-  el.innerText = `${dayName}, ${day} ${month} В ${h}:${m}:${s}`.toUpperCase();
+  // Вставляем стилизованный HTML. style="font-variant-numeric: tabular-nums;" решает проблему дергания цифр!
+  el.innerHTML = `
+    <span class="text-[10px] sm:text-[11px] font-extrabold tracking-widest text-blue-500 uppercase mt-0.5">${dayName}, ${day} ${month}</span>
+    <span class="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-widest ml-auto" style="font-variant-numeric: tabular-nums;">${h}:${m}:${s}</span>
+  `;
 }
 // Обновляем каждую секунду
 setInterval(updateDashTime, 1000);
 updateDashTime();
+
+// Функция открытия микросервиса Pomodoro
+function openPomodoroApp() {
+  const width = 340;
+  const height = 540;
+  // Центрируем окно по центру экрана пользователя
+  const left = (screen.width / 2) - (width / 2);
+  const top = (screen.height / 2) - (height / 2);
+  
+  window.open('pomodoro.html', 'BlockoPomodoro', `width=${width},height=${height},top=${top},left=${left},resizable=no,scrollbars=no,status=no,menubar=no`);
+}
 
 // --- ЛОГИКА МОДАЛЬНОГО ОКНА ДЛЯ QR ДОНАТОВ ---
 function openDonateQrModal(url) {
