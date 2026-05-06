@@ -137,22 +137,6 @@
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-screen max-h-screen flex flex-col overflow-hidden transition-colors duration-300">
 
-<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
-<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
-  <div class="flex flex-col items-center scale-110">
-    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 p-4 rounded-3xl text-white shadow-2xl shadow-blue-500/40 mb-6">
-      <i data-lucide="layers" class="w-12 h-12"></i>
-    </div>
-    <h2 class="text-3xl font-black tracking-tighter mb-10">BLOCKO <span class="text-blue-500">PRO</span></h2>
-    
-    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
-       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-blue-500 rounded-full"></div>
-       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-indigo-500 rounded-full"></div>
-       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-blue-400 rounded-full"></div>
-    </div>
-  </div>
-</div>
-
 <div id="headerWrapper" class="group/header w-full relative z-[60] flex flex-col shadow-sm transition-all duration-300">
   <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-[60] relative">
     <div class="flex items-center gap-3">
@@ -1689,13 +1673,6 @@ auth.onAuthStateChanged(async (user) => {
       window.location.href = 'index.html'; 
     } else {
       loadBoard();
-      // Анимация скрытия загрузчика после инициализации доски
-      setTimeout(() => {
-        if (loader) {
-          loader.style.opacity = '0';
-          setTimeout(() => loader.classList.add('hidden'), 700);
-        }
-      }, 500);
     }
   } else {
     window.location.href = 'index.html'; 
