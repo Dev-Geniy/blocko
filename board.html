@@ -941,32 +941,36 @@
           <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение
         </h3>
         <div id="cvCommentsList" class="space-y-4 mb-6"></div>
-        <div class="flex gap-3 bg-gray-50 dark:bg-gray-900/50 p-2 rounded-[1.5rem] border border-gray-100 dark:border-gray-700 shadow-inner mb-6">
-              <div id="cvMyAvatar" class="flex-shrink-0"></div>
-              <div class="flex-1 flex gap-2">
-                <input id="cvCommentInput" placeholder="Напишите сообщение..." class="flex-1 bg-transparent border-none outline-none text-sm dark:text-white px-2" onkeypress="if(event.key==='Enter') addCommentToContent()" />
-                <button onclick="addCommentToContent()" class="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-md active:scale-95"><i data-lucide="send" class="w-4 h-4"></i></button>
-              </div>
-            </div>
+        <!-- Обновленное поле комментария -->
+        <div class="flex gap-3 bg-gray-50 dark:bg-[#141824] p-2 rounded-[1.5rem] border border-gray-200 dark:border-[#23293D] shadow-inner mb-4">
+          <div id="cvMyAvatar" class="flex-shrink-0"></div>
+          <div class="flex-1 flex gap-2 items-center">
+            <input id="cvCommentInput" placeholder="Напишите сообщение..." class="flex-1 bg-transparent border-none outline-none text-sm dark:text-white px-3 placeholder-gray-500" onkeypress="if(event.key==='Enter') addCommentToContent()" />
+            <button onclick="addCommentToContent()" class="w-10 h-10 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-md active:scale-95 flex-shrink-0">
+              <i data-lucide="send" class="w-4 h-4 ml-[-2px]"></i>
+            </button>
+          </div>
+        </div>
             
-            <div id="cvActionsPanel" class="flex justify-between items-center pt-6 border-t border-gray-100 dark:border-gray-700/50">
-              <div class="flex gap-1.5 sm:gap-2">
-                <button onclick="handleViewDelete()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="Удалить навсегда">
-                  <i data-lucide="trash-2" class="w-4 h-4"></i> <span class="hidden sm:inline">Удалить</span>
-                </button>
-                <button onclick="handleViewArchive()" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="В архив">
-                  <i data-lucide="archive" class="w-4 h-4"></i> <span class="hidden sm:inline">В архив</span>
-                </button>
-                <button onclick="copyDeepLinkFromView()" class="text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors" title="Скопировать ссылку на объект">
-                  <i data-lucide="link" class="w-4 h-4"></i>
-                </button>
-              </div>
-              <div class="flex gap-2">
-                <button onclick="openEditModalFromView()" id="cvEditBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-                  <i data-lucide="edit-3" class="w-4 h-4"></i> <span class="hidden sm:inline">Изменить</span>
-                </button>
-              </div>
-            </div>
+        <!-- Обновленные квадратные кнопки действий -->
+        <div id="cvActionsPanel" class="flex justify-between items-center pt-5 border-t border-gray-100 dark:border-gray-700/50 mt-4">
+          <div class="flex gap-2">
+            <button onclick="handleViewDelete()" class="w-12 h-12 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
+              <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+            <button onclick="handleViewArchive()" class="w-12 h-12 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
+              <i data-lucide="archive" class="w-5 h-5"></i>
+            </button>
+            <button onclick="copyDeepLinkFromView()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на объект">
+              <i data-lucide="link" class="w-5 h-5"></i>
+            </button>
+          </div>
+          <div class="flex items-center gap-4">
+            <button onclick="openEditModalFromView()" id="cvEditBtn" class="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+              <i data-lucide="edit-3" class="w-5 h-5"></i> Изменить
+            </button>
+          </div>
+        </div>
 
           </div>
         </div>
@@ -1037,7 +1041,7 @@
 <!-- Конструкторы Элементов (Инжектируются через JS для оптимизации DOM) -->
 <div id="dynamicConstructorContainer"></div>
 
-<div id="customConfirmModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
     <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
       <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
