@@ -454,10 +454,17 @@
     
     <!-- Панель действий связи -->
     <div class="p-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between gap-2 shadow-inner">
-        <button onclick="openGroupCall()" class="flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm group active:scale-95">
-            <i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest">Конференция</span>
-        </button>
+        <!-- Умная кнопка конференции -->
+        <div class="relative flex-1 flex">
+          <button id="btnGroupCall" onclick="handleGroupCallClick()" class="w-full flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm group active:scale-95 relative overflow-hidden">
+              <i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
+              <span class="text-[9px] font-black uppercase tracking-widest">Конференция</span>
+          </button>
+          <!-- Кнопка принудительного завершения звонка (появится только если звонок активен) -->
+          <button id="btnEndGroupCall" onclick="endGroupCall(event)" class="hidden absolute -top-1.5 -right-1.5 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md z-10 transition-transform hover:scale-110" title="Завершить конференцию для всех">
+              <i data-lucide="x" class="w-3 h-3 pointer-events-none"></i>
+          </button>
+        </div>
         <button onclick="checkOnlineStatus()" id="btnCheckOnline" class="flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 shadow-sm group active:scale-95">
             <i data-lucide="radar" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
             <span class="text-[9px] font-black uppercase tracking-widest">Онлайн Радар</span>
@@ -1857,6 +1864,19 @@ function loadBoard() {
       // ЭНТЕРПРАЙЗ: Авто-создание тега пользователя для системы "My Tasks"
       ensureUserTag(boardData);
 
+      // ЭНТЕРПРАЙЗ: Мониторинг статуса видеоконференции (Real-time WebRTC State)
+      const currentConf = boardData.activeConference;
+      
+      // Если конференция только что началась (и начал её не я)
+      if (currentConf && !window.lastConferenceState && currentConf.startedBy !== currentUser.id) {
+          showSystemToast('Звонок начался!', `${currentConf.startedByName} запустил(а) видеоконференцию.`, 'video', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+          // Системное Push-уведомление (даже если браузер свернут)
+          sendPushNotification('Blocko Meet', `${currentConf.startedByName} приглашает вас в конференцию проекта "${boardData.title}". Присоединяйтесь!`);
+      }
+      
+      window.lastConferenceState = currentConf;
+      updateConferenceButtonUI(); // Обновляем дизайн кнопки
+      
       // 2. Оптимизированный поток: Гранулярное чтение всех карточек
       if (!cardsUnsubscribe) {
         cardsUnsubscribe = docRef.collection("cards").onSnapshot((querySnapshot) => {
@@ -2908,10 +2928,67 @@ function checkOnlineStatus() {
     }, 1500);
 }
 
-function openGroupCall() {
+// --- УПРАВЛЕНИЕ ГРУППОВЫМИ ЗВОНКАМИ (MEET) ---
+
+// Обновление интерфейса кнопки в зависимости от статуса БД
+function updateConferenceButtonUI() {
+    const btn = document.getElementById('btnGroupCall');
+    const endBtn = document.getElementById('btnEndGroupCall');
+    if (!btn || !endBtn) return;
+
+    if (boardData.activeConference) {
+        // ЗВОНОК ИДЕТ
+        btn.innerHTML = `
+            <div class="absolute inset-0 bg-emerald-500/10 animate-pulse pointer-events-none"></div>
+            <span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+            <i data-lucide="video" class="w-5 h-5 mb-1 text-emerald-600 dark:text-emerald-400"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">В эфире</span>
+        `;
+        btn.classList.add('border-emerald-400', 'dark:border-emerald-600', 'shadow-md');
+        btn.classList.remove('border-gray-200', 'dark:border-gray-700');
+        
+        // Кнопку завершения показываем только владельцу доски или тому, кто начал звонок
+        if (boardData.owner === currentUser.id || boardData.activeConference.startedBy === currentUser.id) {
+            endBtn.classList.remove('hidden');
+        } else {
+            endBtn.classList.add('hidden');
+        }
+    } else {
+        // ЗВОНКА НЕТ
+        btn.innerHTML = `
+            <i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Конференция</span>
+        `;
+        btn.classList.remove('border-emerald-400', 'dark:border-emerald-600', 'shadow-md');
+        btn.classList.add('border-gray-200', 'dark:border-gray-700');
+        endBtn.classList.add('hidden');
+    }
+    lucide.createIcons({ root: btn.parentElement });
+}
+
+// Клик по кнопке (Старт нового звонка или Вход в текущий)
+async function handleGroupCallClick() {
     if (isLocalBoard) return showSystemToast('Офлайн', 'Видеоконференции недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-    
-    // Открываем широкое окно для конференции (Blocko Meet)
+
+    if (!boardData.activeConference) {
+        // Запускаем новую конференцию в БД
+        try {
+            await db.collection("boards").doc(BOARD_ID).update({
+                activeConference: {
+                    startedBy: currentUser.id,
+                    startedByName: currentUser.name,
+                    startedAt: new Date().toISOString()
+                }
+            });
+            logActivity(`Запустил(а) видеоконференцию проекта`, 'video');
+        } catch(e) {
+            console.error("Ошибка старта звонка", e);
+        }
+    } else {
+        showSystemToast('Подключение...', 'Входим в текущую комнату.', 'loader-2', 'text-blue-500 animate-spin', 'bg-blue-50 dark:bg-blue-900/30');
+    }
+
+    // Открываем окно Blocko Meet
     const width = 1280;
     const height = 800;
     const left = (screen.width / 2) - (width / 2);
@@ -2919,8 +2996,23 @@ function openGroupCall() {
     
     window.open(`meet.html?b=${BOARD_ID}`, 'BlockoMeet', `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=no,status=no,menubar=no`);
     
-    // Закрываем шторку команды, так как мы перешли в звонок
-    toggleMembers();
+    toggleMembers(); // Скрываем шторку
+}
+
+// Принудительное завершение звонка (очистка статуса в БД)
+async function endGroupCall(event) {
+    event.stopPropagation(); // Чтобы не кликнулась основная кнопка
+    if (confirm("Завершить конференцию? Это очистит статус 'В эфире' для всех участников.")) {
+        try {
+            await db.collection("boards").doc(BOARD_ID).update({
+                activeConference: firebase.firestore.FieldValue.delete()
+            });
+            showSystemToast('Звонок завершен', 'Статус комнаты сброшен.', 'phone-off', 'text-gray-500', 'bg-gray-50 dark:bg-gray-800');
+            logActivity(`Завершил(а) видеоконференцию проекта`, 'phone-off');
+        } catch(e) {
+            console.error("Ошибка завершения звонка", e);
+        }
+    }
 }
 
 function openPersonalCall(targetUid, type) {
