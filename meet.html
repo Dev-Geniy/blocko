@@ -219,34 +219,40 @@
      * BLOCKO WEBRTC MESH ENGINE v5.0
      * Реализует P2P видеосвязь с гранулярным обновлением DOM.
      */
+    /**
+     * BLOCKO WEBRTC MESH ENGINE v5.1 (STABLE)
+     * Исправлен баг зависания лоадера "Подключение потоков" и улучшена отказоустойчивость сессии[cite: 5, 6].
+     */
     let participants = [];
     let pinnedUserId = null;
     let localStream = null;
     let peersUnsubscribe = null;
-    const peerConnections = {}; // RTCPeerConnection хранилище
+    const peerConnections = {}; 
     const rtcConfig = { 'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}] };
     
     const urlParams = new URLSearchParams(window.location.search);
     const BOARD_ID = urlParams.get('b');
-    const db = window.opener?.db || firebase.firestore();
+    
+    // ЭНТЕРПРАЙЗ: Безопасное извлечение глобальных переменных из родительского окна с фолбеком на инициализацию[cite: 4]
+    const db = window.opener?.db || (typeof firebase !== 'undefined' ? firebase.firestore() : null);
     const currentUser = window.opener?.currentUser;
 
-    if (!currentUser || !BOARD_ID) {
-        alert("Критическая ошибка: Доступ запрещен.");
+    if (!db || !currentUser || !BOARD_ID) {
+        alert("Критическая ошибка: Потеряна сессия авторизации или база данных. Перезайдите во встречу.");
         window.close();
     }
 
     async function initLocalCamera() {
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: 1280, height: 720, facingMode: "user" }, 
+                video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
                 audio: true 
             });
             
             const localData = {
                 uid: currentUser.id,
                 name: currentUser.name,
-                avatar: currentUser.customAvatar || currentUser.avatar,
+                avatar: currentUser.customAvatar || currentUser.avatar || '',
                 camOn: true,
                 micOn: true,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
@@ -264,11 +270,12 @@
             const localData = {
                 uid: currentUser.id,
                 name: currentUser.name,
-                avatar: currentUser.customAvatar || currentUser.avatar,
+                avatar: currentUser.customAvatar || currentUser.avatar || '',
                 camOn: false,
                 micOn: true,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
             };
+            // Проваливаемся в режим только аудио, если камера заблокирована[cite: 4]
             await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
             subscribeToPeers();
         }
@@ -296,7 +303,7 @@
                     };
                     participants.push(newPeer);
 
-                    // WebRTC Инициализация для нового узла
+                    // WebRTC Инициализация для нового удаленного узла
                     if (!isMe) {
                         const pc = new RTCPeerConnection(rtcConfig);
                         peerConnections[uid] = pc;
@@ -358,7 +365,6 @@
             requestAnimationFrame(() => updateUI());
         });
 
-        // Слушатель сигнального сервера
         db.collection("boards").doc(BOARD_ID).collection("meet_signals")
             .where("target", "==", currentUser.id)
             .onSnapshot(snapshot => {
@@ -394,14 +400,19 @@
         const galleryArea = document.getElementById('galleryArea');
         if (!spotlightArea || !galleryArea) return;
 
-        // Полный отказ от innerHTML для предотвращения разрыва видеопотоков[cite: 3, 5]
+        // ЭНТЕРПРАЙЗ ФИКС: Безопасно скрываем системный спиннер, если загрузился хотя бы 1 поток[cite: 5]
+        const loader = Array.from(spotlightArea.children).find(el => el.classList.contains('pointer-events-none') && !el.classList.contains('peer-container'));
+        if (loader) {
+            loader.style.display = participants.length > 0 ? 'none' : 'flex';
+        }
+
+        // Гранулярное обновление узлов (без полного перерендера innerHTML)[cite: 5, 6]
         participants.forEach(peer => {
             const isPinned = peer.id === pinnedUserId;
             const targetContainer = isPinned ? spotlightArea : galleryArea;
             
             let peerNode = document.querySelector(`.peer-container[data-id="${peer.id}"]`);
             
-            // Гранулярное обновление узлов (без full re-render)[cite: 5, 6]
             if (!peerNode) {
                 peerNode = createPeerElement(peer, isPinned);
                 targetContainer.appendChild(peerNode);
@@ -409,11 +420,11 @@
                 if (peerNode.parentNode !== targetContainer) {
                     targetContainer.appendChild(peerNode);
                 }
-                peerNode.className = `peer-container ${isPinned ? 'is-pinned' : 'is-gallery snap-center hover:border-blue-500/50'} ${peer.isSpeaking ? 'is-speaking' : ''}`;
+                peerNode.className = `peer-container ${isPinned ? 'is-pinned absolute inset-0' : 'is-gallery snap-center hover:border-blue-500/50 relative'} ${peer.isSpeaking ? 'is-speaking' : ''}`;
             }
         });
 
-        // Безопасное удаление узлов тех, кто покинул встречу[cite: 6]
+        // Сборка мусора: безопасное удаление узлов отключившихся пользователей[cite: 6]
         document.querySelectorAll('.peer-container[data-id]').forEach(node => {
             const uid = node.getAttribute('data-id');
             if (!participants.find(p => p.id === uid)) {
@@ -421,16 +432,20 @@
             }
         });
 
+        // Контроль кнопки-слота для новых приглашений
         let inviteBtn = document.getElementById('inviteSlotNode');
         if (participants.length < 12) {
             if (!inviteBtn) {
                 inviteBtn = document.createElement('div');
                 inviteBtn.id = 'inviteSlotNode';
-                inviteBtn.onclick = () => document.getElementById('inviteModal').classList.remove('hidden');
-                inviteBtn.className = "peer-container is-gallery snap-center border-2 border-dashed border-blue-500/30 bg-blue-500/5 flex flex-col items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/50 transition-all cursor-pointer";
+                inviteBtn.onclick = () => {
+                    const modal = document.getElementById('inviteModal');
+                    if(modal) modal.classList.remove('hidden');
+                };
+                inviteBtn.className = "peer-container is-gallery snap-center border-2 border-dashed border-blue-500/30 bg-blue-500/5 flex flex-col items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/50 transition-all cursor-pointer relative";
                 inviteBtn.innerHTML = `
-                    <i data-lucide="user-plus" class="w-6 h-6 text-blue-400 mb-2"></i>
-                    <span class="text-[9px] font-black uppercase text-blue-400 tracking-tighter">Позвать</span>
+                    <i data-lucide="user-plus" class="w-6 h-6 text-blue-400 mb-2 pointer-events-none"></i>
+                    <span class="text-[9px] font-black uppercase text-blue-400 tracking-tighter pointer-events-none">Позвать</span>
                 `;
                 galleryArea.appendChild(inviteBtn);
             } else if (inviteBtn.parentNode !== galleryArea) {
@@ -445,7 +460,9 @@
 
     window.addEventListener('beforeunload', async () => {
         if (localStream) localStream.getTracks().forEach(track => track.stop());
-        await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).delete();
+        if (db && currentUser) {
+            await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).delete();
+        }
     });
 
     // ЭНТЕРПРАЙЗ: Продвинутый конструктор узла участника с поддержкой WebRTC и состояний потока
