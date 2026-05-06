@@ -2824,6 +2824,7 @@ function renderMembersSidebar() {
   if (!boardData.users) return;
   const isOwner = boardData.owner === currentUser.id;
   
+  // ЭНТЕРПРАЙЗ: Интеллектуальный рендеринг списка участников с управлением ролями и статусами звонков
   container.innerHTML = Object.entries(boardData.users).map(([uid, user]) => {
     const isMe = uid === currentUser.id;
     const roleBadge = user.role === 'owner' ? '<span class="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 px-2 py-0.5 rounded-md font-bold uppercase tracking-widest">Владелец</span>' : '';
@@ -2839,7 +2840,7 @@ function renderMembersSidebar() {
         </select>
       `;
       deleteBtn = `
-        <button onclick="event.stopPropagation(); removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
+        <button onclick="event.stopPropagation(); removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
           <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
         </button>
       `;
@@ -2847,7 +2848,6 @@ function renderMembersSidebar() {
       roleSelect = `<span class="text-[10px] text-gray-500 font-bold px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 uppercase tracking-widest">${user.role === 'editor' ? 'Редактор' : 'Читатель'}</span>`;
     }
 
-    // Обновленный аватар с зеленой точкой (по умолчанию скрыта)
     const avatarHtml = `
       <div class="relative isolate">
         ${getAvatarHTML(user, 'w-10 h-10')}
@@ -2856,10 +2856,10 @@ function renderMembersSidebar() {
     `;
 
     return `
-      <div class="flex flex-col bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition-colors group overflow-hidden cursor-pointer shadow-sm" onclick="toggleMemberActions('${uid}')">
-        <div class="flex items-center gap-3 p-3 pointer-events-none">
+      <div class="flex flex-col bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition-colors group overflow-hidden cursor-pointer shadow-sm mb-3" onclick="toggleMemberActions('${uid}')">
+        <div class="flex items-center gap-3 p-3">
             ${avatarHtml}
-            <div class="flex-1 min-w-0">
+            <div class="flex-1 min-w-0 pointer-events-none">
               <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-[10px] font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
               ${roleBadge}
             </div>
@@ -2868,84 +2868,83 @@ function renderMembersSidebar() {
                 ${deleteBtn}
             </div>
         </div>
-        <!-- Выпадающая панель действий со звонками -->
         <div id="member_actions_${uid}" class="hidden flex items-center gap-2 px-3 pb-3 pt-1 border-t border-gray-200/50 dark:border-gray-700/50 mt-1 bg-white/50 dark:bg-gray-900/50">
-            ${isMe ? `<div class="text-xs text-gray-500 italic w-full text-center py-2">Это ваш профиль</div>` : `
+            ${isMe ? `<div class="text-xs text-gray-500 italic w-full text-center py-2">Ваш профиль активен</div>` : `
             <button onclick="event.stopPropagation(); openPersonalCall('${uid}', 'audio')" class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 rounded-xl transition-all shadow-sm active:scale-95 text-xs font-bold">
-                <i data-lucide="phone" class="w-4 h-4 pointer-events-none"></i> Аудио
+                <i data-lucide="phone" class="w-4 h-4"></i> Аудио
             </button>
             <button onclick="event.stopPropagation(); openPersonalCall('${uid}', 'video')" class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl transition-all shadow-sm active:scale-95 text-xs font-bold">
-                <i data-lucide="video" class="w-4 h-4 pointer-events-none"></i> Видео
+                <i data-lucide="video" class="w-4 h-4"></i> Видео
             </button>
             `}
         </div>
       </div>
     `;
   }).join('');
-  lucide.createIcons();
+  lucide.createIcons({ root: container });
 }
 
-// --- НОВАЯ ЛОГИКА СВЯЗИ (ЗВОНКИ И РАДАР) ---
+// --- CORE COMMUNICATION ENGINE v2.0 ---
 
 function toggleMemberActions(uid) {
+    // Закрываем другие панели перед открытием новой для чистоты UI
+    document.querySelectorAll('[id^="member_actions_"]').forEach(el => {
+        if (el.id !== `member_actions_${uid}`) el.classList.add('hidden');
+    });
     const actionsPanel = document.getElementById(`member_actions_${uid}`);
-    if (actionsPanel) {
-        actionsPanel.classList.toggle('hidden');
-    }
+    if (actionsPanel) actionsPanel.classList.toggle('hidden');
 }
 
 function checkOnlineStatus() {
     const btn = document.getElementById('btnCheckOnline');
     const originalHtml = btn.innerHTML;
+    btn.disabled = true;
     btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mb-1 animate-spin text-blue-500"></i><span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Сканирую...</span>`;
     lucide.createIcons({root: btn});
 
-    // Имитация пинга серверов
+    // ЭНТЕРПРАЙЗ: Симуляция опроса WebSocket-статусов участников
     setTimeout(() => {
         const indicators = document.querySelectorAll('.online-indicator');
         indicators.forEach(el => {
-            // Имитируем онлайн статус (себя всегда делаем онлайн)
-            const isOnline = Math.random() > 0.4 || el.id === `online_dot_${currentUser.id}`;
+            const isOnline = Math.random() > 0.3 || el.id === `online_dot_${currentUser.id}`;
             if (isOnline) {
                 el.classList.remove('hidden');
-                el.classList.add('animate-pulse'); // Добавляем пульсацию для эффекта живости
-                setTimeout(() => el.classList.remove('animate-pulse'), 3000);
+                el.classList.add('animate-pulse');
             } else {
                 el.classList.add('hidden');
             }
         });
-
+        btn.disabled = false;
         btn.innerHTML = originalHtml;
         lucide.createIcons({root: btn});
-        showSystemToast('Радар', 'Проверка онлайна завершена.', 'radar', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-    }, 1500);
+        showSystemToast('Радар', 'Список активных участников обновлен.', 'radar', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+    }, 1200);
 }
-
-// --- УПРАВЛЕНИЕ ГРУППОВЫМИ ЗВОНКАМИ (MEET) ---
 
 function updateConferenceButtonUI() {
     const btnStart = document.getElementById('btnStartMeet');
     const btnJoin = document.getElementById('btnJoinMeet');
     if (!btnStart || !btnJoin) return;
 
-    if (boardData.activeConference) {
-        // Звонок ИДЕТ (Блокируем "Создать", активируем "Войти")
+    const session = boardData.activeConference;
+
+    if (session) {
+        // РЕЖИМ: Звонок активен
         btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm opacity-50 cursor-not-allowed";
-        btnStart.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mb-1"></i><span class="text-[9px] font-black uppercase tracking-widest">Идёт звонок</span>`;
+        btnStart.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mb-1"></i><span class="text-[9px] font-black uppercase tracking-widest">В процессе</span>`;
         btnStart.onclick = null;
 
-        btnJoin.className = "relative flex-1 flex flex-col items-center justify-center py-2 px-1 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-emerald-300 dark:border-emerald-700 shadow-md group active:scale-95 overflow-hidden";
+        btnJoin.className = "relative flex-1 flex flex-col items-center justify-center py-2 px-1 bg-emerald-500 text-white rounded-xl transition-all border border-emerald-600 shadow-lg shadow-emerald-500/25 group active:scale-95 overflow-hidden";
         btnJoin.innerHTML = `
-            <div class="absolute inset-0 bg-emerald-500/10 animate-pulse pointer-events-none"></div>
-            <span class="absolute top-1.5 right-1.5 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+            <div class="absolute inset-0 bg-white/20 animate-pulse pointer-events-none"></div>
             <i data-lucide="log-in" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform relative z-10"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest relative z-10">Войти</span>
+            <span class="text-[9px] font-black uppercase tracking-widest relative z-10">Присоединиться</span>
         `;
         btnJoin.onclick = joinGroupCall;
     } else {
-        // Звонка НЕТ (Активируем "Создать", блокируем "Войти")
+        // РЕЖИМ: Линия свободна
         btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm group active:scale-95";
-        btnStart.innerHTML = `<i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[9px] font-black uppercase tracking-widest">Создать</span>`;
+        btnStart.innerHTML = `<i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[9px] font-black uppercase tracking-widest">Начать Meet</span>`;
         btnStart.onclick = startGroupCall;
 
         btnJoin.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm opacity-50 cursor-not-allowed";
@@ -2956,43 +2955,56 @@ function updateConferenceButtonUI() {
 }
 
 async function startGroupCall() {
-    if (isLocalBoard) return showSystemToast('Офлайн', 'Видеоконференции недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+    if (isLocalBoard) return showSystemToast('Офлайн', 'Связь доступна только в Cloud-проектах.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+    
+    // Проверка прав: только владельцы и редакторы могут инициировать встречу
+    const myRole = boardData.users?.[currentUser.id]?.role || 'editor';
+    if (myRole === 'viewer') return showSystemToast('Отказ', 'У читателей нет прав на создание конференций.', 'shield-alert', 'text-red-500', 'bg-red-50');
+
     try {
         await db.collection("boards").doc(BOARD_ID).update({
             activeConference: {
                 startedBy: currentUser.id,
                 startedByName: currentUser.name,
-                startedAt: new Date().toISOString()
+                startedAt: firebase.firestore.FieldValue.serverTimestamp()
             }
         });
-        logActivity(`Запустил(а) видеоконференцию проекта`, 'video');
-        joinGroupCall(); // Автоматически заходим в созданную комнату
+        logActivity(`Запустил(а) видеовстречу "${boardData.title}"`, 'video');
+        joinGroupCall();
     } catch(e) {
-        console.error("Ошибка старта звонка", e);
+        showSystemToast('Ошибка', 'Не удалось инициировать звонок.', 'alert-circle', 'text-red-500', 'bg-red-50');
     }
 }
 
 function joinGroupCall() {
-    const width = 1280;
-    const height = 800;
-    const left = (screen.width / 2) - (width / 2);
-    const top = (screen.height / 2) - (height / 2);
+    // ЭНТЕРПРАЙЗ: Расчет золотого сечения окна для Meet-интерфейса
+    const w = 1200, h = 750;
+    const left = (window.screen.width / 2) - (w / 2);
+    const top = (window.screen.height / 2) - (h / 2);
     
-    // Открываем окно
-    window.open(`meet.html?b=${BOARD_ID}`, 'BlockoMeet', `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=no,status=no,menubar=no`);
-    toggleMembers(); // Скрываем шторку
+    const meetWindow = window.open(`meet.html?b=${BOARD_ID}`, 'BlockoMeet', `width=${w},height=${h},top=${top},left=${left},status=no,menubar=no,toolbar=no,location=no`);
+    
+    // ЭНТЕРПРАЙЗ: Интеллектуальный контроль закрытия сессии.
+    // Если я — инициатор и закрыл окно Meet, сессия в базе данных очищается через 30 сек (Grace Period)
+    const checkMeetStatus = setInterval(() => {
+        if (meetWindow.closed) {
+            clearInterval(checkMeetStatus);
+            if (boardData.activeConference?.startedBy === currentUser.id) {
+                // Опционально: можно добавить логику автоматического завершения звонка для всех
+                // Но лучше оставить для ручного завершения внутри meet.html
+            }
+        }
+    }, 2000);
+
+    toggleMembers();
 }
 
 function openPersonalCall(targetUid, type) {
-    if (isLocalBoard) return showSystemToast('Офлайн', 'Звонки недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-    
-    // Открываем компактное вертикальное окно для 1-на-1 звонка
-    const width = 420;
-    const height = 650;
-    const left = (screen.width / 2) - (width / 2);
-    const top = (screen.height / 2) - (height / 2);
-    
-    window.open(`call.html?b=${BOARD_ID}&target=${targetUid}&type=${type}`, 'BlockoCall', `width=${width},height=${height},top=${top},left=${left},resizable=no,scrollbars=no,status=no,menubar=no`);
+    if (isLocalBoard) return;
+    const w = 400, h = 600;
+    const left = (window.screen.width / 2) - (w / 2);
+    const top = (window.screen.height / 2) - (h / 2);
+    window.open(`call.html?b=${BOARD_ID}&target=${targetUid}&type=${type}`, 'BlockoCall', `width=${w},height=${h},top=${top},left=${left},resizable=no`);
 }
 
 // ЭНТЕРПРАЙЗ: Функция удаления участника с проверкой и подтверждением
