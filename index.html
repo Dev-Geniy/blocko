@@ -244,16 +244,9 @@
        </div>
     </div>
 
-    <!-- Заголовок сетки и кастомный поиск -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 px-2 gap-4">
-       <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-         <i data-lucide="layout-grid" class="w-5 h-5 text-gray-400"></i> Ваши проекты
-       </h3>
-       
-       <div class="relative w-full sm:w-72 group">
-         <i data-lucide="search" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors pointer-events-none"></i>
-         <input type="text" id="boardSearchInput" oninput="debouncedRender()" placeholder="Найти проект..." class="w-full pl-11 pr-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700/50 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all shadow-sm placeholder-gray-400">
-       </div>
+    <!-- Заголовок сетки -->
+    <div class="flex justify-between items-center mb-6 px-2">
+       <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="layout-grid" class="w-5 h-5 text-gray-400"></i> Ваши проекты</h3>
     </div>
     
     <div id="boardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
