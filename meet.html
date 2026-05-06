@@ -215,107 +215,146 @@
   <script>
     lucide.createIcons();
 
-    // ДИНАМИЧЕСКАЯ БАЗА УЧАСТНИКОВ (Без фейков)
-    const participants = [
-      {
-        id: 'local',
-        name: 'Подключение...',
-        isLocal: true,
-        stream: null,
-        micOn: false,
-        camOn: false,
-        avatar: 'https://ui-avatars.com/api/?name=Вы&background=3b82f6&color=fff',
-        isSpeaking: false
-      }
-    ];
-
-    let pinnedUserId = 'local'; // Закрепляем себя, пока никого нет
+    /**
+     * BLOCKO REAL-TIME PRESENCE ENGINE v4.0
+     * Полное удаление имитационных участников. Система работает строго по факту 
+     * наличия активной сессии в Firebase для каждого конкретного UID[cite: 1, 2, 4].
+     */
+    let participants = [];
+    let pinnedUserId = null;
     let localStream = null;
+    let peersUnsubscribe = null;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const BOARD_ID = urlParams.get('b');
+    const db = window.opener?.db || firebase.firestore();
+    const currentUser = window.opener?.currentUser;
 
-    // --- ИНИЦИАЛИЗАЦИЯ КАМЕРЫ ---
+    if (!currentUser || !BOARD_ID) {
+        alert("Критическая ошибка: Доступ запрещен.");
+        window.close();
+    }
+
     async function initLocalCamera() {
-      const localPeer = participants.find(p => p.id === 'local');
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-        if (localPeer) {
-            localPeer.stream = localStream;
-            localPeer.micOn = true;
-            localPeer.camOn = true;
-            localPeer.name = 'Вы';
+        try {
+            // Захват медиа-потока перед регистрацией в сети[cite: 2]
+            localStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 1280, height: 720, facingMode: "user" }, 
+                audio: true 
+            });
             
-            // Включаем кнопки управления
+            // Инициализация локального профиля[cite: 4]
+            const localData = {
+                uid: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.customAvatar || currentUser.avatar,
+                camOn: true,
+                micOn: true,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Регистрация участника в Firebase[cite: 4, 6]
+            await db.collection("boards").doc(BOARD_ID)
+                    .collection("meet_peers").doc(currentUser.id).set(localData);
+
+            // Слушаем список реальных участников[cite: 4]
+            subscribeToPeers();
+            
+            // Настройка управления локальным интерфейсом
             document.getElementById('btnMic').disabled = false;
             document.getElementById('btnCam').disabled = false;
             
-            updateUI(); 
-        }
-      } catch (err) {
-        console.error("Нет доступа к камере:", err);
-        if (localPeer) {
-            localPeer.camOn = false;
-            localPeer.name = 'Вы (Без камеры)';
-        }
-        updateUI();
-      }
-    }
-
-    // --- CORE: РЕНДЕР ИНТЕРФЕЙСА ---
-    function updateUI() {
-      const spotlightArea = document.getElementById('spotlightArea');
-      const galleryArea = document.getElementById('galleryArea');
-      
-      spotlightArea.innerHTML = '';
-      galleryArea.innerHTML = '';
-
-      let pinnedPeer = participants.find(p => p.id === pinnedUserId);
-      // Защита: если закрепленный участник вышел, фокус переходит к первому в списке
-      if (!pinnedPeer && participants.length > 0) {
-          pinnedPeer = participants[0];
-          pinnedUserId = pinnedPeer.id;
-      }
-
-      // 1. Рендерим реальных участников
-      participants.forEach(peer => {
-        const isPinned = peer.id === pinnedUserId;
-        const domNode = createPeerElement(peer, isPinned);
-
-        if (isPinned) {
-          spotlightArea.appendChild(domNode);
-        } else {
-          galleryArea.appendChild(domNode);
-        }
-      });
-
-      // 2. Рендерим "Слот-призрак"
-      // Для соблюдения сетки до 9 человек отображаем слот приглашения
-      if (participants.length < 9) {
-          const ghostSlot = document.createElement('div');
-          ghostSlot.className = "peer-container is-gallery snap-center border-2 border-dashed border-gray-700/50 bg-gray-800/20 flex flex-col items-center justify-center opacity-40 transition-all hover:bg-gray-800/40 hover:border-gray-600 cursor-pointer";
-          
-          // Тестовая кнопка: эмуляция подключения нового юзера в сеть
-          ghostSlot.onclick = () => {
-             participants.push({
-                id: 'remote_' + Date.now(),
-                name: 'Участник ' + participants.length,
-                isLocal: false,
-                stream: null,
-                micOn: false,
+        } catch (err) {
+            console.error("Медиа-ошибка:", err);
+            // Проваливаемся в режим "Только слушатель" если нет камеры[cite: 2]
+            const localData = {
+                uid: currentUser.id,
+                name: currentUser.name,
+                avatar: currentUser.customAvatar || currentUser.avatar,
                 camOn: false,
-                avatar: 'https://ui-avatars.com/api/?name=U&background=random&color=fff',
-                isSpeaking: false
-             });
-             updateUI();
-          };
-          
-          ghostSlot.innerHTML = `
-              <i data-lucide="user-plus" class="w-6 h-6 sm:w-8 sm:h-8 text-gray-500 mb-2 pointer-events-none"></i>
-              <span class="text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center px-2 pointer-events-none">Пригласить<br>участника</span>
-          `;
-          galleryArea.appendChild(ghostSlot);
-      }
-
-      lucide.createIcons();
+                micOn: true,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection("boards").doc(BOARD_ID)
+                    .collection("meet_peers").doc(currentUser.id).set(localData);
+            subscribeToPeers();
+        }
     }
+
+    function subscribeToPeers() {
+        if (peersUnsubscribe) peersUnsubscribe();
+        
+        peersUnsubscribe = db.collection("boards").doc(BOARD_ID)
+            .collection("meet_peers").onSnapshot((snapshot) => {
+                participants = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const isMe = data.uid === currentUser.id;
+                    return {
+                        id: data.uid,
+                        name: data.name,
+                        isLocal: isMe,
+                        stream: isMe ? localStream : null, // WebRTC потоки будут связаны здесь[cite: 2]
+                        micOn: data.micOn,
+                        camOn: data.camOn,
+                        avatar: data.avatar,
+                        isSpeaking: false
+                    };
+                });
+
+                // Если никто не закреплен или закрепленный вышел — берем себя или первого в списке[cite: 4]
+                if (!pinnedUserId || !participants.find(p => p.id === pinnedUserId)) {
+                    pinnedUserId = participants.find(p => p.isLocal)?.id || participants[0]?.id;
+                }
+
+                updateUI();
+            });
+    }
+
+    function updateUI() {
+        const spotlightArea = document.getElementById('spotlightArea');
+        const galleryArea = document.getElementById('galleryArea');
+        if (!spotlightArea || !galleryArea) return;
+
+        // ЭНТЕРПРАЙЗ: Оптимизированное обновление DOM через очистку[cite: 3, 5]
+        spotlightArea.innerHTML = '';
+        galleryArea.innerHTML = '';
+
+        if (participants.length === 0) return;
+
+        // 1. Рендерим Spotlight (Главный экран)[cite: 5]
+        const pinnedPeer = participants.find(p => p.id === pinnedUserId);
+        if (pinnedPeer) {
+            spotlightArea.appendChild(createPeerElement(pinnedPeer, true));
+        }
+
+        // 2. Рендерим Gallery (Все остальные реальные люди)[cite: 5]
+        participants.forEach(peer => {
+            if (peer.id !== pinnedUserId) {
+                galleryArea.appendChild(createPeerElement(peer, false));
+            }
+        });
+
+        // 3. Слот инвайта (Всегда в конце, если есть место для реальных людей)
+        if (participants.length < 12) {
+            const inviteBtn = document.createElement('div');
+            inviteBtn.onclick = () => document.getElementById('inviteModal').classList.remove('hidden');
+            inviteBtn.className = "peer-container is-gallery snap-center border-2 border-dashed border-blue-500/30 bg-blue-500/5 flex flex-col items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/50 transition-all cursor-pointer";
+            inviteBtn.innerHTML = `
+                <i data-lucide="user-plus" class="w-6 h-6 text-blue-400 mb-2"></i>
+                <span class="text-[9px] font-black uppercase text-blue-400 tracking-tighter">Позвать</span>
+            `;
+            galleryArea.appendChild(inviteBtn);
+        }
+
+        // Пакетное обновление иконок[cite: 5]
+        requestAnimationFrame(() => lucide.createIcons());
+    }
+
+    // Удаление из сети при закрытии окна[cite: 1, 6]
+    window.addEventListener('beforeunload', async () => {
+        if (localStream) localStream.getTracks().forEach(track => track.stop());
+        await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).delete();
+    });
 
     // ЭНТЕРПРАЙЗ: Продвинутый конструктор узла участника с поддержкой WebRTC и состояний потока
     function createPeerElement(peer, isPinned) {
