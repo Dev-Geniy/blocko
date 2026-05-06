@@ -140,6 +140,29 @@
       </div>
     </div>
 
+    <!-- Встроенный полупрозрачный чат (Появляется справа) -->
+    <div id="meetChatOverlay" class="absolute right-4 top-4 bottom-32 w-72 sm:w-80 bg-black/30 hover:bg-black/85 backdrop-blur-md border border-white/5 hover:border-white/10 rounded-[2rem] transition-all duration-500 opacity-40 hover:opacity-100 flex flex-col z-40 translate-x-[120%] overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-blue-400"></i> Чат встречи</h3>
+        <button onclick="toggleMeetChat()" class="text-gray-400 hover:text-white transition-colors p-1 bg-white/5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      
+      <div id="meetChatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll text-sm flex flex-col">
+        <div class="text-center text-[10px] text-gray-500 uppercase tracking-widest mt-2 mb-2 font-bold">E2EE Зашифровано</div>
+      </div>
+      
+      <div class="p-3 border-t border-white/5 flex flex-col gap-2 bg-white/5">
+        <div class="flex gap-2 justify-end px-1">
+          <button onclick="sendMeetReaction('up')" class="p-1.5 rounded-full bg-white/5 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400 transition-colors shadow-sm"><i data-lucide="thumbs-up" class="w-4 h-4"></i></button>
+          <button onclick="sendMeetReaction('down')" class="p-1.5 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-colors shadow-sm"><i data-lucide="thumbs-down" class="w-4 h-4"></i></button>
+        </div>
+        <div class="flex gap-2">
+          <input type="text" id="meetChatInput" onkeypress="if(event.key==='Enter') sendMeetMessage()" placeholder="Написать..." class="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-blue-500/50 transition-colors placeholder-gray-500" />
+          <button onclick="sendMeetMessage()" class="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors shadow-lg active:scale-95"><i data-lucide="send" class="w-4 h-4"></i></button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ЗВОНКОМ -->
@@ -155,13 +178,13 @@
     
     <div class="w-px h-8 bg-white/10 mx-1 sm:mx-2"></div>
     
-    <button class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/30 flex items-center justify-center transition-all border border-transparent shadow-sm active:scale-95" title="Поделиться экраном">
+    <button id="btnScreen" onclick="toggleScreenShare()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 text-gray-400 hover:text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-500/30 flex items-center justify-center transition-all border border-transparent shadow-sm active:scale-95" title="Поделиться экраном">
       <i data-lucide="monitor-up" class="w-5 h-5 sm:w-6 sm:h-6"></i>
     </button>
 
-    <button class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/30 flex items-center justify-center transition-all border border-transparent shadow-sm active:scale-95 relative" title="Чат конференции">
+    <button id="btnMeetChat" onclick="toggleMeetChat()" class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/5 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/30 flex items-center justify-center transition-all border border-transparent shadow-sm active:scale-95 relative" title="Чат конференции">
       <i data-lucide="message-square" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-      <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-[#0B0F19]"></span>
+      <span id="meetChatBadge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-[#0B0F19]"></span>
     </button>
 
     <div class="w-px h-8 bg-white/10 mx-1 sm:mx-2 hidden sm:block"></div>
@@ -233,7 +256,7 @@
         }
       } catch (err) {
         console.error("Нет доступа к камере:", err);
-        // Продолжаем рендер без камеры  (только аватарки)
+        // Продолжаем рендер без камеры (только аватарки)
         const localPeer = participants.find(p => p.id === 'local');
         if (localPeer) localPeer.camOn = false;
         updateUI();
@@ -426,6 +449,140 @@
     window.addEventListener('beforeunload', () => {
       if (localStream) localStream.getTracks().forEach(track => track.stop());
     });
+
+    // --- ДЕМОНСТРАЦИЯ ЭКРАНА (WebRTC) ---
+    let screenStream = null;
+    let isScreenSharing = false;
+
+    async function toggleScreenShare() {
+      const btn = document.getElementById('btnScreen');
+      const videoEl = document.getElementById('localVideo'); // Если наше видео в фокусе или в ленте
+      
+      // Ищем наше видео где бы оно ни было отрендерено
+      const allVideos = document.querySelectorAll('video');
+      let myVideo = null;
+      allVideos.forEach(v => { if (v.srcObject === localStream || v.srcObject === screenStream) myVideo = v; });
+
+      if (!isScreenSharing) {
+        try {
+          // Запрашиваем доступ к захвату экрана (Нативное API браузера)
+          screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+          isScreenSharing = true;
+
+          // Подменяем поток в локальной карточке
+          if (myVideo) {
+             myVideo.srcObject = screenStream;
+             // Отключаем зеркалирование для экрана (иначе текст будет задом наперед!)
+             myVideo.classList.remove('mirror-video');
+          }
+          const localPeer = participants.find(p => p.id === 'local');
+          if (localPeer) localPeer.stream = screenStream;
+
+          // Стилизуем кнопку (Активное состояние)
+          btn.classList.add('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/50');
+          btn.classList.remove('bg-white/5', 'text-gray-400', 'border-transparent');
+
+          // Слушатель: Если пользователь закроет доступ через системную кнопку браузера "Остановить"
+          screenStream.getVideoTracks()[0].onended = () => {
+             stopScreenShare();
+          };
+        } catch (err) {
+          console.log("Доступ к экрану отменен или не поддерживается:", err);
+        }
+      } else {
+        stopScreenShare();
+      }
+    }
+
+    function stopScreenShare() {
+      if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
+      }
+      isScreenSharing = false;
+
+      // Возвращаем поток с веб-камеры
+      const localPeer = participants.find(p => p.id === 'local');
+      if (localPeer) localPeer.stream = localStream;
+      
+      const allVideos = document.querySelectorAll('video');
+      allVideos.forEach(v => { 
+          if (!v.srcObject || v.srcObject.id === (screenStream ? screenStream.id : null)) {
+              v.srcObject = localStream;
+              v.classList.add('mirror-video'); // Возвращаем зеркало для лица
+          }
+      });
+
+      // Сбрасываем стиль кнопки
+      const btn = document.getElementById('btnScreen');
+      btn.classList.remove('bg-indigo-500/20', 'text-indigo-400', 'border-indigo-500/50');
+      btn.classList.add('bg-white/5', 'text-gray-400', 'border-transparent');
+    }
+
+    // --- ПРОЗРАЧНЫЙ ЧАТ ---
+    let isMeetChatOpen = false;
+    
+    function toggleMeetChat() {
+      const chatOverlay = document.getElementById('meetChatOverlay');
+      const badge = document.getElementById('meetChatBadge');
+      isMeetChatOpen = !isMeetChatOpen;
+      
+      if(isMeetChatOpen) {
+        chatOverlay.classList.remove('translate-x-[120%]');
+        if(badge) badge.classList.add('hidden'); // Скрываем индикатор
+      } else {
+        chatOverlay.classList.add('translate-x-[120%]');
+      }
+    }
+
+    function sendMeetMessage() {
+      const input = document.getElementById('meetChatInput');
+      const text = input.value.trim();
+      if(!text) return;
+      
+      const container = document.getElementById('meetChatMessages');
+      container.innerHTML += `
+        <div class="mb-2 self-end max-w-[85%]">
+          <div class="bg-blue-600 text-white text-xs px-3 py-2 rounded-2xl rounded-tr-sm shadow-md break-words">${text}</div>
+          <div class="text-[9px] text-gray-500 text-right mt-1">Вы</div>
+        </div>`;
+      
+      input.value = '';
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendMeetReaction(type) {
+      const container = document.getElementById('meetChatMessages');
+      const icon = type === 'up' ? 'thumbs-up' : 'thumbs-down';
+      const color = type === 'up' ? 'text-emerald-400' : 'text-red-400';
+      const bgColor = type === 'up' ? 'bg-emerald-500/20 border-emerald-500/30' : 'bg-red-500/20 border-red-500/30';
+      
+      container.innerHTML += `
+        <div class="mb-2 self-end">
+          <div class="inline-flex p-2.5 rounded-full ${bgColor} border backdrop-blur-md shadow-lg">
+            <i data-lucide="${icon}" class="w-5 h-5 ${color} fill-current animate-bounce"></i>
+          </div>
+        </div>`;
+      
+      lucide.createIcons({ root: container });
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // Имитация входящего сообщения от коллеги
+    setTimeout(() => {
+        const container = document.getElementById('meetChatMessages');
+        const badge = document.getElementById('meetChatBadge');
+        if(!container) return;
+        
+        container.innerHTML += `
+        <div class="mb-2 self-start max-w-[85%]">
+          <div class="bg-gray-800/80 text-gray-200 text-xs px-3 py-2 rounded-2xl rounded-tl-sm shadow-md border border-gray-700 break-words backdrop-blur-md">Ребята, всем привет! Начинаем через 2 минуты, ждем Елену.</div>
+          <div class="text-[9px] text-gray-500 text-left mt-1">Александр (Lead)</div>
+        </div>`;
+        
+        if(!isMeetChatOpen && badge) badge.classList.remove('hidden');
+        if(isMeetChatOpen) container.scrollTop = container.scrollHeight;
+    }, 5000);
 
     // Секундомер конференции
     let secondsElapsed = 0;
