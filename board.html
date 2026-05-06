@@ -604,51 +604,90 @@
         <div id="uploadStatus" class="text-xs font-bold text-indigo-500 text-center mt-2 h-4 transition-all"></div>
       </div>
       <div>
-        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex justify-between items-center">Чек-лист<span id="checklistProgressText" class="text-blue-500 font-bold">0%</span></span>
+        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex justify-between items-center">Чек-лист<span id="checklistProgressText" class="text-blue-500 font-bold">0%</span></span>
         <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden"><div id="checklistProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div></div>
         <div id="editChecklistContainer" class="space-y-2 mb-3"></div>
-        <div class="flex gap-2"><input id="newChecklistItem" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи..." class="flex-1 px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white" /><button onclick="addChecklistItem()" class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 hover:bg-blue-200 px-4 py-2.5 rounded-xl text-sm font-bold">Добавить</button></div>
+        <div class="flex gap-3">
+          <input id="newChecklistItem" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи" class="flex-1 px-4 py-3 bg-transparent border border-gray-200 dark:border-gray-700 hover:border-blue-500 focus:border-blue-500 rounded-xl outline-none text-sm font-medium dark:text-white transition-colors" />
+          <button onclick="addChecklistItem()" class="bg-blue-600/10 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white px-5 py-3 rounded-xl text-sm font-bold transition-colors">Добавить</button>
+        </div>
       </div>
+
       <div>
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Описание (Markdown)</span>
-          <div class="flex flex-wrap gap-1.5 bg-indigo-50 dark:bg-indigo-900/20 p-1.5 rounded-xl border border-indigo-100 dark:border-indigo-800/50">
-            <button onclick="generateAIDescFromTitle()" id="aiGenTitleBtn" class="text-[10px] hover:bg-white dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Сгенерировать план по заголовку"><i data-lucide="heading" class="w-3 h-3"></i> По заголовку</button>
-            <button onclick="generateAIDescFromText()" id="aiGenTextBtn" class="text-[10px] hover:bg-white dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Улучшить и структурировать введенный текст"><i data-lucide="align-left" class="w-3 h-3"></i> По тексту</button>
-            <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="text-[10px] hover:bg-white dark:hover:bg-indigo-800 text-indigo-600 dark:text-indigo-400 px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95" title="Извлечь физический чек-лист из описания"><i data-lucide="list-todo" class="w-3 h-3"></i> Чек-лист</button>
-          </div>
+        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">Описание (Markdown)</span>
+        
+        <!-- AI Buttons Block (Dark/Purple tint) -->
+        <div class="flex items-center w-full bg-indigo-50/50 dark:bg-[#1A1D2E] border border-indigo-100 dark:border-[#2C324D] rounded-xl p-1 mb-3">
+          <button onclick="generateAIDescFromTitle()" id="aiGenTitleBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="heading" class="w-3.5 h-3.5"></i> По заголовку
+          </button>
+          <div class="w-px h-4 bg-indigo-200 dark:bg-[#2A2F45]"></div>
+          <button onclick="generateAIDescFromText()" id="aiGenTextBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="align-justify" class="w-3.5 h-3.5"></i> По тексту
+          </button>
+          <div class="w-px h-4 bg-indigo-200 dark:bg-[#2A2F45]"></div>
+          <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="list-checks" class="w-3.5 h-3.5"></i> Чек-лист
+          </button>
         </div>
-        <div class="flex flex-wrap items-center justify-between gap-1 mb-2 bg-gray-100 dark:bg-gray-900/80 p-1.5 rounded-xl w-full border border-gray-200 dark:border-gray-700/50">          
-          <div class="flex flex-wrap items-center gap-1">
-            <button onclick="insertMarkdown('**', '**')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Жирный">B</button>
-            <button onclick="insertMarkdown('*', '*')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm italic font-serif text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Курсив">I</button>
-            <button onclick="insertMarkdown('~~', '~~')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-sm line-through text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Зачеркнутый">S</button>
-            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-            <button onclick="insertMarkdown('### ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-xs font-black text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Заголовок H3">H</button>
-            <button onclick="insertMarkdown('> ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Цитата"><i data-lucide="quote" class="w-4 h-4"></i></button>
-            <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Код"><i data-lucide="code" class="w-4 h-4"></i></button>
-            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-            <button onclick="insertMarkdown('- ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Маркированный список"><i data-lucide="list" class="w-4 h-4"></i></button>
-            <button onclick="insertMarkdown('1. ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Нумерованный список"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-            <button onclick="insertMarkdown('- [ ] ', '')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Чек-лист"><i data-lucide="check-square" class="w-4 h-4"></i></button>
-            <div class="w-px h-5 bg-gray-300 dark:bg-gray-700 my-auto mx-1.5"></div>
-            <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="p-1.5 hover:bg-white dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300 w-8 h-8 flex items-center justify-center shadow-sm" title="Ссылка"><i data-lucide="link" class="w-4 h-4"></i></button>
+
+        <!-- Markdown Editor Block -->
+        <div class="bg-white dark:bg-[#141824] border border-gray-200 dark:border-[#23293D] rounded-2xl overflow-hidden flex flex-col shadow-sm">
+          <!-- Formatting Toolbar -->
+          <div class="p-3 border-b border-gray-100 dark:border-[#23293D] flex flex-col gap-3 bg-gray-50 dark:bg-[#141824]">
+            <!-- Line 1 -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
+              <button onclick="insertMarkdown('**', '**')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm font-black w-6 h-6 flex items-center justify-center">B</button>
+              <button onclick="insertMarkdown('*', '*')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm italic font-serif w-6 h-6 flex items-center justify-center">I</button>
+              <button onclick="insertMarkdown('~~', '~~')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm line-through w-6 h-6 flex items-center justify-center">S</button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('### ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm font-black w-6 h-6 flex items-center justify-center">H</button>
+              <button onclick="insertMarkdown('> ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="quote" class="w-4 h-4"></i></button>
+              <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="code" class="w-4 h-4"></i></button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('- ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="list" class="w-4 h-4"></i></button>
+            </div>
+            <!-- Line 2 -->
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
+              <button onclick="insertMarkdown('1. ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+              <button onclick="insertMarkdown('- [ ] ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="check-square" class="w-4 h-4"></i></button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="link" class="w-4 h-4"></i></button>
+            </div>
+            <!-- Mic -->
+            <div class="mt-1 px-1">
+              <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-2 bg-gray-200 dark:bg-[#1F2537] hover:bg-gray-300 dark:hover:bg-[#2A3147] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center w-fit border border-gray-300 dark:border-[#2E364F]">
+                <i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i>
+              </button>
+            </div>
           </div>
-          <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-1.5 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-all w-8 h-8 flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95" title="Голосовая диктовка описания"><i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i></button>
+          <!-- Textarea -->
+          <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-5 py-4 bg-transparent border-none outline-none text-sm font-mono text-gray-800 dark:text-gray-300 resize-y focus:ring-0 leading-relaxed whitespace-pre-wrap"></textarea>
         </div>
-        <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-mono dark:text-gray-300 resize-y focus:ring-2 focus:ring-blue-500 transition-shadow leading-relaxed whitespace-pre-wrap"></textarea>
       </div>
     </div>
+    
+    <!-- Footer Actions (Compact Square Buttons) -->
     <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
-      <div class="flex gap-1.5 sm:gap-2">
-        <button onclick="deleteCard()" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2.5 rounded-xl text-sm font-bold transition-colors" title="Удалить навсегда"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-        <button onclick="archiveCard()" class="text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors" title="В архив"><i data-lucide="archive" class="w-4 h-4"></i> <span class="hidden sm:inline">В архив</span></button>
-        <button onclick="duplicateCard()" id="btnDuplicateCard" class="text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/20 px-3 py-2.5 rounded-xl text-sm font-bold hidden transition-colors" title="Дублировать карточку (Копия)"><i data-lucide="copy" class="w-4 h-4"></i></button>
-        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" class="text-emerald-600 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/20 px-3 py-2.5 rounded-xl text-sm font-bold hidden transition-colors" title="Скопировать прямую ссылку на задачу"><i data-lucide="link" class="w-4 h-4"></i></button>
+      <div class="flex gap-2">
+        <button onclick="deleteCard()" class="w-12 h-12 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </button>
+        <button onclick="archiveCard()" class="w-12 h-12 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
+          <i data-lucide="archive" class="w-5 h-5"></i>
+        </button>
+        <button onclick="duplicateCard()" id="btnDuplicateCard" class="hidden w-12 h-12 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-900/30" title="Дублировать (Копия)">
+          <i data-lucide="copy" class="w-5 h-5"></i>
+        </button>
+        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" class="hidden w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на задачу">
+          <i data-lucide="link" class="w-5 h-5"></i>
+        </button>
       </div>
-      <div class="flex gap-2 sm:gap-3">
-        <button onclick="closeEditModal()" class="px-4 sm:px-5 py-2.5 rounded-xl text-sm font-bold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Отмена</button>
-        <button onclick="saveCard()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all"><i data-lucide="check" class="w-4 h-4"></i> <span class="hidden sm:inline">Сохранить</span></button>
+      <div class="flex items-center gap-4">
+        <button onclick="closeEditModal()" class="px-2 font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">Отмена</button>
+        <button onclick="saveCard()" class="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+          <i data-lucide="check" class="w-6 h-6"></i>
+        </button>
       </div>
     </div>
   </div>
