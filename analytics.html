@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Аналитика проектов — Blocko Pro</title>
+
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Подключаем Chart.js для графиков -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    @keyframes block-stretch {
+      0%, 100% { transform: scaleX(1); opacity: 0.5; }
+      50% { transform: scaleX(2.5); opacity: 1; }
+    }
+    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-400 { animation-delay: 0.4s; }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
+
+<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ -->
+<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+  <div class="flex flex-col items-center scale-110">
+    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-3xl text-white shadow-2xl shadow-emerald-500/40 mb-6">
+      <i data-lucide="bar-chart-3" class="w-12 h-12"></i>
+    </div>
+    <h2 class="text-3xl font-black tracking-tighter mb-10">DATA <span class="text-emerald-500">CENTER</span></h2>
+    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
+       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-emerald-500 rounded-full"></div>
+       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-teal-500 rounded-full"></div>
+       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-emerald-400 rounded-full"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Неоновые блики -->
+<div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+<div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
+<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
+  <div class="flex items-center gap-4">
+    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i>
+    </a>
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">Аналитика проектов</h1>
+      <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+        <i data-lucide="bar-chart" class="w-3.5 h-3.5"></i> Global Dashboard
+      </p>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-4">
+    <button onclick="fetchAnalyticsData()" class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95">
+      <i data-lucide="refresh-cw" class="w-4 h-4"></i> Обновить
+    </button>
+    <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
+  </div>
+</header>
+
+<main class="p-4 sm:p-8 max-w-[1400px] mx-auto w-full flex-1 flex flex-col mb-10">
+  
+  <!-- Верхние виджеты (Сводка) -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
+       <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+       <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5 text-blue-500"></i> Всего задач</div>
+       <div class="text-4xl font-black text-gray-900 dark:text-white" id="statTotalTasks">0</div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
+       <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+       <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> Выполнено</div>
+       <div class="text-4xl font-black text-gray-900 dark:text-white" id="statCompleted">0</div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
+       <div class="absolute -right-4 -top-4 w-16 h-16 bg-rose-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+       <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-rose-500"></i> Просрочено</div>
+       <div class="text-4xl font-black text-gray-900 dark:text-white" id="statOverdue">0</div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
+       <div class="absolute -right-4 -top-4 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
+       <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="scale" class="w-3.5 h-3.5 text-indigo-500"></i> Story Points</div>
+       <div class="text-4xl font-black text-gray-900 dark:text-white" id="statSP">0</div>
+    </div>
+  </div>
+
+  <!-- Графики: Основной ряд -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    
+    <!-- График Приоритетов (Bar Chart) -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm lg:col-span-2 relative">
+      <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="flame" class="w-5 h-5 text-amber-500"></i> Задачи по приоритетам</h3>
+      </div>
+      <div class="relative h-64 w-full">
+          <canvas id="priorityChart"></canvas>
+      </div>
+    </div>
+
+    <!-- График Распределения типов (Doughnut) -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm relative flex flex-col">
+      <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="pie-chart" class="w-5 h-5 text-purple-500"></i> Типы объектов</h3>
+      </div>
+      <div class="relative flex-1 w-full flex items-center justify-center min-h-[250px]">
+          <canvas id="typesChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Список горящих проектов / задач -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm relative overflow-hidden flex-1">
+     <h3 class="text-lg font-black text-gray-900 dark:text-white mb-6 flex items-center gap-2"><i data-lucide="clock-4" class="w-5 h-5 text-rose-500"></i> Ближайшие дедлайны (Топ-5)</h3>
+     <div id="urgentTasksList" class="space-y-3">
+        <!-- JS Injects -->
+        <div class="text-center text-xs text-gray-500 py-10 font-bold uppercase tracking-widest"><i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto mb-2"></i>Анализ данных...</div>
+     </div>
+  </div>
+
+</main>
+
+<!-- Пуш Уведомления -->
+<div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-emerald-50 dark:bg-emerald-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-emerald-500"></i></div>
+  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+</div>
+
+<script>
+  // Инициализация темы
+  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    renderCharts(); // Перерисовка графиков при смене темы для правильных цветов сеток
+  }
+  lucide.createIcons();
+
+  let currentUser = null;
+  let rawTasks = []; 
+  
+  // Экземпляры графиков
+  let priorityChartInstance = null;
+  let typesChartInstance = null;
+
+  auth.onAuthStateChanged(async (user) => {
+    const loader = document.getElementById('globalLoader');
+    if (user) {
+      currentUser = user;
+      await fetchAnalyticsData();
+      
+      loader.style.opacity = '0';
+      setTimeout(() => loader.classList.add('hidden'), 700);
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  async function fetchAnalyticsData() {
+      if (!currentUser) return;
+      rawTasks = [];
+      const loader = document.getElementById('globalLoader');
+      if (loader.classList.contains('hidden')) {
+          showSystemToast('Синхронизация...', 'Собираем данные для анализа.', 'loader-2', 'text-emerald-500 animate-spin', 'bg-emerald-50 dark:bg-emerald-900/30');
+      }
+
+      // 1. ОФЛАЙН ДОСКИ (Local Storage)
+      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+      Object.values(localBoards).forEach(board => {
+          if (board.columns) {
+              board.columns.forEach(col => {
+                  if (col.cards) {
+                      col.cards.forEach(card => {
+                          if (!card.archived) {
+                              rawTasks.push({
+                                  ...card,
+                                  boardId: board.id,
+                                  boardTitle: board.title,
+                                  colName: col.name,
+                                  isLocal: true,
+                                  priority: card.priority || 'normal',
+                                  type: card.type || 'task'
+                              });
+                          }
+                      });
+                  }
+              });
+          }
+      });
+
+      // 2. ОБЛАЧНЫЕ ДОСКИ (Firestore)
+      if (navigator.onLine) {
+          try {
+              const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
+              
+              const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
+                  const boardId = bDoc.id;
+                  const boardData = bDoc.data();
+                  
+                  // Получаем колонки, чтобы понимать, в какой колонке карточка
+                  const columnsMap = {};
+                  (boardData.columns || []).forEach(c => columnsMap[c.id] = c.name);
+
+                  const cardsSnap = await db.collection("boards").doc(boardId).collection("cards").where("archived", "==", false).get();
+                  
+                  cardsSnap.forEach(cDoc => {
+                      const card = cDoc.data();
+                      rawTasks.push({
+                          ...card,
+                          id: cDoc.id,
+                          boardId: boardId,
+                          boardTitle: boardData.title,
+                          colName: columnsMap[card.columnId] || 'Неизвестно',
+                          isLocal: false,
+                          priority: card.priority || 'normal',
+                          type: card.type || 'task'
+                      });
+                  });
+              });
+
+              await Promise.all(fetchPromises);
+              if (loader.classList.contains('hidden')) {
+                 showSystemToast('Успех', 'Данные обновлены.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+              }
+          } catch (e) {
+              console.error("Analytics fetch error:", e);
+              showSystemToast('Внимание', 'Не удалось загрузить часть облачных задач.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+          }
+      }
+
+      processAndRenderData();
+  }
+
+  function processAndRenderData() {
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      let total = rawTasks.length;
+      let completed = 0;
+      let overdue = 0;
+      let sp = 0;
+
+      let priorityData = { critical: 0, high: 0, normal: 0, low: 0 };
+      let typeData = { task: 0, poll: 0, audio: 0, table: 0, timer: 0, todo: 0, link: 0 };
+      
+      let upcomingTasks = [];
+
+      rawTasks.forEach(t => {
+          // Эвристика "Выполнено": Ищем слова Готово/Done/Archive в названии колонки
+          const colNameLower = (t.colName || '').toLowerCase();
+          if (colNameLower.includes('готов') || colNameLower.includes('done') || colNameLower.includes('завершен')) {
+              completed++;
+          } else {
+              // Если задача не в колонке "Готово" и дедлайн прошел
+              if (t.dueDate && t.dueDate < todayStr) {
+                  overdue++;
+              }
+              // Если дедлайн в будущем или сегодня - кидаем в список ближайших
+              if (t.dueDate && t.dueDate >= todayStr) {
+                  upcomingTasks.push(t);
+              }
+          }
+
+          if (t.storyPoints) sp += parseInt(t.storyPoints) || 0;
+          
+          if (priorityData[t.priority] !== undefined) priorityData[t.priority]++;
+          if (typeData[t.type] !== undefined) typeData[t.type]++;
+      });
+
+      // Анимация чисел (Одометр)
+      animateValue('statTotalTasks', total);
+      animateValue('statCompleted', completed);
+      animateValue('statOverdue', overdue);
+      animateValue('statSP', sp);
+
+      // Рендер горящих задач (Сортируем по ближайшей дате)
+      upcomingTasks.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+      renderUrgentTasks(upcomingTasks.slice(0, 5));
+
+      // Рендер Графиков
+      renderCharts(priorityData, typeData);
+  }
+
+  function animateValue(id, end) {
+      const obj = document.getElementById(id);
+      let start = 0;
+      const duration = 1000;
+      const stepTime = Math.abs(Math.floor(duration / (end || 1)));
+      
+      if (end === 0) { obj.innerText = 0; return; }
+
+      const timer = setInterval(() => {
+          start += 1;
+          obj.innerText = start;
+          if (start >= end) {
+              obj.innerText = end;
+              clearInterval(timer);
+          }
+      }, stepTime);
+  }
+
+  function renderUrgentTasks(tasks) {
+      const list = document.getElementById('urgentTasksList');
+      if (tasks.length === 0) {
+          list.innerHTML = `<div class="text-center text-xs text-gray-500 py-6 italic border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">Нет предстоящих дедлайнов. Отличная работа!</div>`;
+          return;
+      }
+
+      list.innerHTML = tasks.map(t => {
+          let priorityColor = "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400";
+          if (t.priority === 'high') priorityColor = "bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400";
+          if (t.priority === 'critical') priorityColor = "bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400 animate-pulse";
+
+          const dateFormatted = new Date(t.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+
+          return `
+            <a href="board.html?b=${t.boardId}&c=${t.id}" target="_blank" class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700/50 rounded-2xl transition-all hover:shadow-md group">
+               <div class="flex items-center gap-3 min-w-0">
+                  <div class="p-2 rounded-lg ${priorityColor} flex-shrink-0 border border-transparent shadow-sm"><i data-lucide="alert-circle" class="w-4 h-4"></i></div>
+                  <div class="flex flex-col min-w-0">
+                     <span class="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-500 transition-colors">${t.title}</span>
+                     <span class="text-[10px] text-gray-500 truncate mt-0.5 flex items-center gap-1 opacity-70"><i data-lucide="${t.isLocal ? 'hard-drive' : 'cloud'}" class="w-3 h-3"></i> ${t.boardTitle}</span>
+                  </div>
+               </div>
+               <div class="text-[11px] font-black uppercase tracking-widest text-gray-500 bg-gray-200 dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-800 flex-shrink-0">
+                  ${dateFormatted}
+               </div>
+            </a>
+          `;
+      }).join('');
+      lucide.createIcons({ root: list });
+  }
+
+  // Кешируем данные для перерисовки при смене темы
+  let cachedPriorityData = null;
+  let cachedTypeData = null;
+
+  function renderCharts(priorityData = cachedPriorityData, typeData = cachedTypeData) {
+      if (!priorityData || !typeData) return;
+      cachedPriorityData = priorityData;
+      cachedTypeData = typeData;
+
+      const isDark = document.documentElement.classList.contains('dark');
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+      const textColor = isDark ? '#9ca3af' : '#6b7280'; // gray-400 / gray-500
+
+      // 1. График Приоритетов (Bar)
+      const ctxPriority = document.getElementById('priorityChart').getContext('2d');
+      if (priorityChartInstance) priorityChartInstance.destroy();
+
+      priorityChartInstance = new Chart(ctxPriority, {
+          type: 'bar',
+          data: {
+              labels: ['Низкий', 'Обычный', 'Высокий', 'КРИТИЧНЫЙ'],
+              datasets: [{
+                  label: 'Кол-во задач',
+                  data: [priorityData.low, priorityData.normal, priorityData.high, priorityData.critical],
+                  backgroundColor: [
+                      isDark ? '#3b82f6' : '#60a5fa', // Blue
+                      isDark ? '#10b981' : '#34d399', // Emerald
+                      isDark ? '#f59e0b' : '#fbbf24', // Amber
+                      isDark ? '#e11d48' : '#fb7185'  // Rose
+                  ],
+                  borderRadius: 8,
+                  borderSkipped: false
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                  x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold' } } },
+                  y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif" }, stepSize: 1 }, beginAtZero: true }
+              }
+          }
+      });
+
+      // 2. График Типов (Doughnut)
+      const ctxTypes = document.getElementById('typesChart').getContext('2d');
+      if (typesChartInstance) typesChartInstance.destroy();
+
+      // Убираем нулевые значения, чтобы график был чище
+      const tLabels = [];
+      const tData = [];
+      const tColors = [];
+
+      const typeConfig = {
+          'task': { label: 'Задачи', color: isDark ? '#6366f1' : '#818cf8' },
+          'todo': { label: 'Чек-листы', color: isDark ? '#06b6d4' : '#22d3ee' },
+          'table': { label: 'Таблицы', color: isDark ? '#3b82f6' : '#60a5fa' },
+          'poll': { label: 'Опросы', color: isDark ? '#a855f7' : '#c084fc' },
+          'audio': { label: 'Аудио', color: isDark ? '#10b981' : '#34d399' },
+          'timer': { label: 'Таймеры', color: isDark ? '#f43f5e' : '#fb7185' },
+          'link': { label: 'Ссылки', color: isDark ? '#64748b' : '#9ca3af' }
+      };
+
+      Object.keys(typeData).forEach(key => {
+          if (typeData[key] > 0) {
+              tLabels.push(typeConfig[key].label);
+              tData.push(typeData[key]);
+              tColors.push(typeConfig[key].color);
+          }
+      });
+
+      if (tData.length === 0) {
+          // Заглушка, если доски пустые
+          tLabels.push('Нет данных');
+          tData.push(1);
+          tColors.push(isDark ? '#334155' : '#e2e8f0');
+      }
+
+      typesChartInstance = new Chart(ctxTypes, {
+          type: 'doughnut',
+          data: {
+              labels: tLabels,
+              datasets: [{
+                  data: tData,
+                  backgroundColor: tColors,
+                  borderWidth: 0,
+                  hoverOffset: 4
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '75%',
+              plugins: {
+                  legend: {
+                      position: 'bottom',
+                      labels: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold', size: 11 }, usePointStyle: true, padding: 20 }
+                  }
+              }
+          }
+      });
+  }
+
+  function showSystemToast(title, desc, iconName, iconColor, bgColor) {
+      const toast = document.getElementById('globalToast');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastDesc').innerText = desc;
+      const iconEl = document.getElementById('toastIcon');
+      iconEl.setAttribute('data-lucide', iconName);
+      iconEl.className = `w-5 h-5 ${iconColor}`;
+      document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
+      lucide.createIcons({ root: toast });
+
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 4000);
+  }
+</script>
+</body>
+</html>
