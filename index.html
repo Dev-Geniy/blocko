@@ -3786,32 +3786,62 @@ const OnboardingEngine = {
 // Инициализация при загрузке документа
 document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
 
-// --- ЛОГИКА ЖИВОГО ВРЕМЕНИ ДЛЯ ДАШБОРДА ---
+// --- ЛОГИКА ЖИВОГО ВРЕМЕНИ ДЛЯ ДАШБОРДА (ENTERPRISE PERFORMANCE) ---
+let lastTimeStr = '';
+
 function updateDashTime() {
-  const el = document.getElementById('dashDateTimeBadge');
-  if(!el) return;
-  
-  const d = new Date();
-  const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-  
-  const dayName = days[d.getDay()].toUpperCase();
-  const day = d.getDate();
-  const month = months[d.getMonth()].toUpperCase();
-  
-  const h = String(d.getHours()).padStart(2, '0');
-  const m = String(d.getMinutes()).padStart(2, '0');
-  const s = String(d.getSeconds()).padStart(2, '0');
-  
-  // Вставляем стилизованный HTML. style="font-variant-numeric: tabular-nums;" решает проблему дергания цифр!
-  el.innerHTML = `
-    <span class="text-[10px] sm:text-[11px] font-extrabold tracking-widest text-blue-500 uppercase mt-0.5">${dayName}, ${day} ${month}</span>
-    <span class="text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-widest ml-auto" style="font-variant-numeric: tabular-nums;">${h}:${m}:${s}</span>
-  `;
+  requestAnimationFrame(() => {
+    const el = document.getElementById('dashDateTimeBadge');
+    if(!el) return;
+    
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    const newTimeStr = `${h}:${m}:${s}`;
+    
+    // Batching DOM updates: блокируем ре-рендер, если время не изменилось
+    if (lastTimeStr === newTimeStr) return; 
+    lastTimeStr = newTimeStr;
+    
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    const dayName = days[d.getDay()].toUpperCase();
+    const day = d.getDate();
+    const month = months[d.getMonth()].toUpperCase();
+    
+    let dateNode = document.getElementById('dashDateText');
+    let timeNode = document.getElementById('dashTimeText');
+    
+    if (!dateNode || !timeNode) {
+      // Исключаем использование innerHTML, строим гранулярный DOM
+      el.textContent = ''; 
+      
+      dateNode = document.createElement('span');
+      dateNode.id = 'dashDateText';
+      dateNode.className = 'text-[10px] sm:text-[11px] font-extrabold tracking-widest text-blue-500 uppercase mt-0.5';
+      
+      timeNode = document.createElement('span');
+      timeNode.id = 'dashTimeText';
+      timeNode.className = 'text-base sm:text-lg font-black text-gray-900 dark:text-white tracking-widest ml-auto';
+      timeNode.style.fontVariantNumeric = 'tabular-nums';
+      
+      el.appendChild(dateNode);
+      el.appendChild(timeNode);
+    }
+    
+    // Точечное обновление через textContent (никаких reflow)
+    dateNode.textContent = `${dayName}, ${day} ${month}`;
+    timeNode.textContent = newTimeStr;
+  });
 }
-// Обновляем каждую секунду
-setInterval(updateDashTime, 1000);
-updateDashTime();
+
+// Запускаем луп с мягким setTimeout + requestAnimationFrame для 60 FPS
+function timeLoop() {
+  updateDashTime();
+  setTimeout(timeLoop, 1000);
+}
+timeLoop();
 
 // Функция открытия микросервиса Pomodoro
 function openPomodoroApp() {
