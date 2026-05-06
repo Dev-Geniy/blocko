@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Blocko Pomodoro</title>
+  <title>Blocko Focus</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -12,16 +12,41 @@
   <style>
     body { 
       font-family: 'Plus Jakarta Sans', sans-serif; 
-      -webkit-app-region: drag; /* Позволяет таскать окно за фон (работает в PWA/некоторых окнах) */
+      -webkit-app-region: drag; /* Позволяет таскать окно за фон */
       user-select: none;
     }
-    /* Для элементов, с которыми нужно взаимодействовать, отключаем drag */
-    button, .no-drag { -webkit-app-region: no-drag; }
+    button, input, .no-drag { -webkit-app-region: no-drag; }
     
     .timer-text { font-variant-numeric: tabular-nums; }
     
     .glow-ring { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
     .glow-ring-break { box-shadow: 0 0 40px rgba(16, 185, 129, 0.4); }
+
+    /* Эффект дыхания для рабочего режима */
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
+      50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(99, 102, 241, 0.6); }
+    }
+    .timer-running .glow-ring { animation: breathe 4s ease-in-out infinite; }
+    
+    @keyframes breathe-break {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(16, 185, 129, 0.4); }
+      50% { transform: scale(1.02); box-shadow: 0 0 60px rgba(16, 185, 129, 0.6); }
+    }
+    .timer-running .glow-ring-break { animation: breathe-break 4s ease-in-out infinite; }
+
+    /* Анимация для иконок Вселенной */
+    @keyframes float-space {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(10px, -15px) rotate(5deg); }
+      50% { transform: translate(-5px, 20px) rotate(-5deg); }
+      75% { transform: translate(-15px, -5px) rotate(2deg); }
+    }
+    .space-icon { animation: float-space infinite ease-in-out alternate; }
+
+    /* Кастомный тултип */
+    .tooltip { visibility: hidden; opacity: 0; transition: all 0.3s ease; }
+    .group-hover:hover .tooltip { visibility: visible; opacity: 1; transform: translateY(0); }
   </style>
 
   <script>
@@ -30,109 +55,240 @@
 </head>
 <body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500" id="appBody">
 
-  <!-- Декоративные эффекты -->
-  <div class="absolute -top-32 -left-32 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700" id="glow1"></div>
-  <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700" id="glow2"></div>
+  <!-- Глубокие световые пятна -->
+  <div class="absolute -top-32 -left-32 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700 z-0" id="glow1"></div>
+  <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700 z-0" id="glow2"></div>
+
+  <!-- Контейнер для Вселенной Blocko (Генерируется JS) -->
+  <div id="universe" class="absolute inset-0 overflow-hidden pointer-events-none z-0 mix-blend-screen"></div>
 
   <!-- Шапка виджета -->
-  <div class="absolute top-5 left-5 right-5 flex justify-between items-center z-10">
-    <div class="flex items-center gap-2 text-indigo-400" id="modeIconText">
-      <i data-lucide="zap" class="w-4 h-4"></i>
-      <span class="text-xs font-black uppercase tracking-widest" id="modeTitle">Фокус</span>
+  <div class="absolute top-5 left-5 right-5 flex justify-between items-center z-20">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 text-indigo-400 transition-colors duration-500" id="modeIconText">
+        <i data-lucide="zap" class="w-4 h-4"></i>
+        <span class="text-xs font-black uppercase tracking-widest" id="modeTitle">Фокус</span>
+      </div>
+      
+      <!-- Мой апгрейд: Кнопка звука -->
+      <button onclick="toggleSound()" class="p-1.5 text-gray-500 hover:text-white transition-colors no-drag" title="Звук">
+        <i data-lucide="volume-2" class="w-3.5 h-3.5" id="soundIcon"></i>
+      </button>
     </div>
-    <button onclick="window.close()" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors no-drag">
-      <i data-lucide="x" class="w-4 h-4 text-gray-300"></i>
-    </button>
+    
+    <div class="flex items-center gap-2 no-drag">
+        <!-- Твоя идея: Кнопка Инфо (?) -->
+        <div class="relative group-hover flex flex-col items-center">
+            <button onclick="openInfoModal()" class="p-1.5 bg-white/5 hover:bg-white/20 rounded-full transition-all border border-transparent hover:border-gray-500 text-gray-400 hover:text-white">
+              <i data-lucide="help-circle" class="w-4 h-4"></i>
+            </button>
+            <div class="tooltip absolute top-8 bg-gray-800 text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-700 whitespace-nowrap transform -translate-y-1 shadow-lg pointer-events-none z-50">
+              Как это работает?
+            </div>
+        </div>
+
+        <!-- Кнопка закрытия (X) -->
+        <div class="relative group-hover flex flex-col items-end">
+            <button onclick="window.close()" class="p-1.5 bg-white/5 hover:bg-red-500/20 rounded-full transition-all border border-transparent hover:border-red-500/50 text-gray-400 hover:text-red-500">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+            <div class="tooltip absolute top-8 right-0 bg-gray-800 text-gray-300 text-[10px] font-bold px-2 py-1 rounded border border-gray-700 whitespace-nowrap transform -translate-y-1 shadow-lg pointer-events-none z-50">
+              Закрыть таймер
+            </div>
+        </div>
+    </div>
   </div>
 
-  <!-- Таймер Круг -->
-  <div class="relative w-56 h-56 rounded-full border-4 border-indigo-500/20 flex flex-col items-center justify-center glow-ring transition-all duration-700 z-10 bg-gray-900/50 backdrop-blur-sm" id="timerRing">
-     <!-- Прогресс бар (SVG) -->
-     <svg class="absolute inset-0 w-full h-full -rotate-90 transform pointer-events-none" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500 transition-all duration-1000 ease-linear" id="progressCircle" stroke-dasharray="301" stroke-dashoffset="0"></circle>
-     </svg>
-     
-     <div class="text-5xl font-black timer-text tracking-wider" id="timeDisplay">25:00</div>
-     <div class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mt-2" id="statusText">Ожидание</div>
+  <!-- Центральный блок (Таймер + Цель) -->
+  <div class="flex flex-col items-center justify-center z-20 mt-4 w-full" id="timerWrapper">
+      <!-- Таймер Круг -->
+      <div class="relative w-56 h-56 rounded-full border-4 border-indigo-500/20 flex flex-col items-center justify-center glow-ring transition-all duration-700 bg-gray-900/50 backdrop-blur-sm" id="timerRing">
+         <svg class="absolute inset-0 w-full h-full -rotate-90 transform pointer-events-none" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500 transition-all duration-1000 ease-linear" id="progressCircle" stroke-dasharray="301" stroke-dashoffset="0"></circle>
+         </svg>
+         
+         <div class="text-5xl font-black timer-text tracking-wider" id="timeDisplay">25:00</div>
+         <div class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mt-2 transition-colors duration-300" id="statusText">Ожидание</div>
+      </div>
+
+      <!-- Мой апгрейд: Поле для записи задачи (Focus Intent) -->
+      <input type="text" id="focusIntent" placeholder="Над чем работаем?" class="mt-6 bg-transparent border-b border-dashed border-gray-700 hover:border-gray-500 focus:border-indigo-500 text-center text-xs font-bold text-white outline-none w-3/4 py-1.5 transition-colors placeholder-gray-600 no-drag" autocomplete="off" spellcheck="false" />
   </div>
 
   <!-- Кнопки управления -->
-  <div class="flex items-center gap-4 mt-12 z-10 no-drag">
-    <button onclick="resetTimer()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95 border border-gray-700">
-      <i data-lucide="rotate-ccw" class="w-5 h-5 text-gray-400"></i>
+  <div class="flex items-center gap-4 mt-8 z-20 no-drag">
+    <button onclick="resetTimer()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-95 border border-gray-700 hover:border-gray-500 group" title="Сбросить">
+      <i data-lucide="rotate-ccw" class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors"></i>
     </button>
-    <button onclick="toggleTimer()" id="mainBtn" class="w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white">
-      <i data-lucide="play" class="w-8 h-8 ml-1" id="mainBtnIcon"></i>
+    
+    <button onclick="toggleTimer()" id="mainBtn" class="w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white group" title="Старт/Пауза">
+      <div id="mainBtnIconWrapper" class="transition-transform group-hover:scale-110 ml-1">
+        <i data-lucide="play" class="w-8 h-8"></i>
+      </div>
     </button>
-    <button onclick="skipSession()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95 border border-gray-700">
-      <i data-lucide="skip-forward" class="w-5 h-5 text-gray-400"></i>
+
+    <button onclick="skipSession()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-all active:scale-95 border border-gray-700 hover:border-gray-500 group" title="Пропустить фазу">
+      <i data-lucide="skip-forward" class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors"></i>
     </button>
   </div>
 
   <!-- Счетчик помидорок -->
-  <div class="absolute bottom-6 flex items-center gap-1.5 z-10">
-    <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" id="dot1"></div>
-    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot2"></div>
-    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot3"></div>
-    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot4"></div>
+  <div class="absolute bottom-6 flex items-center gap-2 z-20">
+    <div class="w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)] transition-all duration-300" id="dot1"></div>
+    <div class="w-2.5 h-2.5 rounded-full bg-gray-800 transition-all duration-300" id="dot2"></div>
+    <div class="w-2.5 h-2.5 rounded-full bg-gray-800 transition-all duration-300" id="dot3"></div>
+    <div class="w-2.5 h-2.5 rounded-full bg-gray-800 transition-all duration-300" id="dot4"></div>
+  </div>
+
+  <!-- Твоя идея: Модальное окно "Об Инструменте" -->
+  <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300 no-drag p-4">
+    <div class="bg-gray-900 border border-gray-700 p-6 rounded-3xl max-w-sm w-full text-center relative transform scale-95 transition-transform duration-300" id="infoContent">
+       <button onclick="closeInfoModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors">
+         <i data-lucide="x" class="w-4 h-4"></i>
+       </button>
+       
+       <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-500/30">
+         <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+       </div>
+       <h2 class="text-xl font-black text-white mb-2 tracking-tight">Blocko Focus</h2>
+       
+       <div class="text-xs text-gray-400 font-medium leading-relaxed space-y-3 text-left bg-gray-800/50 p-4 rounded-2xl border border-gray-700/50">
+         <p>Этот виджет использует технику <b class="text-white">Pomodoro</b> для гипер-концентрации.</p>
+         <ul class="space-y-2 list-none">
+           <li class="flex items-start gap-2"><i data-lucide="zap" class="w-3.5 h-3.5 text-indigo-400 mt-0.5 flex-shrink-0"></i> <span><b>25 минут</b> непрерывной работы над одной задачей без отвлечений.</span></li>
+           <li class="flex items-start gap-2"><i data-lucide="coffee" class="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0"></i> <span><b>5 минут</b> отдыха. Встаньте, разомнитесь, снимите фокус с экрана.</span></li>
+         </ul>
+         <p class="text-[10px] text-gray-500 mt-2 italic">Это помогает мозгу не перегорать, сохранять ясность мыслей весь день и закрывать задачи в 2 раза быстрее.</p>
+       </div>
+       
+       <button onclick="closeInfoModal()" class="w-full mt-4 bg-white hover:bg-gray-200 text-gray-900 font-bold py-2.5 rounded-xl text-xs transition-colors active:scale-95">Понятно</button>
+    </div>
   </div>
 
   <script>
     lucide.createIcons();
+
+    // Генерация "Вселенной Blocko" на фоне
+    const universe = document.getElementById('universe');
+    const iconColors = ['text-indigo-500', 'text-blue-500', 'text-purple-500', 'text-emerald-500'];
+    
+    for(let i = 0; i < 15; i++) {
+        const size = Math.random() * 24 + 10; // От 10 до 34 px
+        const opacity = Math.random() * 0.15 + 0.02; // От 2% до 17% видимости
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5;
+        const duration = Math.random() * 15 + 10; // 10-25 секунд цикл анимации
+        const color = iconColors[Math.floor(Math.random() * iconColors.length)];
+        
+        const el = document.createElement('div');
+        el.className = `absolute space-icon ${color}`;
+        el.style.top = `${top}%`;
+        el.style.left = `${left}%`;
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.opacity = opacity;
+        el.style.animationDuration = `${duration}s`;
+        el.style.animationDelay = `${delay}s`;
+        
+        el.innerHTML = '<i data-lucide="layers" style="width:100%; height:100%;"></i>';
+        universe.appendChild(el);
+    }
+    lucide.createIcons({ root: universe }); // Рендерим иконки фона
 
     // Запрос на Push-уведомления
     if (Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // Настройки
+    // Настройки времени (в минутах)
     const WORK_MINUTES = 25;
     const BREAK_MINUTES = 5;
     
     let isRunning = false;
     let isWorkMode = true;
+    let soundEnabled = true; // Звук по умолчанию включен
     let timeLeft = WORK_MINUTES * 60;
     let totalTime = WORK_MINUTES * 60;
     let timerId = null;
     let completedPomodoros = 0;
 
+    // DOM Элементы
     const display = document.getElementById('timeDisplay');
     const statusText = document.getElementById('statusText');
     const mainBtn = document.getElementById('mainBtn');
-    const mainBtnIcon = document.getElementById('mainBtnIcon');
+    const mainBtnIconWrapper = document.getElementById('mainBtnIconWrapper');
+    const timerWrapper = document.getElementById('timerWrapper');
     const ring = document.getElementById('timerRing');
     const progCircle = document.getElementById('progressCircle');
-    const modeTitle = document.getElementById('modeTitle');
     const modeIconText = document.getElementById('modeIconText');
+    const intentInput = document.getElementById('focusIntent');
+    const soundIcon = document.getElementById('soundIcon');
     
     const glow1 = document.getElementById('glow1');
     const glow2 = document.getElementById('glow2');
 
-    // Функция звукового сигнала (через Web Audio API, чтобы не грузить mp3)
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep() {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(isWorkMode ? 600 : 800, audioCtx.currentTime); // Тон выше, когда пора за работу
-      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
-      
-      osc.start();
-      osc.stop(audioCtx.currentTime + 1);
+    // Логика Модалки Инфо
+    function openInfoModal() {
+        const m = document.getElementById('infoModal');
+        const c = document.getElementById('infoContent');
+        m.classList.remove('hidden');
+        setTimeout(() => { m.classList.remove('opacity-0'); c.classList.remove('scale-95'); }, 10);
+    }
+    function closeInfoModal() {
+        const m = document.getElementById('infoModal');
+        const c = document.getElementById('infoContent');
+        m.classList.add('opacity-0'); c.classList.add('scale-95');
+        setTimeout(() => m.classList.add('hidden'), 300);
     }
 
+    // Переключение звука
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        soundIcon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+        soundIcon.classList.toggle('text-red-400', !soundEnabled);
+        lucide.createIcons({ root: soundIcon.parentElement });
+    }
+
+    // Функция звукового сигнала
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+      if (!soundEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const playNote = (freq, startTime, duration) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.3, startTime + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+      };
+
+      const now = audioCtx.currentTime;
+      if (isWorkMode) {
+          playNote(400, now, 0.4); playNote(600, now + 0.2, 0.5);
+      } else {
+          playNote(600, now, 0.4); playNote(400, now + 0.2, 0.5);
+      }
+    }
+
+    // Push-уведомления с цветными иконками
     function showPushNotification(title, body) {
       if (Notification.permission === "granted") {
-        new Notification(title, {
-          body: body,
-          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>"
-        });
+        const strokeColor = isWorkMode ? "%236366f1" : "%2310b981"; 
+        const svgPath = isWorkMode 
+            ? "<polygon points='13 2 3 14 12 14 11 22 21 10 12 10 13 2'/>" 
+            : "<path d='M18 8h1a4 4 0 0 1 0 8h-1'/><path d='M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z'/><line x1='6' y1='1' x2='6' y2='4'/><line x1='10' y1='1' x2='10' y2='4'/><line x1='14' y1='1' x2='14' y2='4'/>";
+
+        const iconUrl = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${strokeColor}' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>${svgPath}</svg>`;
+
+        new Notification(title, { body: body, icon: iconUrl, requireInteraction: true });
       }
     }
 
@@ -145,30 +301,27 @@
     function updateUI() {
       display.innerText = formatTime(timeLeft);
       document.title = `${formatTime(timeLeft)} - Blocko Focus`;
-      
-      // Вычисление смещения кольца SVG
       const dashoffset = 301 - (timeLeft / totalTime) * 301;
       progCircle.style.strokeDashoffset = dashoffset;
     }
 
     function switchMode() {
-      playBeep();
       if (isWorkMode) {
-        // Переход в отдых
         isWorkMode = false;
         timeLeft = BREAK_MINUTES * 60;
         totalTime = BREAK_MINUTES * 60;
         
         completedPomodoros++;
         updateDots();
-        
         showPushNotification("Отличная работа!", "Самое время размяться и сделать перерыв 5 минут.");
+        playBeep();
         
-        // Смена цветов на Изумрудные (Break)
         ring.classList.replace('border-indigo-500/20', 'border-emerald-500/20');
         ring.classList.replace('glow-ring', 'glow-ring-break');
         progCircle.classList.replace('text-indigo-500', 'text-emerald-500');
-        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-emerald-500/30 border border-emerald-400/30 text-white";
+        
+        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-emerald-500/30 border border-emerald-400/30 text-white group";
+        
         modeIconText.innerHTML = '<i data-lucide="coffee" class="w-4 h-4"></i><span class="text-xs font-black uppercase tracking-widest">Перерыв</span>';
         modeIconText.classList.replace('text-indigo-400', 'text-emerald-400');
         
@@ -176,19 +329,22 @@
         glow2.classList.replace('bg-blue-500/20', 'bg-teal-500/20');
         
         statusText.innerText = "Расслабьтесь";
+        statusText.classList.add('text-emerald-400');
+        intentInput.classList.add('opacity-30', 'pointer-events-none'); // Затемняем поле ввода на перерыве
       } else {
-        // Переход в работу
         isWorkMode = true;
         timeLeft = WORK_MINUTES * 60;
         totalTime = WORK_MINUTES * 60;
         
         showPushNotification("Время Фокуса", "Пора возвращаться к задачам. 25 минут полного погружения!");
+        playBeep();
         
-        // Смена цветов на Индиго (Work)
         ring.classList.replace('border-emerald-500/20', 'border-indigo-500/20');
         ring.classList.replace('glow-ring-break', 'glow-ring');
         progCircle.classList.replace('text-emerald-500', 'text-indigo-500');
-        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white";
+        
+        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white group";
+        
         modeIconText.innerHTML = '<i data-lucide="zap" class="w-4 h-4"></i><span class="text-xs font-black uppercase tracking-widest">Фокус</span>';
         modeIconText.classList.replace('text-emerald-400', 'text-indigo-400');
         
@@ -196,9 +352,10 @@
         glow2.classList.replace('bg-teal-500/20', 'bg-blue-500/20');
         
         statusText.innerText = "Ожидание";
+        statusText.classList.remove('text-emerald-400');
+        intentInput.classList.remove('opacity-30', 'pointer-events-none');
         
-        // Принудительно ставим на паузу при возврате в рабочий режим (чтобы юзер сам начал)
-        pauseTimer();
+        pauseTimer(); 
       }
       lucide.createIcons();
       updateUI();
@@ -206,30 +363,35 @@
 
     function tick() {
       timeLeft--;
-      if (timeLeft <= 0) {
-        switchMode();
-      } else {
-        updateUI();
-      }
+      if (timeLeft <= 0) switchMode();
+      else updateUI();
+    }
+
+    function setBtnIcon(iconName, addMargin) {
+        mainBtnIconWrapper.innerHTML = `<i data-lucide="${iconName}" class="w-8 h-8"></i>`;
+        mainBtnIconWrapper.className = `transition-transform group-hover:scale-110 ${addMargin ? 'ml-1' : ''}`;
+        lucide.createIcons({ root: mainBtnIconWrapper });
     }
 
     function startTimer() {
       if (audioCtx.state === 'suspended') audioCtx.resume();
-      isRunning = true;
-      statusText.innerText = isWorkMode ? "В процессе" : "Восстановление";
-      timerId = setInterval(tick, 1000);
-      mainBtnIcon.setAttribute('data-lucide', 'pause');
-      mainBtnIcon.classList.remove('ml-1'); // Убираем отступ (нужен был для треугольника Play)
-      lucide.createIcons();
+      if (!isRunning) {
+        isRunning = true;
+        timerWrapper.classList.add('timer-running'); // Включаем эффект дыхания
+        statusText.innerText = isWorkMode ? "В процессе" : "Восстановление";
+        timerId = setInterval(tick, 1000);
+        setBtnIcon('pause', false); 
+      }
     }
 
     function pauseTimer() {
-      isRunning = false;
-      statusText.innerText = "Пауза";
-      clearInterval(timerId);
-      mainBtnIcon.setAttribute('data-lucide', 'play');
-      mainBtnIcon.classList.add('ml-1');
-      lucide.createIcons();
+      if (isRunning) {
+        isRunning = false;
+        timerWrapper.classList.remove('timer-running'); // Выключаем эффект дыхания
+        statusText.innerText = "Пауза";
+        clearInterval(timerId);
+        setBtnIcon('play', true); 
+      }
     }
 
     function toggleTimer() {
@@ -248,19 +410,18 @@
       pauseTimer();
       timeLeft = 0;
       switchMode();
-      if (!isWorkMode) startTimer(); // Сразу запускаем отдых
+      if (!isWorkMode) startTimer(); 
     }
 
     function updateDots() {
       const activeClass = isWorkMode ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
-      
       for(let i=1; i<=4; i++) {
         const dot = document.getElementById('dot'+i);
-        dot.className = `w-2 h-2 rounded-full transition-all duration-500 ${i <= (completedPomodoros % 4 || (completedPomodoros > 0 ? 4 : 1)) ? activeClass : 'bg-gray-800'}`;
+        const isCompleted = i <= (completedPomodoros % 4 || (completedPomodoros > 0 && completedPomodoros % 4 === 0 ? 4 : 0));
+        dot.className = `w-2.5 h-2.5 rounded-full transition-all duration-500 ${isCompleted ? activeClass : 'bg-gray-800'}`;
       }
     }
 
-    // Инит
     updateUI();
   </script>
 </body>
