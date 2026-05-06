@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Blocko Call</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #050505; color: #fff; overflow: hidden; }
+    .mirror { transform: scaleX(-1); }
+  </style>
+</head>
+<body class="h-screen w-full flex flex-col relative bg-gray-950">
+
+  <div class="absolute inset-0 z-0 flex items-center justify-center bg-gray-900">
+      <video id="remoteVideo" class="w-full h-full object-cover hidden" autoplay playsinline></video>
+      <div id="connectingUi" class="flex flex-col items-center justify-center animate-pulse">
+          <i data-lucide="loader-2" class="w-10 h-10 text-emerald-500 animate-spin mb-4"></i>
+          <p class="text-sm font-bold text-gray-400 uppercase tracking-widest">Установка P2P соединения...</p>
+      </div>
+  </div>
+
+  <div class="absolute top-4 right-4 z-10 w-28 h-40 bg-gray-800 rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-700/50">
+      <video id="localVideo" class="w-full h-full object-cover mirror bg-gray-900" autoplay playsinline muted></video>
+  </div>
+
+  <div class="absolute bottom-8 left-0 right-0 z-20 flex justify-center gap-4 px-4">
+      <button id="btnMic" onclick="toggleMic()" class="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md transition-all active:scale-95">
+          <i id="iconMic" data-lucide="mic" class="w-6 h-6 text-white"></i>
+      </button>
+      <button id="btnCam" onclick="toggleCam()" class="p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md transition-all active:scale-95">
+          <i id="iconCam" data-lucide="video" class="w-6 h-6 text-white"></i>
+      </button>
+      <button onclick="endCall()" class="p-4 rounded-full bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all active:scale-95 border border-red-600">
+          <i data-lucide="phone-off" class="w-6 h-6 text-white"></i>
+      </button>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Извлечение параметров из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const BOARD_ID = urlParams.get('b');
+    const CHANNEL_ID = urlParams.get('channel'); 
+    const TYPE = urlParams.get('type');
+    const IS_INITIATOR = urlParams.get('init') === 'true';
+
+    // Подтягиваем сессию из родительского окна (доски)
+    const db = window.opener?.db;
+    const currentUser = window.opener?.currentUser;
+
+    if (!db || !currentUser || !BOARD_ID || !CHANNEL_ID) {
+        alert("Ошибка сессии. Звонок прерван.");
+        window.close();
+    }
+
+    // WebRTC переменные
+    let localStream;
+    let peerConnection;
+    let signalsUnsubscribe;
+    const rtcConfig = { 'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}] };
+    
+    // Ссылка на канал связи в Firebase
+    const signalsRef = db.collection("boards").doc(BOARD_ID).collection("p2p_calls").doc(CHANNEL_ID).collection("signals");
+    const callStatusRef = db.collection("boards").doc(BOARD_ID).collection("p2p_calls").doc(CHANNEL_ID);
+
+    // 1. Инициализация локальных медиа
+    async function startCall() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ 
+                video: TYPE === 'video', 
+                audio: true 
+            });
+            document.getElementById('localVideo').srcObject = localStream;
+            
+            if (TYPE === 'audio') {
+                document.getElementById('btnCam').style.display = 'none';
+            }
+
+            setupWebRTC();
+        } catch (e) {
+            console.error("Ошибка доступа к медиа:", e);
+            alert("Не удалось получить доступ к камере или микрофону.");
+            endCall();
+        }
+    }
+
+    // 2. Настройка P2P соединения
+    async function setupWebRTC() {
+        peerConnection = new RTCPeerConnection(rtcConfig);
+
+        // Добавляем свои треки
+        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+        // Слушаем чужие треки
+        peerConnection.ontrack = event => {
+            const remoteVid = document.getElementById('remoteVideo');
+            document.getElementById('connectingUi').style.display = 'none';
+            remoteVid.style.display = 'block';
+            if (remoteVid.srcObject !== event.streams[0]) {
+                remoteVid.srcObject = event.streams[0];
+            }
+        };
+
+        // Отправляем свои ICE-кандидаты
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                signalsRef.add({ sender: currentUser.id, type: 'candidate', candidate: event.candidate.toJSON() });
+            }
+        };
+
+        // Логика Инициатора (Звонящего)
+        if (IS_INITIATOR) {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            signalsRef.add({ sender: currentUser.id, type: 'offer', offer: { type: offer.type, sdp: offer.sdp } });
+        }
+
+        // 3. Сигнальный сервер
+        signalsUnsubscribe = signalsRef.onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(async change => {
+                if (change.type === "added") {
+                    const data = change.doc.data();
+                    
+                    // Игнорируем свои же сигналы
+                    if (data.sender === currentUser.id) return;
+
+                    try {
+                        if (data.type === 'offer' && !IS_INITIATOR) {
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+                            const answer = await peerConnection.createAnswer();
+                            await peerConnection.setLocalDescription(answer);
+                            signalsRef.add({ sender: currentUser.id, type: 'answer', answer: { type: answer.type, sdp: answer.sdp } });
+                        } 
+                        else if (data.type === 'answer' && IS_INITIATOR) {
+                            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        } 
+                        else if (data.type === 'candidate') {
+                            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        }
+                    } catch(e) {
+                        console.error("WebRTC Signaling Error:", e);
+                    }
+                }
+            });
+        });
+
+        // Слушаем статус звонка (если собеседник положил трубку)
+        callStatusRef.onSnapshot(doc => {
+            if (doc.exists && doc.data().status === 'ended') {
+                cleanUpAndClose();
+            }
+        });
+    }
+
+    // --- Управление локальными кнопками ---
+    function toggleMic() {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (!audioTrack) return;
+        audioTrack.enabled = !audioTrack.enabled;
+        
+        const btn = document.getElementById('btnMic');
+        const icon = document.getElementById('iconMic');
+        if (audioTrack.enabled) {
+            btn.className = "p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md transition-all active:scale-95";
+            icon.setAttribute('data-lucide', 'mic');
+        } else {
+            btn.className = "p-4 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 backdrop-blur-md transition-all active:scale-95 text-red-500";
+            icon.setAttribute('data-lucide', 'mic-off');
+            icon.classList.replace('text-white', 'text-red-500');
+        }
+        lucide.createIcons();
+    }
+
+    function toggleCam() {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (!videoTrack) return;
+        videoTrack.enabled = !videoTrack.enabled;
+
+        const btn = document.getElementById('btnCam');
+        const icon = document.getElementById('iconCam');
+        if (videoTrack.enabled) {
+            btn.className = "p-4 rounded-full bg-white/10 hover:bg-white/20 border border-white/5 backdrop-blur-md transition-all active:scale-95";
+            icon.setAttribute('data-lucide', 'video');
+        } else {
+            btn.className = "p-4 rounded-full bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 backdrop-blur-md transition-all active:scale-95 text-red-500";
+            icon.setAttribute('data-lucide', 'video-off');
+            icon.classList.replace('text-white', 'text-red-500');
+        }
+        lucide.createIcons();
+    }
+
+    // --- Завершение звонка ---
+    function endCall() {
+        // Меняем статус в базе, чтобы у собеседника тоже закрылось окно
+        callStatusRef.update({ status: 'ended' }).catch(()=>{});
+        cleanUpAndClose();
+    }
+
+    function cleanUpAndClose() {
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+        if (peerConnection) peerConnection.close();
+        if (signalsUnsubscribe) signalsUnsubscribe();
+        window.close();
+    }
+
+    // Безопасное закрытие при нажатии "крестика" в браузере
+    window.addEventListener('beforeunload', () => {
+        callStatusRef.update({ status: 'ended' }).catch(()=>{});
+        if (localStream) localStream.getTracks().forEach(t => t.stop());
+    });
+
+    // Запуск
+    startCall();
+  </script>
+</body>
+</html>
