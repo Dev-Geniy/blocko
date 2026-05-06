@@ -2861,67 +2861,24 @@ function renderMembersSidebar() {
   lucide.createIcons();
 }
 
-// --- НОВАЯ ЛОГИКА СВЯЗИ (ЗВОНКИ И РАДАР) ---
+// --- ЭНТЕРПРАЙЗ: УПРАВЛЕНИЕ УЧАСТНИКАМИ ---
 
+/**
+ * Переключает видимость информационной панели участника.
+ * Теперь используется для отображения мета-данных синхронизации вместо звонков.
+ */
 function toggleMemberActions(uid) {
     const actionsPanel = document.getElementById(`member_actions_${uid}`);
     if (actionsPanel) {
-        actionsPanel.classList.toggle('hidden');
+        // Плавное переключение через CSS классы для исключения рывков layout
+        if (actionsPanel.classList.contains('hidden')) {
+            actionsPanel.classList.remove('hidden');
+            actionsPanel.classList.add('flex');
+        } else {
+            actionsPanel.classList.add('hidden');
+            actionsPanel.classList.remove('flex');
+        }
     }
-}
-
-function checkOnlineStatus() {
-    const btn = document.getElementById('btnCheckOnline');
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mb-1 animate-spin text-blue-500"></i><span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Сканирую...</span>`;
-    lucide.createIcons({root: btn});
-
-    // Имитация пинга серверов
-    setTimeout(() => {
-        const indicators = document.querySelectorAll('.online-indicator');
-        indicators.forEach(el => {
-            // Имитируем онлайн статус (себя всегда делаем онлайн)
-            const isOnline = Math.random() > 0.4 || el.id === `online_dot_${currentUser.id}`;
-            if (isOnline) {
-                el.classList.remove('hidden');
-                el.classList.add('animate-pulse'); // Добавляем пульсацию для эффекта живости
-                setTimeout(() => el.classList.remove('animate-pulse'), 3000);
-            } else {
-                el.classList.add('hidden');
-            }
-        });
-
-        btn.innerHTML = originalHtml;
-        lucide.createIcons({root: btn});
-        showSystemToast('Радар', 'Проверка онлайна завершена.', 'radar', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-    }, 1500);
-}
-
-function openGroupCall() {
-    if (isLocalBoard) return showSystemToast('Офлайн', 'Видеоконференции недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-    
-    // Открываем широкое окно для конференции (Blocko Meet)
-    const width = 1280;
-    const height = 800;
-    const left = (screen.width / 2) - (width / 2);
-    const top = (screen.height / 2) - (height / 2);
-    
-    window.open(`meet.html?b=${BOARD_ID}`, 'BlockoMeet', `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=no,status=no,menubar=no`);
-    
-    // Закрываем шторку команды, так как мы перешли в звонок
-    toggleMembers();
-}
-
-function openPersonalCall(targetUid, type) {
-    if (isLocalBoard) return showSystemToast('Офлайн', 'Звонки недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-    
-    // Открываем компактное вертикальное окно для 1-на-1 звонка
-    const width = 420;
-    const height = 650;
-    const left = (screen.width / 2) - (width / 2);
-    const top = (screen.height / 2) - (height / 2);
-    
-    window.open(`call.html?b=${BOARD_ID}&target=${targetUid}&type=${type}`, 'BlockoCall', `width=${width},height=${height},top=${top},left=${left},resizable=no,scrollbars=no,status=no,menubar=no`);
 }
 
 // ЭНТЕРПРАЙЗ: Функция удаления участника с проверкой и подтверждением
