@@ -269,10 +269,10 @@
         await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
     }
 
-    // --- ПОЛНЫЙ ЦИКЛ WEBRTC SIGNALING ---
     function subscribeToPeers() {
-        // 1. Слушаем подключение новых людей
         if (peersUnsubscribe) peersUnsubscribe();
+        
+        // 1. Слушаем список участников в комнате (Presence)
         peersUnsubscribe = db.collection("boards").doc(BOARD_ID).collection("meet_peers").onSnapshot((snapshot) => {
             snapshot.docChanges().forEach(async (change) => {
                 const data = change.doc.data();
@@ -292,7 +292,7 @@
                     };
                     participants.push(newPeer);
 
-                    // WebRTC Инициализация для каждого нового удаленного узла
+                    // WebRTC Инициализация соединения
                     if (!isMe) {
                         const pc = new RTCPeerConnection(rtcConfig);
                         peerConnections[uid] = pc;
@@ -301,24 +301,39 @@
                             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
                         }
 
-                        // Прием удаленного потока
+                        // Прием удаленных медиа-треков
                         pc.ontrack = event => {
                             event.streams[0].getTracks().forEach(track => {
                                 if (!newPeer.stream.getTracks().includes(track)) {
                                     newPeer.stream.addTrack(track);
                                 }
                             });
-                            // Прямая привязка потока к видеоэлементу, как только он появился
+                            
+                            // Агрессивная привязка потока к DOM-элементу без full re-render[cite: 5, 6]
                             const vidEl = document.getElementById(`vid_${uid}`);
                             if (vidEl && vidEl.srcObject !== newPeer.stream) vidEl.srcObject = newPeer.stream;
                         };
 
-                        // Отправка ICE-кандидатов в Firebase
+                        // Маршрутизация через ICE-кандидаты
                         pc.onicecandidate = event => {
                             if (event.candidate) {
                                 db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
                                     target: uid, sender: currentUser.id, type: 'candidate', candidate: event.candidate.toJSON()
                                 });
+                            }
+                        };
+                        
+                        // ЭНТЕРПРАЙЗ ФИКС: Мониторинг физического разрыва P2P-соединения
+                        pc.onconnectionstatechange = () => {
+                            if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                                console.log(`[WebRTC] Сеть с ${data.name} разорвана.`);
+                                participants = participants.filter(p => p.id !== uid);
+                                pc.close();
+                                delete peerConnections[uid];
+                                if (pinnedUserId === uid) pinnedUserId = null;
+                                
+                                // Batching DOM update[cite: 6]
+                                requestAnimationFrame(() => updateUI());
                             }
                         };
 
@@ -351,7 +366,7 @@
                 }
             });
 
-            // Автоматическое закрепление, если никого нет
+            // Поддержание фокуса на ком-либо
             if (!pinnedUserId || !participants.find(p => p.id === pinnedUserId)) {
                 pinnedUserId = participants.find(p => p.isLocal)?.id || participants[0]?.id;
             }
@@ -359,7 +374,7 @@
             requestAnimationFrame(() => updateUI());
         });
 
-        // 2. Слушаем Сигналы (Offer, Answer, ICE) направленные лично нам
+        // 2. Сигнальный сервер WebRTC: Обработка входящих рукопожатий
         if (signalsUnsubscribe) signalsUnsubscribe();
         signalsUnsubscribe = db.collection("boards").doc(BOARD_ID).collection("meet_signals")
             .where("target", "==", currentUser.id)
@@ -384,10 +399,10 @@
                                 await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
                             }
                         } catch(e) {
-                            console.error("WebRTC Error:", e);
+                            console.error("[WebRTC] Ошибка обработки сигнала:", e);
                         }
                         
-                        // Агрессивная очистка базы: удаляем отработанный сигнал
+                        // Агрессивная сборка мусора в базе
                         change.doc.ref.delete().catch(() => {});
                     }
                 });
