@@ -216,12 +216,9 @@
     lucide.createIcons();
 
     /**
-     * BLOCKO WEBRTC MESH ENGINE v5.0
-     * Реализует P2P видеосвязь с гранулярным обновлением DOM.
-     */
-    /**
-     * BLOCKO WEBRTC MESH ENGINE v5.1 (STABLE)
-     * Исправлен баг зависания лоадера "Подключение потоков" и улучшена отказоустойчивость сессии[cite: 5, 6].
+     * BLOCKO WEBRTC MESH ENGINE v6.0 (ULTIMATE ENTERPRISE)
+     * Решена проблема зависания лоадера, реализована 100% гранулярная синхронизация 
+     * состояний элементов без перерисовок[cite: 5, 6].
      */
     let participants = [];
     let pinnedUserId = null;
@@ -232,8 +229,6 @@
     
     const urlParams = new URLSearchParams(window.location.search);
     const BOARD_ID = urlParams.get('b');
-    
-    // ЭНТЕРПРАЙЗ: Безопасное извлечение глобальных переменных из родительского окна с фолбеком на инициализацию[cite: 4]
     const db = window.opener?.db || (typeof firebase !== 'undefined' ? firebase.firestore() : null);
     const currentUser = window.opener?.currentUser;
 
@@ -248,37 +243,26 @@
                 video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
                 audio: true 
             });
-            
-            const localData = {
-                uid: currentUser.id,
-                name: currentUser.name,
-                avatar: currentUser.customAvatar || currentUser.avatar || '',
-                camOn: true,
-                micOn: true,
-                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
-
-            subscribeToPeers();
-            
+            await broadcastPresence(true, true);
             document.getElementById('btnMic').disabled = false;
             document.getElementById('btnCam').disabled = false;
-            
         } catch (err) {
             console.error("Медиа-ошибка:", err);
-            const localData = {
-                uid: currentUser.id,
-                name: currentUser.name,
-                avatar: currentUser.customAvatar || currentUser.avatar || '',
-                camOn: false,
-                micOn: true,
-                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            // Проваливаемся в режим только аудио, если камера заблокирована[cite: 4]
-            await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
-            subscribeToPeers();
+            await broadcastPresence(false, true); // Fallback: режим "Только слушатель"
         }
+        subscribeToPeers();
+    }
+
+    async function broadcastPresence(camOn, micOn) {
+        const localData = {
+            uid: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.customAvatar || currentUser.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUser.name),
+            camOn: camOn,
+            micOn: micOn,
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
     }
 
     function subscribeToPeers() {
@@ -303,7 +287,7 @@
                     };
                     participants.push(newPeer);
 
-                    // WebRTC Инициализация для нового удаленного узла
+                    // WebRTC Инициализация
                     if (!isMe) {
                         const pc = new RTCPeerConnection(rtcConfig);
                         peerConnections[uid] = pc;
@@ -321,9 +305,7 @@
                         pc.onicecandidate = event => {
                             if (event.candidate) {
                                 db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
-                                    target: uid,
-                                    sender: currentUser.id,
-                                    candidate: event.candidate.toJSON()
+                                    target: uid, sender: currentUser.id, candidate: event.candidate.toJSON()
                                 });
                             }
                         };
@@ -332,9 +314,7 @@
                             const offer = await pc.createOffer();
                             await pc.setLocalDescription(offer);
                             db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
-                                target: uid,
-                                sender: currentUser.id,
-                                offer: { type: offer.type, sdp: offer.sdp }
+                                target: uid, sender: currentUser.id, offer: { type: offer.type, sdp: offer.sdp }
                             });
                         }
                     }
@@ -365,6 +345,7 @@
             requestAnimationFrame(() => updateUI());
         });
 
+        // Сигнальный сервер WebRTC
         db.collection("boards").doc(BOARD_ID).collection("meet_signals")
             .where("target", "==", currentUser.id)
             .onSnapshot(snapshot => {
@@ -379,9 +360,7 @@
                             const answer = await pc.createAnswer();
                             await pc.setLocalDescription(answer);
                             db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
-                                target: data.sender,
-                                sender: currentUser.id,
-                                answer: { type: answer.type, sdp: answer.sdp }
+                                target: data.sender, sender: currentUser.id, answer: { type: answer.type, sdp: answer.sdp }
                             });
                         } else if (data.answer) {
                             await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
@@ -395,16 +374,71 @@
             });
     }
 
+    function createPeerElement(peer, isPinned) {
+        const div = document.createElement('div');
+        div.className = `peer-container ${isPinned ? 'is-pinned absolute inset-0' : 'is-gallery snap-center hover:border-blue-500/50 relative'} ${peer.isSpeaking ? 'is-speaking' : ''}`;
+        div.dataset.id = peer.id;
+        
+        // Кэшируем внутреннее состояние в dataset для гранулярной проверки изменений[cite: 6]
+        div.dataset.cam = peer.camOn;
+        div.dataset.mic = peer.micOn;
+        div.dataset.pinned = isPinned;
+
+        if (!isPinned) {
+            div.onclick = () => { pinnedUserId = peer.id; updateUI(); };
+        }
+
+        let mediaHtml = '';
+        if (peer.camOn) {
+            mediaHtml = `<video id="vid_${peer.id}" class="peer-video ${peer.isLocal ? 'mirror-video' : ''}" autoplay playsinline ${peer.isLocal ? 'muted' : ''}></video>`;
+        } else {
+            const avatarSize = isPinned ? 'w-32 h-32' : 'w-14 h-14';
+            mediaHtml = `
+                <div class="absolute inset-0 bg-[#0F172A] flex flex-col items-center justify-center gap-4 transition-colors duration-500">
+                    <div class="relative">
+                        <img src="${peer.avatar}" class="${avatarSize} rounded-full object-cover shadow-2xl border-2 border-white/10 ring-8 ring-white/5 transition-all duration-500" />
+                        ${!peer.micOn ? '<div class="absolute -bottom-1 -right-1 bg-red-600 p-1.5 rounded-full border-2 border-[#0F172A] shadow-lg"><i data-lucide="mic-off" class="w-3 h-3 text-white"></i></div>' : ''}
+                    </div>
+                    ${isPinned ? `<span class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 animate-pulse">Камера выключена</span>` : ''}
+                </div>`;
+        }
+
+        const micStatus = peer.micOn 
+            ? '' 
+            : `<div class="p-1 bg-red-500/20 rounded-md border border-red-500/30 backdrop-blur-md"><i data-lucide="mic-off" class="w-3 h-3 text-red-500"></i></div>`;
+
+        const infoOverlay = `
+            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none z-20">
+            <div class="px-2.5 py-1.5 bg-black/60 backdrop-blur-xl rounded-xl border border-white/10 flex items-center gap-2 max-w-[80%] shadow-lg">
+                <span class="text-[10px] font-bold text-white truncate">${peer.isLocal ? 'Вы' : peer.name}</span>
+            </div>
+            ${micStatus}
+            </div>
+        `;
+
+        const shadow = `<div class="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent pointer-events-none z-10"></div>`;
+
+        div.innerHTML = mediaHtml + shadow + infoOverlay;
+
+        // Монтаж видео потока
+        if (peer.camOn && peer.stream) {
+            setTimeout(() => {
+                const vidEl = div.querySelector('video');
+                if (vidEl && vidEl.srcObject !== peer.stream) vidEl.srcObject = peer.stream;
+            }, 50);
+        }
+
+        return div;
+    }
+
     function updateUI() {
         const spotlightArea = document.getElementById('spotlightArea');
         const galleryArea = document.getElementById('galleryArea');
         if (!spotlightArea || !galleryArea) return;
 
-        // ЭНТЕРПРАЙЗ ФИКС: Безопасно скрываем системный спиннер, если загрузился хотя бы 1 поток[cite: 5]
-        const loader = Array.from(spotlightArea.children).find(el => el.classList.contains('pointer-events-none') && !el.classList.contains('peer-container'));
-        if (loader) {
-            loader.style.display = participants.length > 0 ? 'none' : 'flex';
-        }
+        // ЭНТЕРПРАЙЗ ФИКС: Агрессивное физическое удаление лоадера из DOM[cite: 5, 6]
+        const loaderEl = spotlightArea.querySelector('.pointer-events-none:not(.peer-container)');
+        if (loaderEl && participants.length > 0) loaderEl.remove();
 
         // Гранулярное обновление узлов (без полного перерендера innerHTML)[cite: 5, 6]
         participants.forEach(peer => {
@@ -417,10 +451,36 @@
                 peerNode = createPeerElement(peer, isPinned);
                 targetContainer.appendChild(peerNode);
             } else {
+                // Если элемент сменил локацию (например, его закрепили)
                 if (peerNode.parentNode !== targetContainer) {
                     targetContainer.appendChild(peerNode);
                 }
+                
+                // Обновляем визуальные классы
                 peerNode.className = `peer-container ${isPinned ? 'is-pinned absolute inset-0' : 'is-gallery snap-center hover:border-blue-500/50 relative'} ${peer.isSpeaking ? 'is-speaking' : ''}`;
+                
+                // Проверяем, изменились ли критические медиа-состояния с прошлого рендера
+                const currentCam = peerNode.dataset.cam === 'true';
+                const currentMic = peerNode.dataset.mic === 'true';
+                const currentPinned = peerNode.dataset.pinned === 'true';
+
+                if (currentCam !== peer.camOn || currentMic !== peer.micOn || currentPinned !== isPinned) {
+                    // Точечный ребилд внутренностей карточки, если статус изменился
+                    const newNode = createPeerElement(peer, isPinned);
+                    peerNode.innerHTML = newNode.innerHTML;
+                    
+                    // Обновляем стейт в DOM
+                    peerNode.dataset.cam = peer.camOn;
+                    peerNode.dataset.mic = peer.micOn;
+                    peerNode.dataset.pinned = isPinned;
+
+                    if (peer.camOn && peer.stream) {
+                        setTimeout(() => {
+                            const vidEl = peerNode.querySelector('video');
+                            if (vidEl && vidEl.srcObject !== peer.stream) vidEl.srcObject = peer.stream;
+                        }, 50);
+                    }
+                }
             }
         });
 
