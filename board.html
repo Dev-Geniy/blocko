@@ -92,7 +92,7 @@
 
     /* ENTERPRISE: Компактный режим доски (High-Density View) */
     body.compact-mode .card-item { padding: 0.5rem !important; }
-    body.compact-mode .card-item img { display: none !important; }
+    body.compact-mode .card-item .compact-hide { display: none !important; }
     body.compact-mode .card-item .text-sm { font-size: 0.75rem !important; line-height: 1rem !important; margin-bottom: 0.25rem !important; }
     body.compact-mode .card-item .mt-3 { margin-top: 0.25rem !important; }
     body.compact-mode .card-item .mb-3 { margin-bottom: 0.25rem !important; }
@@ -4326,7 +4326,7 @@ function render() {
             ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
             
             <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
-            ${c.image ? `<div class="mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.imageThumb || c.image}" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
+            ${c.image ? `<div class="compact-hide mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.imageThumb || c.image}" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
             
             <div class="flex flex-col items-start w-full pointer-events-none">
               ${tagsHtml}
