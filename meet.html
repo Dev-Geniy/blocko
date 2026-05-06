@@ -197,68 +197,46 @@
   <script>
     lucide.createIcons();
 
-    // Симуляция базы данных участников (Реалистичные моки без заглушек)
-    // В реальном приложении сюда прилетят RTCPeerConnection стримы
+    // ДИНАМИЧЕСКАЯ БАЗА УЧАСТНИКОВ (Без фейков)
     const participants = [
       {
         id: 'local',
-        name: 'Вы',
+        name: 'Подключение...',
         isLocal: true,
-        stream: null, // Заполнится WebRTC камерой
-        micOn: true,
-        camOn: true,
-        avatar: 'https://ui-avatars.com/api/?name=You&background=3b82f6&color=fff',
-        isSpeaking: false
-      },
-      {
-        id: 'user_1',
-        name: 'Александр (Lead)',
-        isLocal: false,
-        stream: null,
-        micOn: true,
-        camOn: false, // Камера выключена
-        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        isSpeaking: true // Имитация разговора
-      },
-      {
-        id: 'user_2',
-        name: 'Елена (Design)',
-        isLocal: false,
         stream: null,
         micOn: false,
         camOn: false,
-        avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
-        isSpeaking: false
-      },
-      {
-        id: 'user_3',
-        name: 'Игорь (QA)',
-        isLocal: false,
-        stream: null,
-        micOn: true,
-        camOn: false,
-        avatar: 'https://ui-avatars.com/api/?name=Игорь&background=8b5cf6&color=fff',
+        avatar: 'https://ui-avatars.com/api/?name=Вы&background=3b82f6&color=fff',
         isSpeaking: false
       }
     ];
 
-    let pinnedUserId = 'user_1'; // По умолчанию закрепляем собеседника
+    let pinnedUserId = 'local'; // Закрепляем себя, пока никого нет
     let localStream = null;
 
     // --- ИНИЦИАЛИЗАЦИЯ КАМЕРЫ ---
     async function initLocalCamera() {
+      const localPeer = participants.find(p => p.id === 'local');
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-        const localPeer = participants.find(p => p.id === 'local');
         if (localPeer) {
             localPeer.stream = localStream;
-            updateUI(); // Перерисовываем UI после получения стрима
+            localPeer.micOn = true;
+            localPeer.camOn = true;
+            localPeer.name = 'Вы';
+            
+            // Включаем кнопки управления
+            document.getElementById('btnMic').disabled = false;
+            document.getElementById('btnCam').disabled = false;
+            
+            updateUI(); 
         }
       } catch (err) {
         console.error("Нет доступа к камере:", err);
-        // Продолжаем рендер без камеры (только аватарки)
-        const localPeer = participants.find(p => p.id === 'local');
-        if (localPeer) localPeer.camOn = false;
+        if (localPeer) {
+            localPeer.camOn = false;
+            localPeer.name = 'Вы (Без камеры)';
+        }
         updateUI();
       }
     }
@@ -271,6 +249,14 @@
       spotlightArea.innerHTML = '';
       galleryArea.innerHTML = '';
 
+      let pinnedPeer = participants.find(p => p.id === pinnedUserId);
+      // Защита: если закрепленный участник вышел, фокус переходит к первому в списке
+      if (!pinnedPeer && participants.length > 0) {
+          pinnedPeer = participants[0];
+          pinnedUserId = pinnedPeer.id;
+      }
+
+      // 1. Рендерим реальных участников
       participants.forEach(peer => {
         const isPinned = peer.id === pinnedUserId;
         const domNode = createPeerElement(peer, isPinned);
@@ -281,6 +267,35 @@
           galleryArea.appendChild(domNode);
         }
       });
+
+      // 2. Рендерим "Слот-призрак"
+      // Для соблюдения сетки до 9 человек отображаем слот приглашения
+      if (participants.length < 9) {
+          const ghostSlot = document.createElement('div');
+          ghostSlot.className = "peer-container is-gallery snap-center border-2 border-dashed border-gray-700/50 bg-gray-800/20 flex flex-col items-center justify-center opacity-40 transition-all hover:bg-gray-800/40 hover:border-gray-600 cursor-pointer";
+          
+          // Тестовая кнопка: эмуляция подключения нового юзера в сеть
+          ghostSlot.onclick = () => {
+             participants.push({
+                id: 'remote_' + Date.now(),
+                name: 'Участник ' + participants.length,
+                isLocal: false,
+                stream: null,
+                micOn: false,
+                camOn: false,
+                avatar: 'https://ui-avatars.com/api/?name=U&background=random&color=fff',
+                isSpeaking: false
+             });
+             updateUI();
+          };
+          
+          ghostSlot.innerHTML = `
+              <i data-lucide="user-plus" class="w-6 h-6 sm:w-8 sm:h-8 text-gray-500 mb-2 pointer-events-none"></i>
+              <span class="text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center px-2 pointer-events-none">Пригласить<br>участника</span>
+          `;
+          galleryArea.appendChild(ghostSlot);
+      }
+
       lucide.createIcons();
     }
 
