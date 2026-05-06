@@ -216,14 +216,15 @@
     lucide.createIcons();
 
     /**
-     * BLOCKO REAL-TIME PRESENCE ENGINE v4.0
-     * Полное удаление имитационных участников. Система работает строго по факту 
-     * наличия активной сессии в Firebase для каждого конкретного UID[cite: 1, 2, 4].
+     * BLOCKO WEBRTC MESH ENGINE v5.0
+     * Реализует P2P видеосвязь с гранулярным обновлением DOM.
      */
     let participants = [];
     let pinnedUserId = null;
     let localStream = null;
     let peersUnsubscribe = null;
+    const peerConnections = {}; // RTCPeerConnection хранилище
+    const rtcConfig = { 'iceServers': [{'urls': 'stun:stun.l.google.com:19302'}] };
     
     const urlParams = new URLSearchParams(window.location.search);
     const BOARD_ID = urlParams.get('b');
@@ -237,13 +238,11 @@
 
     async function initLocalCamera() {
         try {
-            // Захват медиа-потока перед регистрацией в сети[cite: 2]
             localStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: 1280, height: 720, facingMode: "user" }, 
                 audio: true 
             });
             
-            // Инициализация локального профиля[cite: 4]
             const localData = {
                 uid: currentUser.id,
                 name: currentUser.name,
@@ -253,20 +252,15 @@
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // Регистрация участника в Firebase[cite: 4, 6]
-            await db.collection("boards").doc(BOARD_ID)
-                    .collection("meet_peers").doc(currentUser.id).set(localData);
+            await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
 
-            // Слушаем список реальных участников[cite: 4]
             subscribeToPeers();
             
-            // Настройка управления локальным интерфейсом
             document.getElementById('btnMic').disabled = false;
             document.getElementById('btnCam').disabled = false;
             
         } catch (err) {
             console.error("Медиа-ошибка:", err);
-            // Проваливаемся в режим "Только слушатель" если нет камеры[cite: 2]
             const localData = {
                 uid: currentUser.id,
                 name: currentUser.name,
@@ -275,8 +269,7 @@
                 micOn: true,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
             };
-            await db.collection("boards").doc(BOARD_ID)
-                    .collection("meet_peers").doc(currentUser.id).set(localData);
+            await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).set(localData);
             subscribeToPeers();
         }
     }
@@ -284,29 +277,115 @@
     function subscribeToPeers() {
         if (peersUnsubscribe) peersUnsubscribe();
         
-        peersUnsubscribe = db.collection("boards").doc(BOARD_ID)
-            .collection("meet_peers").onSnapshot((snapshot) => {
-                participants = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    const isMe = data.uid === currentUser.id;
-                    return {
-                        id: data.uid,
+        peersUnsubscribe = db.collection("boards").doc(BOARD_ID).collection("meet_peers").onSnapshot((snapshot) => {
+            snapshot.docChanges().forEach(async (change) => {
+                const data = change.doc.data();
+                const uid = data.uid;
+                const isMe = uid === currentUser.id;
+
+                if (change.type === "added") {
+                    const newPeer = {
+                        id: uid,
                         name: data.name,
                         isLocal: isMe,
-                        stream: isMe ? localStream : null, // WebRTC потоки будут связаны здесь[cite: 2]
+                        stream: isMe ? localStream : new MediaStream(),
                         micOn: data.micOn,
                         camOn: data.camOn,
                         avatar: data.avatar,
                         isSpeaking: false
                     };
-                });
+                    participants.push(newPeer);
 
-                // Если никто не закреплен или закрепленный вышел — берем себя или первого в списке[cite: 4]
-                if (!pinnedUserId || !participants.find(p => p.id === pinnedUserId)) {
-                    pinnedUserId = participants.find(p => p.isLocal)?.id || participants[0]?.id;
+                    // WebRTC Инициализация для нового узла
+                    if (!isMe) {
+                        const pc = new RTCPeerConnection(rtcConfig);
+                        peerConnections[uid] = pc;
+
+                        if (localStream) {
+                            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                        }
+
+                        pc.ontrack = event => {
+                            event.streams[0].getTracks().forEach(track => newPeer.stream.addTrack(track));
+                            const vidEl = document.getElementById(`vid_${uid}`);
+                            if (vidEl && vidEl.srcObject !== newPeer.stream) vidEl.srcObject = newPeer.stream;
+                        };
+
+                        pc.onicecandidate = event => {
+                            if (event.candidate) {
+                                db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
+                                    target: uid,
+                                    sender: currentUser.id,
+                                    candidate: event.candidate.toJSON()
+                                });
+                            }
+                        };
+
+                        if (currentUser.id > uid) {
+                            const offer = await pc.createOffer();
+                            await pc.setLocalDescription(offer);
+                            db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
+                                target: uid,
+                                sender: currentUser.id,
+                                offer: { type: offer.type, sdp: offer.sdp }
+                            });
+                        }
+                    }
                 }
 
-                updateUI();
+                if (change.type === "modified") {
+                    const peer = participants.find(p => p.id === uid);
+                    if (peer) {
+                        peer.micOn = data.micOn;
+                        peer.camOn = data.camOn;
+                    }
+                }
+
+                if (change.type === "removed") {
+                    participants = participants.filter(p => p.id !== uid);
+                    if (peerConnections[uid]) {
+                        peerConnections[uid].close();
+                        delete peerConnections[uid];
+                    }
+                    if (pinnedUserId === uid) pinnedUserId = null;
+                }
+            });
+
+            if (!pinnedUserId || !participants.find(p => p.id === pinnedUserId)) {
+                pinnedUserId = participants.find(p => p.isLocal)?.id || participants[0]?.id;
+            }
+
+            requestAnimationFrame(() => updateUI());
+        });
+
+        // Слушатель сигнального сервера
+        db.collection("boards").doc(BOARD_ID).collection("meet_signals")
+            .where("target", "==", currentUser.id)
+            .onSnapshot(snapshot => {
+                snapshot.docChanges().forEach(async change => {
+                    if (change.type === "added") {
+                        const data = change.doc.data();
+                        const pc = peerConnections[data.sender];
+                        if (!pc) return;
+
+                        if (data.offer) {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                            const answer = await pc.createAnswer();
+                            await pc.setLocalDescription(answer);
+                            db.collection("boards").doc(BOARD_ID).collection("meet_signals").add({
+                                target: data.sender,
+                                sender: currentUser.id,
+                                answer: { type: answer.type, sdp: answer.sdp }
+                            });
+                        } else if (data.answer) {
+                            await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        } else if (data.candidate) {
+                            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        }
+                        
+                        change.doc.ref.delete().catch(() => {});
+                    }
+                });
             });
     }
 
@@ -315,42 +394,55 @@
         const galleryArea = document.getElementById('galleryArea');
         if (!spotlightArea || !galleryArea) return;
 
-        // ЭНТЕРПРАЙЗ: Оптимизированное обновление DOM через очистку[cite: 3, 5]
-        spotlightArea.innerHTML = '';
-        galleryArea.innerHTML = '';
-
-        if (participants.length === 0) return;
-
-        // 1. Рендерим Spotlight (Главный экран)[cite: 5]
-        const pinnedPeer = participants.find(p => p.id === pinnedUserId);
-        if (pinnedPeer) {
-            spotlightArea.appendChild(createPeerElement(pinnedPeer, true));
-        }
-
-        // 2. Рендерим Gallery (Все остальные реальные люди)[cite: 5]
+        // Полный отказ от innerHTML для предотвращения разрыва видеопотоков[cite: 3, 5]
         participants.forEach(peer => {
-            if (peer.id !== pinnedUserId) {
-                galleryArea.appendChild(createPeerElement(peer, false));
+            const isPinned = peer.id === pinnedUserId;
+            const targetContainer = isPinned ? spotlightArea : galleryArea;
+            
+            let peerNode = document.querySelector(`.peer-container[data-id="${peer.id}"]`);
+            
+            // Гранулярное обновление узлов (без full re-render)[cite: 5, 6]
+            if (!peerNode) {
+                peerNode = createPeerElement(peer, isPinned);
+                targetContainer.appendChild(peerNode);
+            } else {
+                if (peerNode.parentNode !== targetContainer) {
+                    targetContainer.appendChild(peerNode);
+                }
+                peerNode.className = `peer-container ${isPinned ? 'is-pinned' : 'is-gallery snap-center hover:border-blue-500/50'} ${peer.isSpeaking ? 'is-speaking' : ''}`;
             }
         });
 
-        // 3. Слот инвайта (Всегда в конце, если есть место для реальных людей)
+        // Безопасное удаление узлов тех, кто покинул встречу[cite: 6]
+        document.querySelectorAll('.peer-container[data-id]').forEach(node => {
+            const uid = node.getAttribute('data-id');
+            if (!participants.find(p => p.id === uid)) {
+                node.remove();
+            }
+        });
+
+        let inviteBtn = document.getElementById('inviteSlotNode');
         if (participants.length < 12) {
-            const inviteBtn = document.createElement('div');
-            inviteBtn.onclick = () => document.getElementById('inviteModal').classList.remove('hidden');
-            inviteBtn.className = "peer-container is-gallery snap-center border-2 border-dashed border-blue-500/30 bg-blue-500/5 flex flex-col items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/50 transition-all cursor-pointer";
-            inviteBtn.innerHTML = `
-                <i data-lucide="user-plus" class="w-6 h-6 text-blue-400 mb-2"></i>
-                <span class="text-[9px] font-black uppercase text-blue-400 tracking-tighter">Позвать</span>
-            `;
-            galleryArea.appendChild(inviteBtn);
+            if (!inviteBtn) {
+                inviteBtn = document.createElement('div');
+                inviteBtn.id = 'inviteSlotNode';
+                inviteBtn.onclick = () => document.getElementById('inviteModal').classList.remove('hidden');
+                inviteBtn.className = "peer-container is-gallery snap-center border-2 border-dashed border-blue-500/30 bg-blue-500/5 flex flex-col items-center justify-center hover:bg-blue-500/10 hover:border-blue-500/50 transition-all cursor-pointer";
+                inviteBtn.innerHTML = `
+                    <i data-lucide="user-plus" class="w-6 h-6 text-blue-400 mb-2"></i>
+                    <span class="text-[9px] font-black uppercase text-blue-400 tracking-tighter">Позвать</span>
+                `;
+                galleryArea.appendChild(inviteBtn);
+            } else if (inviteBtn.parentNode !== galleryArea) {
+                galleryArea.appendChild(inviteBtn);
+            }
+        } else if (inviteBtn) {
+            inviteBtn.remove();
         }
 
-        // Пакетное обновление иконок[cite: 5]
         requestAnimationFrame(() => lucide.createIcons());
     }
 
-    // Удаление из сети при закрытии окна[cite: 1, 6]
     window.addEventListener('beforeunload', async () => {
         if (localStream) localStream.getTracks().forEach(track => track.stop());
         await db.collection("boards").doc(BOARD_ID).collection("meet_peers").doc(currentUser.id).delete();
