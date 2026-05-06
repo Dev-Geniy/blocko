@@ -163,6 +163,24 @@
       </div>
     </div>
 
+    <!-- Модальное окно приглашения -->
+    <div id="inviteModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
+      <div class="bg-[#111827] border border-gray-800 p-8 rounded-[2rem] w-full max-w-md text-center transform scale-95 transition-transform shadow-2xl relative" id="inviteContent">
+        <button onclick="closeInviteModal()" class="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <div class="w-16 h-16 bg-blue-500/20 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-blue-500/30">
+          <i data-lucide="user-plus" class="w-8 h-8"></i>
+        </div>
+        <h2 class="text-xl font-bold text-white mb-2">Пригласить коллег</h2>
+        <p class="text-xs text-gray-400 mb-6 leading-relaxed">Отправьте эту ссылку участникам доски. Они смогут мгновенно присоединиться к текущей конференции.</p>
+        
+        <div class="flex items-center gap-2 bg-[#0B0F19] border border-gray-700 rounded-xl p-2 mb-2 shadow-inner">
+          <input type="text" id="inviteLinkInput" readonly class="flex-1 bg-transparent text-xs text-gray-300 outline-none px-2 font-mono truncate" value="">
+          <button onclick="copyInviteLink()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors font-bold text-xs shadow-md active:scale-95 flex gap-2 items-center"><i data-lucide="copy" class="w-3.5 h-3.5"></i> Скопировать</button>
+        </div>
+        <div id="inviteCopyStatus" class="text-[10px] text-emerald-500 font-bold h-4 transition-all opacity-0">Скопировано в буфер обмена!</div>
+      </div>
+    </div>
+    
   </main>
 
   <!-- ПАНЕЛЬ УПРАВЛЕНИЯ ЗВОНКОМ -->
