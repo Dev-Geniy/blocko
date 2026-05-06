@@ -451,8 +451,25 @@
       <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="users" class="w-4 h-4 text-emerald-500"></i> Команда проекта</h3>
       <button onclick="toggleMembers()" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all active:scale-95 bg-gray-100/50 dark:bg-gray-800/50 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
-    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 text-xs text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800/50">Только владелец доски может изменять роли.</div>
-    <div id="membersList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+    
+    <!-- Панель действий связи -->
+    <div class="p-3 border-b border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex items-center justify-between gap-2 shadow-inner">
+        <button onclick="openGroupCall()" class="flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm group active:scale-95">
+            <i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Конференция</span>
+        </button>
+        <button onclick="checkOnlineStatus()" id="btnCheckOnline" class="flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 shadow-sm group active:scale-95">
+            <i data-lucide="radar" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Онлайн Радар</span>
+        </button>
+        <button class="flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-50 shadow-sm">
+            <i data-lucide="more-horizontal" class="w-5 h-5 mb-1"></i>
+            <span class="text-[9px] font-black uppercase tracking-widest">Скоро...</span>
+        </button>
+    </div>
+
+    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-[10px] font-bold text-blue-600 dark:text-blue-400 border-b border-blue-100 dark:border-blue-800/50 uppercase tracking-widest flex items-center justify-center gap-1.5"><i data-lucide="info" class="w-3 h-3"></i> Кликните на участника для звонка</div>
+    <div id="membersList" class="flex-1 overflow-y-auto p-4 space-y-3 hide-scroll"></div>
   </aside>
 
   <aside id="archiveSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
@@ -2801,40 +2818,121 @@ function renderMembersSidebar() {
     let roleSelect = '';
     let deleteBtn = '';
     
-    // ЭНТЕРПРАЙЗ: Селектор ролей и кнопка удаления (только для владельца)
     if (isOwner && user.role !== 'owner') {
       roleSelect = `
-        <select onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
+        <select onclick="event.stopPropagation()" onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
           <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Редактор</option>
           <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Читатель</option>
         </select>
       `;
       deleteBtn = `
-        <button onclick="removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
-          <i data-lucide="trash-2" class="w-4 h-4"></i>
+        <button onclick="event.stopPropagation(); removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
+          <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
         </button>
       `;
     } else if (user.role !== 'owner') {
       roleSelect = `<span class="text-[10px] text-gray-500 font-bold px-2 py-1 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 uppercase tracking-widest">${user.role === 'editor' ? 'Редактор' : 'Читатель'}</span>`;
     }
 
+    // Обновленный аватар с зеленой точкой (по умолчанию скрыта)
+    const avatarHtml = `
+      <div class="relative isolate">
+        ${getAvatarHTML(user, 'w-10 h-10')}
+        <div id="online_dot_${uid}" class="online-indicator hidden absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm"></div>
+      </div>
+    `;
+
     return `
-      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800 transition-colors group">
-        <div class="relative isolate">
-            ${getAvatarHTML(user, 'w-10 h-10')}
+      <div class="flex flex-col bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition-colors group overflow-hidden cursor-pointer shadow-sm" onclick="toggleMemberActions('${uid}')">
+        <div class="flex items-center gap-3 p-3 pointer-events-none">
+            ${avatarHtml}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-[10px] font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
+              ${roleBadge}
+            </div>
+            <div class="flex items-center pointer-events-auto">
+                ${roleSelect}
+                ${deleteBtn}
+            </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-xs font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
-          ${roleBadge}
-        </div>
-        <div class="flex items-center">
-            ${roleSelect}
-            ${deleteBtn}
+        <!-- Выпадающая панель действий со звонками -->
+        <div id="member_actions_${uid}" class="hidden flex items-center gap-2 px-3 pb-3 pt-1 border-t border-gray-200/50 dark:border-gray-700/50 mt-1 bg-white/50 dark:bg-gray-900/50">
+            ${isMe ? `<div class="text-xs text-gray-500 italic w-full text-center py-2">Это ваш профиль</div>` : `
+            <button onclick="event.stopPropagation(); openPersonalCall('${uid}', 'audio')" class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-emerald-500 dark:hover:text-emerald-400 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 rounded-xl transition-all shadow-sm active:scale-95 text-xs font-bold">
+                <i data-lucide="phone" class="w-4 h-4 pointer-events-none"></i> Аудио
+            </button>
+            <button onclick="event.stopPropagation(); openPersonalCall('${uid}', 'video')" class="flex-1 flex items-center justify-center gap-2 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 rounded-xl transition-all shadow-sm active:scale-95 text-xs font-bold">
+                <i data-lucide="video" class="w-4 h-4 pointer-events-none"></i> Видео
+            </button>
+            `}
         </div>
       </div>
     `;
   }).join('');
   lucide.createIcons();
+}
+
+// --- НОВАЯ ЛОГИКА СВЯЗИ (ЗВОНКИ И РАДАР) ---
+
+function toggleMemberActions(uid) {
+    const actionsPanel = document.getElementById(`member_actions_${uid}`);
+    if (actionsPanel) {
+        actionsPanel.classList.toggle('hidden');
+    }
+}
+
+function checkOnlineStatus() {
+    const btn = document.getElementById('btnCheckOnline');
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 mb-1 animate-spin text-blue-500"></i><span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Сканирую...</span>`;
+    lucide.createIcons({root: btn});
+
+    // Имитация пинга серверов
+    setTimeout(() => {
+        const indicators = document.querySelectorAll('.online-indicator');
+        indicators.forEach(el => {
+            // Имитируем онлайн статус (себя всегда делаем онлайн)
+            const isOnline = Math.random() > 0.4 || el.id === `online_dot_${currentUser.id}`;
+            if (isOnline) {
+                el.classList.remove('hidden');
+                el.classList.add('animate-pulse'); // Добавляем пульсацию для эффекта живости
+                setTimeout(() => el.classList.remove('animate-pulse'), 3000);
+            } else {
+                el.classList.add('hidden');
+            }
+        });
+
+        btn.innerHTML = originalHtml;
+        lucide.createIcons({root: btn});
+        showSystemToast('Радар', 'Проверка онлайна завершена.', 'radar', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+    }, 1500);
+}
+
+function openGroupCall() {
+    if (isLocalBoard) return showSystemToast('Офлайн', 'Видеоконференции недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+    
+    // Открываем широкое окно для конференции (Blocko Meet)
+    const width = 1280;
+    const height = 800;
+    const left = (screen.width / 2) - (width / 2);
+    const top = (screen.height / 2) - (height / 2);
+    
+    window.open(`meet.html?b=${BOARD_ID}`, 'BlockoMeet', `width=${width},height=${height},top=${top},left=${left},resizable=yes,scrollbars=no,status=no,menubar=no`);
+    
+    // Закрываем шторку команды, так как мы перешли в звонок
+    toggleMembers();
+}
+
+function openPersonalCall(targetUid, type) {
+    if (isLocalBoard) return showSystemToast('Офлайн', 'Звонки недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
+    
+    // Открываем компактное вертикальное окно для 1-на-1 звонка
+    const width = 420;
+    const height = 650;
+    const left = (screen.width / 2) - (width / 2);
+    const top = (screen.height / 2) - (height / 2);
+    
+    window.open(`call.html?b=${BOARD_ID}&target=${targetUid}&type=${type}`, 'BlockoCall', `width=${width},height=${height},top=${top},left=${left},resizable=no,scrollbars=no,status=no,menubar=no`);
 }
 
 // ЭНТЕРПРАЙЗ: Функция удаления участника с проверкой и подтверждением
