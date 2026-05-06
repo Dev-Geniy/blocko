@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Blocko Pomodoro</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      -webkit-app-region: drag; /* Позволяет таскать окно за фон (работает в PWA/некоторых окнах) */
+      user-select: none;
+    }
+    /* Для элементов, с которыми нужно взаимодействовать, отключаем drag */
+    button, .no-drag { -webkit-app-region: no-drag; }
+    
+    .timer-text { font-variant-numeric: tabular-nums; }
+    
+    .glow-ring { box-shadow: 0 0 40px rgba(99, 102, 241, 0.4); }
+    .glow-ring-break { box-shadow: 0 0 40px rgba(16, 185, 129, 0.4); }
+  </style>
+
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 900: '#0f172a', 950: '#0b0f19' } } } } }
+  </script>
+</head>
+<body class="bg-gray-950 text-white min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-500" id="appBody">
+
+  <!-- Декоративные эффекты -->
+  <div class="absolute -top-32 -left-32 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700" id="glow1"></div>
+  <div class="absolute -bottom-32 -right-32 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none transition-colors duration-700" id="glow2"></div>
+
+  <!-- Шапка виджета -->
+  <div class="absolute top-5 left-5 right-5 flex justify-between items-center z-10">
+    <div class="flex items-center gap-2 text-indigo-400" id="modeIconText">
+      <i data-lucide="zap" class="w-4 h-4"></i>
+      <span class="text-xs font-black uppercase tracking-widest" id="modeTitle">Фокус</span>
+    </div>
+    <button onclick="window.close()" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors no-drag">
+      <i data-lucide="x" class="w-4 h-4 text-gray-300"></i>
+    </button>
+  </div>
+
+  <!-- Таймер Круг -->
+  <div class="relative w-56 h-56 rounded-full border-4 border-indigo-500/20 flex flex-col items-center justify-center glow-ring transition-all duration-700 z-10 bg-gray-900/50 backdrop-blur-sm" id="timerRing">
+     <!-- Прогресс бар (SVG) -->
+     <svg class="absolute inset-0 w-full h-full -rotate-90 transform pointer-events-none" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-500 transition-all duration-1000 ease-linear" id="progressCircle" stroke-dasharray="301" stroke-dashoffset="0"></circle>
+     </svg>
+     
+     <div class="text-5xl font-black timer-text tracking-wider" id="timeDisplay">25:00</div>
+     <div class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mt-2" id="statusText">Ожидание</div>
+  </div>
+
+  <!-- Кнопки управления -->
+  <div class="flex items-center gap-4 mt-12 z-10 no-drag">
+    <button onclick="resetTimer()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95 border border-gray-700">
+      <i data-lucide="rotate-ccw" class="w-5 h-5 text-gray-400"></i>
+    </button>
+    <button onclick="toggleTimer()" id="mainBtn" class="w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white">
+      <i data-lucide="play" class="w-8 h-8 ml-1" id="mainBtnIcon"></i>
+    </button>
+    <button onclick="skipSession()" class="w-12 h-12 rounded-2xl bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors active:scale-95 border border-gray-700">
+      <i data-lucide="skip-forward" class="w-5 h-5 text-gray-400"></i>
+    </button>
+  </div>
+
+  <!-- Счетчик помидорок -->
+  <div class="absolute bottom-6 flex items-center gap-1.5 z-10">
+    <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" id="dot1"></div>
+    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot2"></div>
+    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot3"></div>
+    <div class="w-2 h-2 rounded-full bg-gray-800" id="dot4"></div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Запрос на Push-уведомления
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Настройки
+    const WORK_MINUTES = 25;
+    const BREAK_MINUTES = 5;
+    
+    let isRunning = false;
+    let isWorkMode = true;
+    let timeLeft = WORK_MINUTES * 60;
+    let totalTime = WORK_MINUTES * 60;
+    let timerId = null;
+    let completedPomodoros = 0;
+
+    const display = document.getElementById('timeDisplay');
+    const statusText = document.getElementById('statusText');
+    const mainBtn = document.getElementById('mainBtn');
+    const mainBtnIcon = document.getElementById('mainBtnIcon');
+    const ring = document.getElementById('timerRing');
+    const progCircle = document.getElementById('progressCircle');
+    const modeTitle = document.getElementById('modeTitle');
+    const modeIconText = document.getElementById('modeIconText');
+    
+    const glow1 = document.getElementById('glow1');
+    const glow2 = document.getElementById('glow2');
+
+    // Функция звукового сигнала (через Web Audio API, чтобы не грузить mp3)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isWorkMode ? 600 : 800, audioCtx.currentTime); // Тон выше, когда пора за работу
+      gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1);
+    }
+
+    function showPushNotification(title, body) {
+      if (Notification.permission === "granted") {
+        new Notification(title, {
+          body: body,
+          icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>"
+        });
+      }
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+      const s = (seconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function updateUI() {
+      display.innerText = formatTime(timeLeft);
+      document.title = `${formatTime(timeLeft)} - Blocko Focus`;
+      
+      // Вычисление смещения кольца SVG
+      const dashoffset = 301 - (timeLeft / totalTime) * 301;
+      progCircle.style.strokeDashoffset = dashoffset;
+    }
+
+    function switchMode() {
+      playBeep();
+      if (isWorkMode) {
+        // Переход в отдых
+        isWorkMode = false;
+        timeLeft = BREAK_MINUTES * 60;
+        totalTime = BREAK_MINUTES * 60;
+        
+        completedPomodoros++;
+        updateDots();
+        
+        showPushNotification("Отличная работа!", "Самое время размяться и сделать перерыв 5 минут.");
+        
+        // Смена цветов на Изумрудные (Break)
+        ring.classList.replace('border-indigo-500/20', 'border-emerald-500/20');
+        ring.classList.replace('glow-ring', 'glow-ring-break');
+        progCircle.classList.replace('text-indigo-500', 'text-emerald-500');
+        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-emerald-600 hover:bg-emerald-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-emerald-500/30 border border-emerald-400/30 text-white";
+        modeIconText.innerHTML = '<i data-lucide="coffee" class="w-4 h-4"></i><span class="text-xs font-black uppercase tracking-widest">Перерыв</span>';
+        modeIconText.classList.replace('text-indigo-400', 'text-emerald-400');
+        
+        glow1.classList.replace('bg-indigo-500/20', 'bg-emerald-500/20');
+        glow2.classList.replace('bg-blue-500/20', 'bg-teal-500/20');
+        
+        statusText.innerText = "Расслабьтесь";
+      } else {
+        // Переход в работу
+        isWorkMode = true;
+        timeLeft = WORK_MINUTES * 60;
+        totalTime = WORK_MINUTES * 60;
+        
+        showPushNotification("Время Фокуса", "Пора возвращаться к задачам. 25 минут полного погружения!");
+        
+        // Смена цветов на Индиго (Work)
+        ring.classList.replace('border-emerald-500/20', 'border-indigo-500/20');
+        ring.classList.replace('glow-ring-break', 'glow-ring');
+        progCircle.classList.replace('text-emerald-500', 'text-indigo-500');
+        mainBtn.className = "w-20 h-20 rounded-[2rem] bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-indigo-500/30 border border-indigo-400/30 text-white";
+        modeIconText.innerHTML = '<i data-lucide="zap" class="w-4 h-4"></i><span class="text-xs font-black uppercase tracking-widest">Фокус</span>';
+        modeIconText.classList.replace('text-emerald-400', 'text-indigo-400');
+        
+        glow1.classList.replace('bg-emerald-500/20', 'bg-indigo-500/20');
+        glow2.classList.replace('bg-teal-500/20', 'bg-blue-500/20');
+        
+        statusText.innerText = "Ожидание";
+        
+        // Принудительно ставим на паузу при возврате в рабочий режим (чтобы юзер сам начал)
+        pauseTimer();
+      }
+      lucide.createIcons();
+      updateUI();
+    }
+
+    function tick() {
+      timeLeft--;
+      if (timeLeft <= 0) {
+        switchMode();
+      } else {
+        updateUI();
+      }
+    }
+
+    function startTimer() {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      isRunning = true;
+      statusText.innerText = isWorkMode ? "В процессе" : "Восстановление";
+      timerId = setInterval(tick, 1000);
+      mainBtnIcon.setAttribute('data-lucide', 'pause');
+      mainBtnIcon.classList.remove('ml-1'); // Убираем отступ (нужен был для треугольника Play)
+      lucide.createIcons();
+    }
+
+    function pauseTimer() {
+      isRunning = false;
+      statusText.innerText = "Пауза";
+      clearInterval(timerId);
+      mainBtnIcon.setAttribute('data-lucide', 'play');
+      mainBtnIcon.classList.add('ml-1');
+      lucide.createIcons();
+    }
+
+    function toggleTimer() {
+      if (isRunning) pauseTimer();
+      else startTimer();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timeLeft = isWorkMode ? WORK_MINUTES * 60 : BREAK_MINUTES * 60;
+      statusText.innerText = "Сброшено";
+      updateUI();
+    }
+
+    function skipSession() {
+      pauseTimer();
+      timeLeft = 0;
+      switchMode();
+      if (!isWorkMode) startTimer(); // Сразу запускаем отдых
+    }
+
+    function updateDots() {
+      const activeClass = isWorkMode ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]';
+      
+      for(let i=1; i<=4; i++) {
+        const dot = document.getElementById('dot'+i);
+        dot.className = `w-2 h-2 rounded-full transition-all duration-500 ${i <= (completedPomodoros % 4 || (completedPomodoros > 0 ? 4 : 1)) ? activeClass : 'bg-gray-800'}`;
+      }
+    }
+
+    // Инит
+    updateUI();
+  </script>
+</body>
+</html>
