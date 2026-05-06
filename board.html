@@ -2921,30 +2921,46 @@ function checkOnlineStatus() {
     }, 1200);
 }
 
+/**
+ * ENTERPRISE CONFERENCE CONTROLLER v2.5
+ * Реализует интеллектуальное управление состоянием видеосвязи.
+ * Внедрена кнопка принудительного сброса (Kill Switch) для очистки зависших сессий.
+ */
 function updateConferenceButtonUI() {
     const btnStart = document.getElementById('btnStartMeet');
     const btnJoin = document.getElementById('btnJoinMeet');
     if (!btnStart || !btnJoin) return;
 
     const session = boardData.activeConference;
+    const isOwner = boardData.owner === currentUser.id;
+    const isInitiator = session && session.startedBy === currentUser.id;
 
     if (session) {
-        // РЕЖИМ: Звонок активен
-        btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm opacity-50 cursor-not-allowed";
-        btnStart.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mb-1"></i><span class="text-[9px] font-black uppercase tracking-widest">В процессе</span>`;
-        btnStart.onclick = null;
+        // СОСТОЯНИЕ: Линия занята
+        btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-xl border border-rose-200 dark:border-rose-800 shadow-sm group transition-all active:scale-95";
+        
+        // Если пользователь имеет права (Владелец или тот, кто начал), даем кнопку СБРОСА
+        if (isOwner || isInitiator) {
+            btnStart.innerHTML = `<i data-lucide="power" class="w-5 h-5 mb-1 group-hover:rotate-90 transition-transform"></i><span class="text-[9px] font-black uppercase tracking-widest">Сброс</span>`;
+            btnStart.title = "Принудительно завершить конференцию для всех";
+            btnStart.onclick = resetGroupCall;
+        } else {
+            btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed";
+            btnStart.innerHTML = `<i data-lucide="lock" class="w-5 h-5 mb-1"></i><span class="text-[9px] font-black uppercase tracking-widest">Идет звонок</span>`;
+            btnStart.onclick = null;
+        }
 
         btnJoin.className = "relative flex-1 flex flex-col items-center justify-center py-2 px-1 bg-emerald-500 text-white rounded-xl transition-all border border-emerald-600 shadow-lg shadow-emerald-500/25 group active:scale-95 overflow-hidden";
         btnJoin.innerHTML = `
             <div class="absolute inset-0 bg-white/20 animate-pulse pointer-events-none"></div>
             <i data-lucide="log-in" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform relative z-10"></i>
-            <span class="text-[9px] font-black uppercase tracking-widest relative z-10">Присоединиться</span>
+            <span class="text-[9px] font-black uppercase tracking-widest relative z-10">Войти</span>
         `;
         btnJoin.onclick = joinGroupCall;
     } else {
-        // РЕЖИМ: Линия свободна
+        // СОСТОЯНИЕ: Линия свободна
         btnStart.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-white dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-800/50 shadow-sm group active:scale-95";
-        btnStart.innerHTML = `<i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[9px] font-black uppercase tracking-widest">Начать Meet</span>`;
+        btnStart.innerHTML = `<i data-lucide="video" class="w-5 h-5 mb-1 group-hover:scale-110 transition-transform"></i><span class="text-[9px] font-black uppercase tracking-widest">Создать</span>`;
         btnStart.onclick = startGroupCall;
 
         btnJoin.className = "flex-1 flex flex-col items-center justify-center py-2 px-1 bg-gray-100 dark:bg-gray-800 text-gray-400 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm opacity-50 cursor-not-allowed";
@@ -2954,6 +2970,29 @@ function updateConferenceButtonUI() {
     lucide.createIcons({ root: btnStart.parentElement });
 }
 
+/**
+ * КРИТИЧЕСКИЙ СБРОС СЕССИИ (Kill Switch)
+ */
+async function resetGroupCall() {
+    openConfirmModal(
+        'Сбросить сессию?', 
+        'Если конференция зависла или участники забыли выйти, это действие принудительно очистит статус звонка в базе.', 
+        'Сбросить сейчас', 
+        true, 
+        async () => {
+            try {
+                await db.collection("boards").doc(BOARD_ID).update({
+                    activeConference: firebase.firestore.FieldValue.delete()
+                });
+                logActivity(`Принудительно завершил(а) активную конференцию`, 'power');
+                showSystemToast('Система очищена', 'Теперь можно запустить новый звонок.', 'check', 'text-emerald-500', 'bg-emerald-50');
+            } catch (e) {
+                showSystemToast('Ошибка', 'Не удалось очистить сессию.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+            }
+        }
+    );
+}
+  
 async function startGroupCall() {
     if (isLocalBoard) return showSystemToast('Офлайн', 'Связь доступна только в Cloud-проектах.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
     
