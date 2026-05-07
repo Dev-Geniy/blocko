@@ -103,7 +103,7 @@
   </div>
 </header>
 
-<main class="p-4 sm:p-8 max-w-[1500px] mx-auto w-full flex-1 flex flex-col h-[calc(100vh-85px)]">
+  <main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full">
   
   <!-- Панель управления календарем -->
   <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md">
@@ -137,28 +137,23 @@
   </div>
 
   <!-- Сетка календаря -->
-  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative z-10">
-    <div class="w-full flex-1 flex flex-col h-full overflow-hidden">
-       <div class="w-full flex-1 flex flex-col h-full">
-          
-          <!-- Заголовки дней недели -->
-          <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-800/50 backdrop-blur-md">
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Сб</div>
-            <div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Вс</div>
-          </div>
-
-          <!-- Ячейки дней -->
-          <div id="calendarGrid" class="flex-1 grid grid-cols-7 grid-rows-5 bg-gray-200 dark:bg-gray-800 gap-px">
-             <!-- Рендерится через JS -->
-          </div>
-
-       </div>
+  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative z-10 min-h-[400px]">
+    
+    <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Сб</div>
+      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Вс</div>
     </div>
+
+    <div class="flex-1 overflow-y-auto relative bg-gray-200 dark:bg-gray-800 hide-scroll">
+      <div id="calendarGrid" class="min-h-full grid grid-cols-7 gap-px">
+         </div>
+    </div>
+
   </div>
 
 </main>
@@ -407,8 +402,7 @@
       // 1. Дни предыдущего месяца
       for (let i = startDay - 1; i >= 0; i--) {
           const d = daysInPrevMonth - i;
-          html += 
-            (null, d, true, false, cellCount);
+          html += createDayCell(null, d, true, false, cellCount);
           cellCount++;
       }
 
@@ -429,7 +423,15 @@
           cellCount++;
       }
 
-      grid.className = `flex-1 grid grid-cols-7 ${totalCells === 42 ? 'grid-rows-6' : 'grid-rows-5'} bg-gray-200 dark:bg-gray-800 gap-px grid-animate`;
+      // Умные адаптивные строки. Гарантируют, что календарь заполнит экран, но не сожмется до невидимости.
+      const rowsCount = totalCells === 42 ? 6 : 5;
+      grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
+      
+      // ЭНТЕРПРАЙЗ: На мобилках фиксируем 70px для свайпа. 
+      // На ПК ставим 0! Это заставит CSS Grid идеально поделить доступную высоту экрана (100dvh) без скролла всей страницы.
+      const minCellHeight = window.innerWidth < 640 ? '70px' : '0';
+      grid.style.gridTemplateRows = `repeat(${rowsCount}, minmax(${minCellHeight}, 1fr))`;
+      
       grid.innerHTML = html;
 
       // Инициализация Drag and Drop
@@ -498,9 +500,10 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
             </a>`;
       }).join('');
 
+      // min-h-0 спасает от разрыва сетки! gap-px в контейнере рисует идеальные 1px бордеры.
       return `
-        <div class="flex flex-col ${bgClass} transition-colors group cursor-pointer border-r border-b border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50" onclick="openDayModal('${dateStr}')">
-          <div class="p-1 sm:p-2 flex justify-center sm:justify-between items-center transition-colors pointer-events-none">
+        <div class="flex flex-col ${bgClass} transition-colors group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 min-h-0 relative" onclick="openDayModal('${dateStr}')">
+          <div class="p-1 sm:p-2 flex justify-center sm:justify-between items-center transition-colors pointer-events-none flex-shrink-0">
             <span class="text-[11px] sm:text-sm font-black ${badgeClass}">${dayNum}</span>
             <div class="hidden sm:flex items-center gap-1">
                ${tasksForDay.length > 0 ? `<span class="text-[9px] font-black text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">${tasksForDay.length}</span>` : ''}
@@ -509,7 +512,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
                </button>
             </div>
           </div>
-          <div class="flex-1 p-0.5 sm:p-1.5 flex flex-col overflow-y-auto hide-scroll calendar-day-dropzone min-h-[30px] sm:min-h-[60px]" data-date="${dateStr}" onclick="event.stopPropagation()">
+          <div class="flex-1 p-0.5 sm:p-1.5 flex flex-col overflow-y-auto hide-scroll calendar-day-dropzone min-h-[30px] sm:min-h-[50px]" data-date="${dateStr}" onclick="event.stopPropagation()">
             ${tasksHtml}
           </div>
         </div>`;
