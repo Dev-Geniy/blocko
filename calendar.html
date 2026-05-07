@@ -227,23 +227,44 @@
   }
   lucide.createIcons();
 
+  // ФИКС №2 и №3: Инициализация Firebase Auth и Firestore (Безопасный фоллбэк)
+  const db = window.db || firebase.firestore();
+  const auth = window.auth || firebase.auth();
+
   let currentUser = null;
   let allTasks = []; // Все задачи с дедлайном
   let currentViewDate = new Date(); // Месяц, который сейчас отображается
   let sortableZones = [];
   let currentFilter = 'all'; // Глобальный фильтр приоритетов
 
+  // ФИКС №8: Базовая санитизация против XSS
+  const escapeHTML = (str) => {
+      if (!str) return '';
+      return String(str).replace(/[&<>'"]/g, tag => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[tag] || tag));
+  };
+
+  // ФИКС №5: Оптимизация рендера с requestAnimationFrame (Debouncing)
+  let renderRAF = null;
+  function triggerRender() {
+      if (renderRAF) cancelAnimationFrame(renderRAF);
+      renderRAF = requestAnimationFrame(() => {
+          renderCalendar();
+      });
+  }
+
   auth.onAuthStateChanged(async (user) => {
-    const loader = document.getElementById('globalLoader');
-    if (user) {
-      currentUser = user;
-      await fetchCalendarTasks();
-      
-      loader.style.opacity = '0';
-      setTimeout(() => loader.classList.add('hidden'), 700);
-    } else {
-      window.location.href = 'index.html';
-    }
+      const loader = document.getElementById('globalLoader');
+      if (user) {
+          currentUser = user;
+          await fetchCalendarTasks();
+          
+          loader.style.opacity = '0';
+          setTimeout(() => loader.classList.add('hidden'), 700);
+      } else {
+          window.location.href = 'index.html';
+      }
   });
 
   // Логика Фильтров
@@ -272,7 +293,7 @@
       void grid.offsetWidth; // Триггер reflow для перезапуска анимации
       grid.classList.add('grid-animate');
       
-      renderCalendar();
+      triggerRender();
   }
 
   // Извлечение всех задач из Firebase и LocalStorage
@@ -310,6 +331,7 @@
       // 2. ОБЛАЧНЫЕ ДОСКИ (Firestore)
       if (navigator.onLine) {
           try {
+              // ФИКС №6: Оптимизируем загрузку, избегая N+1. Выполняем подзапросы параллельно.
               const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
               
               const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
@@ -344,7 +366,7 @@
           }
       }
 
-      renderCalendar();
+      triggerRender();
   }
 
   // --- ЛОГИКА КАЛЕНДАРЯ ---
@@ -356,7 +378,7 @@
       void grid.offsetWidth;
       grid.classList.add('grid-animate');
       
-      renderCalendar();
+      triggerRender();
   }
 
   function goToToday() {
@@ -367,7 +389,7 @@
       void grid.offsetWidth;
       grid.classList.add('grid-animate');
 
-      renderCalendar();
+      triggerRender();
   }
 
   function renderCalendar() {
@@ -423,15 +445,7 @@
           cellCount++;
       }
 
-      // Умные адаптивные строки. Гарантируют, что календарь заполнит экран, но не сожмется до невидимости.
-      const rowsCount = totalCells === 42 ? 6 : 5;
-      grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
-      
-      // ЭНТЕРПРАЙЗ: На мобилках фиксируем 70px для свайпа. 
-      // На ПК ставим 0! Это заставит CSS Grid идеально поделить доступную высоту экрана (100dvh) без скролла всей страницы.
-      const minCellHeight = window.innerWidth < 640 ? '70px' : '0';
-      grid.style.gridTemplateRows = `repeat(${rowsCount}, minmax(${minCellHeight}, 1fr))`;
-      
+      // ФИКС №1: Убрано дублирование инициализации grid (оставили только один раз rowsCount)
       const rowsCount = totalCells === 42 ? 6 : 5;
       grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
       
@@ -448,7 +462,6 @@
               ghostClass: 'opacity-50',
               dragClass: 'sortable-drag',
               easing: "cubic-bezier(0.25, 1, 0.5, 1)",
-              // ФИКС СКРОЛЛА НА МОБИЛЬНЫХ: Добавляем таймаут и порог сдвига
               delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
               fallbackTolerance: 5,
               onAdd: function (evt) {
@@ -468,7 +481,7 @@
       lucide.createIcons();
   }
 
-function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0) {
+  function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0) {
       const dayOfWeekIndex = cellIndex % 7;
       const isWeekend = dayOfWeekIndex === 5 || dayOfWeekIndex === 6;
       const weekendBg = isWeekend && !isFiller ? "bg-rose-50/20 dark:bg-rose-900/10" : "";
@@ -498,19 +511,16 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
           if (t.priority === 'high') priorityClass = "bg-amber-500 sm:bg-amber-50 sm:text-amber-700 sm:border-amber-200 dark:sm:bg-amber-900/30 dark:sm:text-amber-400 dark:sm:border-amber-800/50 hover:sm:bg-amber-100";
           if (t.priority === 'critical') priorityClass = "bg-rose-500 sm:bg-rose-50 sm:text-rose-700 sm:border-rose-200 dark:sm:bg-rose-900/30 dark:sm:text-rose-400 dark:sm:border-rose-800/50 hover:sm:bg-rose-100 shadow-sm";
 
-          // Убрали onclick="event.stopPropagation()". Добавили h-1.5 для мобилок
           return `
-            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${priorityClass}" title="${t.title}">
+            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${priorityClass}" title="${escapeHTML(t.title)}">
                <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
                  ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
-                 <span class="truncate max-w-[60px] lg:max-w-[80px]">${t.boardTitle}</span>
+                 <span class="truncate max-w-[60px] lg:max-w-[80px]">${escapeHTML(t.boardTitle)}</span>
                </div>
-               <span class="hidden sm:inline truncate w-full block pointer-events-none">${t.title}</span>
+               <span class="hidden sm:inline truncate w-full block pointer-events-none">${escapeHTML(t.title)}</span>
             </div>`;
       }).join('');
 
-      // Убрали onclick="event.stopPropagation()" из блока dropzone. Теперь вся площадь кликабельна!
-      // Оставили stopPropagation только на кнопке "+", чтобы она не открывала модалку просмотра дня
       return `
         <div class="flex flex-col ${bgClass} transition-colors group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 min-h-0 relative border-r border-b border-gray-200 dark:border-gray-800" onclick="openDayModal('${dateStr}')">
           <div class="p-1 sm:p-2 flex justify-center sm:justify-between items-center transition-colors pointer-events-none flex-shrink-0">
@@ -531,8 +541,11 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
   // --- ДВИЖОК ОБНОВЛЕНИЯ ДАТЫ ПРИ DRAG & DROP ---
   async function updateTaskDate(boardId, taskId, newDateStr, isLocal) {
       const taskIndex = allTasks.findIndex(t => t.id === taskId);
+      // ФИКС №7: Запоминаем старую дату на случай ошибки (Anti-Race Condition)
+      const oldDateStr = taskIndex !== -1 ? allTasks[taskIndex].dueDate : null;
+      
       if (taskIndex !== -1) {
-          allTasks[taskIndex].dueDate = newDateStr;
+          allTasks[taskIndex].dueDate = newDateStr; // Optimistic UI
       }
 
       if (isLocal) {
@@ -557,16 +570,16 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
               showSystemToast('Дедлайн изменен', `Задача перенесена на ${newDateStr}.`, 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
           } catch (e) {
               console.error(e);
+              // ФИКС №7: Откат UI при падении запроса
+              if (taskIndex !== -1 && oldDateStr) {
+                  allTasks[taskIndex].dueDate = oldDateStr;
+                  triggerRender();
+              }
               showSystemToast('Ошибка', 'Не удалось обновить дату в облаке.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
           }
       }
       
-      renderCalendar();
-  }
-
-  // Заглушка для кнопки "Быстрое добавление"
-  function showQuickAddToast(dateStr) {
-      showSystemToast('Quick Add', `Добавление задачи напрямую в ${dateStr} появится в следующем обновлении.`, 'plus-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
+      triggerRender();
   }
 
   function showSystemToast(title, desc, iconName, iconColor, bgColor) {
@@ -589,12 +602,10 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
       const content = document.getElementById('dayViewContent');
       const container = document.getElementById('modalDayTasks');
       
-      // Форматируем заголовок (например: 25 Октября 2026)
       const dateObj = new Date(dateStr);
       const options = { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' };
       document.getElementById('modalDayTitle').innerText = dateObj.toLocaleDateString('ru-RU', options);
 
-      // Ищем задачи
       let dayTasks = allTasks.filter(t => t.dueDate === dateStr);
       if (currentFilter !== 'all') dayTasks = dayTasks.filter(t => t.priority === currentFilter);
 
@@ -615,24 +626,23 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
               return `
               <a href="board.html?b=${t.boardId}&c=${t.id}" target="_blank" class="flex flex-col bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all active:scale-[0.98] group">
                 <div class="flex justify-between items-start mb-2">
-                  <span class="text-[10px] font-bold text-gray-500 flex items-center gap-1.5"><i data-lucide="${t.isLocal ? 'hard-drive' : 'layout'}" class="w-3.5 h-3.5"></i> ${t.boardTitle}</span>
+                  <span class="text-[10px] font-bold text-gray-500 flex items-center gap-1.5"><i data-lucide="${t.isLocal ? 'hard-drive' : 'layout'}" class="w-3.5 h-3.5"></i> ${escapeHTML(t.boardTitle)}</span>
                   <div class="px-2 py-1 rounded-md flex items-center gap-1 text-[9px] font-black uppercase tracking-widest ${pColor}"><i data-lucide="${pIcon}" class="w-3 h-3"></i> ${t.priority}</div>
                 </div>
-                <h4 class="font-bold text-gray-900 dark:text-white text-base leading-tight group-hover:text-indigo-500 transition-colors">${t.title}</h4>
+                <h4 class="font-bold text-gray-900 dark:text-white text-base leading-tight group-hover:text-indigo-500 transition-colors">${escapeHTML(t.title)}</h4>
               </a>`;
           }).join('');
       }
 
       lucide.createIcons({ root: container });
 
-      // Анимация появления
       modal.classList.remove('hidden');
       setTimeout(() => {
           modal.classList.remove('opacity-0');
           if (window.innerWidth < 640) {
-              content.classList.remove('translate-y-full'); // Выезд снизу на мобилках
+              content.classList.remove('translate-y-full');
           } else {
-              content.classList.remove('scale-95'); // Увеличение на ПК
+              content.classList.remove('scale-95');
           }
       }, 10);
   }
@@ -651,14 +661,9 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
       setTimeout(() => modal.classList.add('hidden'), 300);
   }
 
-  // Закрытие модалки при клике на черный фон
-  window.addEventListener('click', (e) => {
-      if (e.target.id === 'dayViewModal') closeDayModal();
-  });
-  
   // --- ЛОГИКА БЫСТРОГО ДОБАВЛЕНИЯ ЗАДАЧИ (Quick Add) ---
   let quickAddTargetDate = null;
-  let availableBoardsData = {}; // Кэш досок и их колонок
+  let availableBoardsData = {}; 
   
   async function fetchAvailableBoards() {
       availableBoardsData = {};
@@ -686,7 +691,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
       // Рендерим селект проектов
       boardSelect.innerHTML = '<option value="">Выберите проект...</option>';
       Object.values(availableBoardsData).forEach(b => {
-          boardSelect.innerHTML += `<option value="${b.id}">${b.isLocal ? '💽 ' : '☁️ '}${b.title}</option>`;
+          boardSelect.innerHTML += `<option value="${b.id}">${b.isLocal ? '💽 ' : '☁️ '}${escapeHTML(b.title)}</option>`;
       });
       boardSelect.disabled = false;
   }
@@ -706,7 +711,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
           colSelect.innerHTML = '<option value="">Нет колонок</option>';
           colSelect.disabled = true;
       } else {
-          colSelect.innerHTML = cols.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+          colSelect.innerHTML = cols.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
           colSelect.disabled = false;
       }
   }
@@ -714,20 +719,16 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
   function openQuickAddModal(dateStr) {
       quickAddTargetDate = dateStr;
       
-      // Красивая дата в шапке
       const dateObj = new Date(dateStr);
       document.getElementById('quickAddDateText').innerText = 'План на ' + dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       
-      // Сброс полей
       document.getElementById('quickAddTitle').value = '';
       document.getElementById('quickAddDesc').value = '';
       document.getElementById('quickAddColumn').innerHTML = '<option value="">Колонка...</option>';
       document.getElementById('quickAddColumn').disabled = true;
       
-      // Подгружаем проекты в фоне
       fetchAvailableBoards();
       
-      // Анимация открытия
       const modal = document.getElementById('quickAddModal');
       const content = document.getElementById('quickAddContent');
       modal.classList.remove('hidden');
@@ -769,7 +770,6 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
       const board = availableBoardsData[boardId];
       const cardId = 'card_' + Date.now();
       
-      // Формируем чистую базовую карточку
       const newCard = {
           id: cardId,
           title: title,
@@ -806,7 +806,6 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
               });
           }
           
-          // Мгновенно добавляем в локальный массив календаря для рендера
           allTasks.push({
               ...newCard,
               boardId: boardId,
@@ -815,7 +814,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
               isLocal: board.isLocal
           });
           
-          renderCalendar();
+          triggerRender();
           closeQuickAddModal();
           showSystemToast('Успех', 'Задача залетела на доску!', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
           
@@ -829,7 +828,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
       }
   }
 
-  // Обновляем слушатель кликов, чтобы он закрывал и модалку быстрого добавления
+  // ФИКС №4: Единый глобальный слушатель кликов
   window.addEventListener('click', (e) => {
       if (e.target.id === 'dayViewModal') closeDayModal();
       if (e.target.id === 'quickAddModal') closeQuickAddModal();
