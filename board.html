@@ -1462,7 +1462,7 @@ function renderSpacesUI() {
    const verticalSidebar = document.getElementById('spacesVerticalSidebar');
    
    if (!boardData.spaces || boardData.spaces.length === 0) {
-       boardData.spaces = [{ id: 'default', name: 'Главная доска' }];
+       boardData.spaces = [{ id: 'default', name: 'Главная' }];
    }
    
    // Логика переключения контейнеров (на мобильных принудительно горизонт)
@@ -2263,7 +2263,7 @@ function processBoardData(data) {
   headerTitle.innerText = data.title;
 
   // ЭНТЕРПРАЙЗ: Инициализация Пространств (Tabs)
-  if (!boardData.spaces) boardData.spaces = [{ id: 'default', name: 'Главная доска' }];
+  if (!boardData.spaces) boardData.spaces = [{ id: 'default', name: 'Главная' }];
   renderSpacesUI();
 
   // ЭНТЕРПРАЙЗ: Синхронизация селектора очистки с данными доски
