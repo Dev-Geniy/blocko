@@ -58,19 +58,17 @@
     .mini-month-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
+      gap: 3px;
     }
     .mini-day {
       aspect-ratio: 1/1;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      border-radius: 8px;
     }
-    .hide-scroll::-webkit-scrollbar { display: none; }
-    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 
   <script>
@@ -121,50 +119,11 @@
 
 <main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full">
   
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md flex-shrink-0">
-    
-    <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
-      <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-      <h2 id="currentMonthYear" class="text-lg font-black text-gray-900 dark:text-white w-40 text-center tracking-tight">Загрузка...</h2>
-      <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-    </div>
+  <div id="desktopProjectTabs" class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto hide-scroll w-full mb-4 flex-shrink-0">
+     </div>
 
-    <div class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner overflow-x-auto hide-scroll w-full sm:w-auto">
-      <button onclick="setFilter('all')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm transition-all whitespace-nowrap" data-filter="all">
-        Все задачи
-      </button>
-      <button onclick="setFilter('critical')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-transparent text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition-all whitespace-nowrap flex items-center gap-1.5 opacity-60 hover:opacity-100" data-filter="critical">
-        <i data-lucide="zap" class="w-3.5 h-3.5 fill-current"></i> Критичные
-      </button>
-      <button onclick="setFilter('high')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-transparent text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-all whitespace-nowrap flex items-center gap-1.5 opacity-60 hover:opacity-100" data-filter="high">
-        <i data-lucide="arrow-up-from-line" class="w-3.5 h-3.5"></i> Высокий
-      </button>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <button onclick="goToToday()" class="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all shadow-sm border border-indigo-200 dark:border-indigo-800/50 active:scale-95 whitespace-nowrap">
-        Сегодня
-      </button>
-    </div>
-  </div>
-
-  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative z-10 min-h-[400px]">
-    
-    <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Сб</div>
-      <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Вс</div>
-    </div>
-
-    <div class="flex-1 overflow-y-auto relative bg-gray-200 dark:bg-gray-800 hide-scroll">
-      <div id="calendarGrid" class="min-h-full grid grid-cols-7 gap-px">
-         </div>
-    </div>
-  </div>
+  <div id="calendarViewport" class="flex-1 overflow-y-auto hide-scroll relative z-10">
+      </div>
 </main>
 
 <div id="dayViewModal" class="hidden fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 sm:px-4">
@@ -237,9 +196,11 @@
 
   let currentUser = null;
   let allTasks = [];
+  let allBoardsData = {}; // Кеш для фильтров
   let currentViewDate = new Date();
   let sortableZones = [];
-  let currentFilter = 'all';
+  let filterBoardId = 'all';
+  let currentViewMode = localStorage.getItem('blocko_calendar_mode') || 'standard';
 
   // ЭНТЕРПРАЙЗ: Защита от XSS (внедрение скриптов через названия)
   const escapeHTML = (str) => {
@@ -271,31 +232,88 @@
       }
   });
 
-  function setFilter(filterType) {
-      currentFilter = filterType;
+  function toggleSettings() {
+     const sidebar = document.getElementById('calendarSettingsSidebar');
+     sidebar.classList.toggle('translate-x-full');
+  }
+
+  function setViewMode(mode) {
+     currentViewMode = mode;
+     localStorage.setItem('blocko_calendar_mode', mode);
+     
+     document.getElementById('modeBtn_standard').className = mode === 'standard' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+     document.getElementById('modeBtn_minimalist').className = mode === 'minimalist' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+     
+     triggerRender();
+     if(window.innerWidth < 768) toggleSettings();
+  }
+
+  function setBoardFilter(boardId) {
+      filterBoardId = boardId;
       
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-          if (btn.dataset.filter === filterType) {
-              btn.classList.remove('bg-transparent', 'opacity-60');
-              if (filterType === 'all') btn.classList.add('bg-gray-900', 'text-white', 'dark:bg-white', 'dark:text-gray-900', 'shadow-sm');
-              if (filterType === 'critical') btn.classList.add('bg-rose-50', 'dark:bg-rose-900/30', 'border', 'border-rose-200', 'dark:border-rose-800/50');
-              if (filterType === 'high') btn.classList.add('bg-amber-50', 'dark:bg-amber-900/30', 'border', 'border-amber-200', 'dark:border-amber-800/50');
+      const headerSelect = document.getElementById('projectSelectFilter');
+      if (headerSelect) headerSelect.value = boardId;
+
+      document.querySelectorAll('.board-filter-btn').forEach(btn => {
+          if (btn.dataset.board === boardId) {
+              btn.classList.remove('bg-transparent', 'text-gray-500', 'opacity-60', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+              btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
           } else {
-              btn.classList.add('opacity-60');
-              if (btn.dataset.filter === 'all') btn.classList.remove('bg-gray-900', 'text-white', 'dark:bg-white', 'dark:text-gray-900', 'shadow-sm');
-              else btn.classList.remove('bg-rose-50', 'dark:bg-rose-900/30', 'bg-amber-50', 'dark:bg-amber-900/30', 'border', 'border-rose-200', 'dark:border-rose-800/50', 'border-amber-200', 'dark:border-amber-800/50');
-              btn.classList.add('bg-transparent');
+              btn.classList.add('bg-transparent', 'text-gray-500', 'opacity-60', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
+              btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
           }
       });
 
+      document.querySelectorAll('#mobileProjectFilters button').forEach(btn => {
+          const isSelected = btn.dataset.board === boardId;
+          btn.className = `w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`;
+          const iconContainer = btn.querySelector('.check-icon-container');
+          if (iconContainer) iconContainer.innerHTML = isSelected ? '<i data-lucide="check" class="w-4 h-4"></i>' : '';
+      });
+      lucide.createIcons();
+
       const grid = document.getElementById('calendarGrid');
-      grid.classList.remove('grid-animate');
-      void grid.offsetWidth; 
-      grid.classList.add('grid-animate');
+      if (grid) {
+         grid.classList.remove('grid-animate');
+         void grid.offsetWidth; 
+         grid.classList.add('grid-animate');
+      }
       
       triggerRender();
   }
 
+  function populateProjectFilters() {
+      const select = document.getElementById('projectSelectFilter');
+      const tabsContainer = document.getElementById('desktopProjectTabs');
+      const mobileContainer = document.getElementById('mobileProjectFilters');
+      
+      let optionsHtml = '<option value="all">Все проекты</option>';
+      let tabsHtml = `<button onclick="setBoardFilter('all')" class="board-filter-btn px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filterBoardId === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'bg-transparent text-gray-500 opacity-60 hover:bg-gray-100 dark:hover:bg-gray-800'}" data-board="all">Все проекты</button>`;
+      let mobileHtml = `
+         <button data-board="all" onclick="setBoardFilter('all')" class="w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${filterBoardId === 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}">
+            <span class="text-xs font-bold">Все проекты</span>
+            <div class="check-icon-container">${filterBoardId === 'all' ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>
+         </button>
+      `;
+
+      Object.values(allBoardsData).forEach(b => {
+         const isSelected = filterBoardId === b.id;
+         optionsHtml += `<option value="${b.id}" ${isSelected ? 'selected' : ''}>${escapeHTML(b.title)}</option>`;
+         tabsHtml += `<button onclick="setBoardFilter('${b.id}')" class="board-filter-btn px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'bg-transparent text-gray-500 opacity-60 hover:bg-gray-100 dark:hover:bg-gray-800'}" data-board="${b.id}">${escapeHTML(b.title)}</button>`;
+         mobileHtml += `
+            <button data-board="${b.id}" onclick="setBoardFilter('${b.id}')" class="w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}">
+               <span class="text-xs font-bold truncate pr-4">${escapeHTML(b.title)}</span>
+               <div class="check-icon-container">${isSelected ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>
+            </button>
+         `;
+      });
+      
+      if(select) select.innerHTML = optionsHtml;
+      if(tabsContainer) tabsContainer.innerHTML = tabsHtml;
+      if(mobileContainer) mobileContainer.innerHTML = mobileHtml;
+      lucide.createIcons();
+  }
+  
   // Оптимизированный Fetch (Устранена проблема N+1)
   async function fetchCalendarTasks() {
       if (!currentUser) return;
@@ -329,13 +347,15 @@
 
       if (navigator.onLine) {
           try {
-              // Параллельная загрузка досок
               const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
               
               const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
                   const boardId = bDoc.id;
                   const boardData = bDoc.data();
                   
+                  // Запоминаем для фильтров
+                  allBoardsData[boardId] = { id: boardId, title: boardData.title, isLocal: false };
+
                   const cardsSnap = await db.collection("boards").doc(boardId).collection("cards").where("archived", "==", false).get();
                   
                   cardsSnap.forEach(cDoc => {
@@ -364,7 +384,14 @@
           }
       }
 
-      triggerRender();
+      // Локальные доски тоже добавляем в фильтры
+      Object.values(localBoards).forEach(b => {
+          allBoardsData[b.id] = { id: b.id, title: b.title, isLocal: true };
+      });
+
+      populateProjectFilters();
+      // Инициализация правильного режима в UI шторке
+      setViewMode(currentViewMode);
   }
 
   function changeMonth(offset) {
@@ -380,30 +407,28 @@
 
   function goToToday() {
       currentViewDate = new Date();
-      
-      const grid = document.getElementById('calendarGrid');
-      grid.classList.remove('grid-animate');
-      void grid.offsetWidth;
-      grid.classList.add('grid-animate');
-
       triggerRender();
   }
 
   function renderCalendar() {
-      const grid = document.getElementById('calendarGrid');
-      const monthYearTitle = document.getElementById('currentMonthYear');
+      const viewport = document.getElementById('calendarViewport');
       
+      if (currentViewMode === 'minimalist') {
+          renderQuarterView(viewport);
+      } else {
+          renderStandardView(viewport);
+      }
+  }
+
+  function renderStandardView(container) {
+      sortableZones.forEach(z => z.destroy());
+      sortableZones = [];
+
       const year = currentViewDate.getFullYear();
       const month = currentViewDate.getMonth();
 
       const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-      monthYearTitle.innerText = `${monthNames[month]} ${year}`;
-
-      sortableZones.forEach(z => z.destroy());
-      sortableZones = [];
-
-      grid.innerHTML = '';
-
+      
       const firstDay = new Date(year, month, 1);
       let startDay = firstDay.getDay() - 1;
       if (startDay === -1) startDay = 6;
@@ -440,13 +465,31 @@
       }
 
       const rowsCount = totalCells === 42 ? 6 : 5;
-      grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
-      
-      // ЭНТЕРПРАЙЗ: minmax(0, 1fr) на ПК, чтобы сетка ровно легла на весь экран. На мобильных 70px для скролла.
       const minCellHeight = window.innerWidth < 640 ? '70px' : '0';
-      grid.style.gridTemplateRows = `repeat(${rowsCount}, minmax(${minCellHeight}, 1fr))`;
       
-      grid.innerHTML = html;
+      container.innerHTML = `
+        <div class="flex items-center justify-between mb-4 bg-white/50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md flex-shrink-0">
+          <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+          <h2 class="text-lg font-black text-gray-900 dark:text-white w-48 text-center tracking-tight">${monthNames[month]} ${year}</h2>
+          <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+        </div>
+        <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative">
+          <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Сб</div>
+            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Вс</div>
+          </div>
+          <div class="flex-1 overflow-y-auto relative bg-gray-200 dark:bg-gray-800 hide-scroll">
+            <div class="min-h-full grid grid-cols-7 gap-px grid-animate" style="grid-template-rows: repeat(${rowsCount}, minmax(${minCellHeight}, 1fr));">
+              ${html}
+            </div>
+          </div>
+        </div>
+      `;
 
       // Инициализация Drag and Drop
       document.querySelectorAll('.calendar-day-dropzone').forEach(zone => {
@@ -472,7 +515,7 @@
           }));
       });
 
-      lucide.createIcons();
+      lucide.createIcons({ root: container });
   }
 
   function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0) {
@@ -488,8 +531,8 @@
       }
 
       let tasksForDay = allTasks.filter(t => t.dueDate === dateStr);
-      if (currentFilter !== 'all') {
-          tasksForDay = tasksForDay.filter(t => t.priority === currentFilter);
+      if (filterBoardId !== 'all') {
+          tasksForDay = tasksForDay.filter(t => t.boardId === filterBoardId);
       }
       
       const badgeClass = isToday 
@@ -501,13 +544,14 @@
           : `bg-white dark:bg-gray-900 ${weekendBg}`;
 
       let tasksHtml = tasksForDay.map(t => {
-          let priorityClass = "bg-blue-500 sm:bg-blue-50 sm:text-blue-700 sm:border-blue-200 dark:sm:bg-blue-900/30 dark:sm:text-blue-400 dark:sm:border-blue-800/50 hover:sm:bg-blue-100";
-          if (t.priority === 'high') priorityClass = "bg-amber-500 sm:bg-amber-50 sm:text-amber-700 sm:border-amber-200 dark:sm:bg-amber-900/30 dark:sm:text-amber-400 dark:sm:border-amber-800/50 hover:sm:bg-amber-100";
-          if (t.priority === 'critical') priorityClass = "bg-rose-500 sm:bg-rose-50 sm:text-rose-700 sm:border-rose-200 dark:sm:bg-rose-900/30 dark:sm:text-rose-400 dark:sm:border-rose-800/50 hover:sm:bg-rose-100 shadow-sm";
+          // ЭНТЕРПРАЙЗ: Генерация цвета по проекту для визуального отличия
+          const charCode = t.boardId ? t.boardId.charCodeAt(t.boardId.length - 1) : 0;
+          const colorList = ['blue', 'emerald', 'amber', 'purple', 'rose', 'cyan'];
+          const cTheme = colorList[charCode % colorList.length];
+          const colorClass = `bg-${cTheme}-500 sm:bg-${cTheme}-50 sm:text-${cTheme}-700 sm:border-${cTheme}-200 dark:sm:bg-${cTheme}-900/30 dark:sm:text-${cTheme}-400 dark:sm:border-${cTheme}-800/50 hover:sm:bg-${cTheme}-100`;
 
-          // ЭНТЕРПРАЙЗ: Задачи некликабельны, клик проходит в ячейку (openDayModal).
           return `
-            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${priorityClass}" title="${escapeHTML(t.title)}">
+            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${colorClass}" title="${escapeHTML(t.title)}">
                <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
                  ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
                  <span class="truncate max-w-[60px] lg:max-w-[80px]">${escapeHTML(t.boardTitle)}</span>
@@ -531,6 +575,80 @@
             ${tasksHtml}
           </div>
         </div>`;
+  }
+
+  function renderQuarterView(container) {
+     const today = new Date();
+     const months = [];
+     for(let i=0; i<3; i++) {
+        const year = currentViewDate.getFullYear();
+        const month = currentViewDate.getMonth() + i;
+        months.push(new Date(year, month, 1));
+     }
+     
+     const topNavHtml = `
+       <div class="w-full flex justify-between items-center mb-6 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md">
+          <button onclick="changeMonth(-3)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevrons-left" class="w-5 h-5"></i></button>
+          <div class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest text-center">Квартальный вид</div>
+          <button onclick="changeMonth(3)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
+       </div>
+     `;
+     
+     let monthsHtml = '';
+     months.forEach(m => {
+        const monthName = m.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+        
+        let daysHtml = '';
+        const year = m.getFullYear();
+        const month = m.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        let startDay = firstDay.getDay(); 
+        startDay = startDay === 0 ? 6 : startDay - 1;
+
+        for(let i=0; i<startDay; i++) {
+           daysHtml += '<div class="mini-day opacity-0 pointer-events-none"></div>';
+        }
+
+        for(let d=1; d<=lastDay.getDate(); d++) {
+           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+           
+           let dayTasks = allTasks.filter(t => t.dueDate === dateStr);
+           if (filterBoardId !== 'all') {
+               dayTasks = dayTasks.filter(t => t.boardId === filterBoardId);
+           }
+           
+           const hasTasks = dayTasks.length > 0;
+           const isToday = dateStr === new Date().toISOString().split('T')[0];
+           
+           // Heatmap логика: чем больше задач, тем интенсивнее цвет
+           let bgClass = 'bg-gray-100 dark:bg-gray-800 text-gray-400';
+           if (hasTasks) {
+               if (dayTasks.length === 1) bgClass = 'bg-indigo-300 dark:bg-indigo-900/60 text-white shadow-sm';
+               else if (dayTasks.length === 2) bgClass = 'bg-indigo-400 dark:bg-indigo-700 text-white shadow-sm';
+               else bgClass = 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md font-black';
+           } else if (isToday) {
+               bgClass = 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 ring-2 ring-blue-400';
+           }
+           
+           const hoverClass = 'hover:scale-110 hover:shadow-md cursor-pointer transition-all active:scale-95 hover:z-10';
+
+           daysHtml += `<div onclick="${hasTasks ? `openDayModal('${dateStr}')` : `openQuickAddModal('${dateStr}')`}" class="mini-day ${bgClass} ${hoverClass}">${d}</div>`;
+        }
+
+        monthsHtml += `
+           <div class="w-full lg:w-1/3 flex flex-col animate-fade-in-up bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800">
+              <h3 class="text-xs font-black uppercase tracking-[0.2em] text-indigo-500 mb-6 text-center">${monthName}</h3>
+              <div class="mini-month-grid mb-2">
+                 ${['П','В','С','Ч','П','С','В'].map(d => `<div class="text-[9px] font-black text-gray-400 text-center py-1">${d}</div>`).join('')}
+              </div>
+              <div class="mini-month-grid">${daysHtml}</div>
+           </div>
+        `;
+     });
+     
+     container.innerHTML = topNavHtml + `<div class="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center">${monthsHtml}</div>`;
+     lucide.createIcons({ root: container });
   }
 
   // --- ДВИЖОК ОБНОВЛЕНИЯ ДАТЫ ПРИ DRAG & DROP ---
@@ -601,8 +719,8 @@
       document.getElementById('modalDayTitle').innerText = dateObj.toLocaleDateString('ru-RU', options);
 
       let dayTasks = allTasks.filter(t => t.dueDate === dateStr);
-      if (currentFilter !== 'all') dayTasks = dayTasks.filter(t => t.priority === currentFilter);
-
+      if (filterBoardId !== 'all') dayTasks = dayTasks.filter(t => t.boardId === filterBoardId);
+    
       if (dayTasks.length === 0) {
           container.innerHTML = `
             <div class="flex flex-col items-center justify-center py-10 text-center text-gray-400">
