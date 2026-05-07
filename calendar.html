@@ -117,7 +117,35 @@
   </div>
 </header>
 
-<main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full">
+<aside id="calendarSettingsSidebar" class="fixed right-0 top-0 bottom-0 w-80 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-[100] shadow-2xl">
+  <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-900/10">
+    <h3 class="font-black text-lg flex items-center gap-2 text-gray-900 dark:text-white"><i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i> Вид календаря</h3>
+    <button onclick="toggleSettings()" class="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+  </div>
+  <div class="p-6 space-y-8">
+     <div>
+        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Режим отображения</label>
+        <div class="space-y-3">
+           <button onclick="setViewMode('standard'); toggleSettings()" id="modeBtn_standard" class="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800">
+              <div class="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-indigo-500"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
+              <div><div class="text-sm font-bold text-gray-900 dark:text-white">Стандартный</div><div class="text-[10px] text-gray-500">Сетка на один месяц</div></div>
+           </button>
+           <button onclick="setViewMode('minimalist'); toggleSettings()" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300">
+              <div class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-400"><i data-lucide="columns-3" class="w-5 h-5"></i></div>
+              <div><div class="text-sm font-bold text-gray-900 dark:text-white">Квартальный</div><div class="text-[10px] text-gray-500">3 месяца в ряд (Мини)</div></div>
+           </button>
+        </div>
+     </div>
+     
+     <div class="sm:hidden">
+        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Фильтр проектов</label>
+        <div id="mobileProjectFilters" class="space-y-2">
+           </div>
+     </div>
+  </div>
+</aside>
+
+<main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full bg-gray-50/50 dark:bg-black/20">
   
   <div id="desktopProjectTabs" class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto hide-scroll w-full mb-4 flex-shrink-0">
      </div>
@@ -241,11 +269,15 @@
      currentViewMode = mode;
      localStorage.setItem('blocko_calendar_mode', mode);
      
-     document.getElementById('modeBtn_standard').className = mode === 'standard' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
-     document.getElementById('modeBtn_minimalist').className = mode === 'minimalist' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+     const btnStandard = document.getElementById('modeBtn_standard');
+     const btnMinimalist = document.getElementById('modeBtn_minimalist');
+
+     if (btnStandard && btnMinimalist) {
+         btnStandard.className = mode === 'standard' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+         btnMinimalist.className = mode === 'minimalist' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+     }
      
      triggerRender();
-     if(window.innerWidth < 768) toggleSettings();
   }
 
   function setBoardFilter(boardId) {
