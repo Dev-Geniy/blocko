@@ -18,6 +18,15 @@
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     html { scroll-behavior: smooth; }
+
+    html, body {
+      height: 100dvh;
+      width: 100%;
+      touch-action: none; /* Предотвращает масштабирование и левые жесты на уровне браузера */
+      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
+      overflow-y: auto;   /* Разрешаем вертикальный скролл */
+      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    }
   </style>
 
   <script>
