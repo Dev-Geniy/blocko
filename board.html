@@ -553,7 +553,7 @@
   </aside>
 </div>
 
-<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700">
+<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 overflow-y-auto py-10 px-4">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 m-auto">
     <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
       <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
       <button onclick="closeEditModal()" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -702,7 +702,7 @@
   </div>
 </div>
 
-<div id="colModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700">
+<div id="colModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-200 overflow-y-auto py-10 px-4">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-sm shadow-2xl border border-gray-200 dark:border-gray-700 m-auto">
     <div class="flex justify-between items-center mb-5"><h2 class="text-xl font-bold dark:text-white">Настройки колонки</h2><button onclick="closeColModal()" class="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-5 h-5 text-gray-400"></i></button></div>
     <span class="text-xs font-bold text-gray-500 uppercase block mb-2">Название</span>
     <input id="colNameInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none mb-4 dark:text-white focus:ring-2 focus:ring-blue-500" />
@@ -737,9 +737,9 @@
     </div>
   </div>
 </div>
-
-<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/60 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4">
-  <div class="w-full max-w-lg p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl relative border border-gray-200 dark:border-gray-700">
+  
+<div id="quickAddModal" class="hidden fixed inset-0 z-[100] flex items-start justify-center bg-gray-900/60 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="w-full max-w-lg p-8 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl relative border border-gray-200 dark:border-gray-700 m-auto">
     <button onclick="closeQuickAdd()" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"><i data-lucide="x" class="w-6 h-6"></i></button>
     <h3 class="text-gray-900 dark:text-white text-xl font-bold mb-6 pr-8">Новая быстрая задача</h3>
     <div class="space-y-4">
@@ -762,8 +762,8 @@
   </div>
 </div>
 
-<div id="moreAddModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-gray-900/30 dark:bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white/85 dark:bg-gray-900/85 backdrop-blur-2xl p-8 rounded-[3rem] w-full max-w-lg shadow-2xl border border-white/50 dark:border-gray-700/50 transform scale-95 transition-transform flex flex-col" id="moreAddContent">
+<div id="moreAddModal" class="hidden fixed inset-0 z-[300] flex items-start justify-center bg-gray-900/30 dark:bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white/85 dark:bg-gray-900/85 backdrop-blur-2xl p-8 rounded-[3rem] w-full max-w-lg shadow-2xl border border-white/50 dark:border-gray-700/50 transform scale-95 transition-transform flex flex-col m-auto" id="moreAddContent">
     <div class="flex justify-between items-center mb-6">
       <h3 class="text-xl font-black dark:text-white">Создать объект</h3>
       <button onclick="closeMoreAddModal()" class="p-2 bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full text-gray-500 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -821,8 +821,8 @@
   </div>
 </div>
 
-<div id="voiceMemoModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="voiceMemoContent">
+<div id="voiceMemoModal" class="hidden fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform m-auto" id="voiceMemoContent">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><i data-lucide="mic" class="w-5 h-5"></i></div>
       <h3 class="text-xl font-black dark:text-white">Аудио</h3>
@@ -851,8 +851,8 @@
   </div>
 </div>
   
-<div id="pollConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform" id="pollConstructorContent">
+<div id="pollConstructorModal" class="hidden fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform m-auto" id="pollConstructorContent">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl"><i data-lucide="bar-chart-3" class="w-5 h-5"></i></div>
       <h3 class="text-xl font-black dark:text-white">Новый опрос</h3>
@@ -883,8 +883,8 @@
   </div>
 </div>
 <!-- Файлообменник -->
-<div id="fileTypeModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center">
+<div id="fileTypeModal" class="hidden fixed inset-0 z-[110] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center m-auto">
     <button onclick="closeFileTypeModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
     
     <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
@@ -924,8 +924,8 @@
   </div>
 </div>
 
-<div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden">
+<div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden m-auto">
     <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
       <i data-lucide="x" class="w-6 h-6"></i>
     </button>
@@ -992,8 +992,8 @@
        <img id="fullscreenImageSrc" src="" class="max-w-[95vw] max-h-[95vh] object-contain rounded-xl shadow-2xl scale-95 transition-transform duration-300 pointer-events-none" />
     </div>
 
-<div id="tableConstructorModal" class="hidden fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="tableConstructorContent">
+<div id="tableConstructorModal" class="hidden fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform m-auto" id="tableConstructorContent">
     <div class="flex items-center gap-3 mb-6">
       <div class="p-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><i data-lucide="table" class="w-5 h-5"></i></div>
       <h3 class="text-xl font-black dark:text-white">Новая таблица</h3>
@@ -1050,8 +1050,8 @@
 <!-- Конструкторы Элементов (Инжектируются через JS для оптимизации DOM) -->
 <div id="dynamicConstructorContainer"></div>
 
-<div id="customConfirmModal" class="hidden fixed inset-0 z-[1100] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[1100] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95 m-auto" id="confirmModalContent">
     <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
       <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
     </div>
@@ -1064,8 +1064,8 @@
   </div>
 </div>
 
-<div id="customPromptModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="promptModalContent">
+<div id="customPromptModal" class="hidden fixed inset-0 z-[600] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95 m-auto" id="promptModalContent">
     <div class="mx-auto w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
       <i data-lucide="folder-plus" class="w-8 h-8"></i>
     </div>
@@ -5836,8 +5836,8 @@ function renderDynamicModal(type) {
 
   if (type === 'timer') {
     html = `
-      <div id="timerConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="timerConstructorContent">
+      <div id="timerConstructorModal" class="fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform m-auto" id="timerConstructorContent">
           <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-rose-100 dark:bg-rose-900/30 text-rose-500 rounded-xl"><i data-lucide="timer" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Настройки Таймера</h3></div>
           <div class="space-y-4">
             <input type="text" id="timerTitle" placeholder="Событие (Например: Запуск релиза)" class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-rose-500 font-bold dark:text-white">
@@ -5851,8 +5851,8 @@ function renderDynamicModal(type) {
       </div>`;
   } else if (type === 'todo') {
     html = `
-      <div id="todoConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="todoConstructorContent">
+      <div id="todoConstructorModal" class="fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform m-auto" id="todoConstructorContent">
           <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-500 rounded-xl"><i data-lucide="list-todo" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Быстрый Чек-лист</h3></div>
           <div class="space-y-4">
             <input type="text" id="todoFastTitle" placeholder="Название списка..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-cyan-500 font-bold dark:text-white">
@@ -5866,8 +5866,8 @@ function renderDynamicModal(type) {
       </div>`;
   } else if (type === 'link') {
     html = `
-      <div id="linkConstructorModal" class="fixed inset-0 z-[310] flex items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
-        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform" id="linkConstructorContent">
+      <div id="linkConstructorModal" class="fixed inset-0 z-[310] flex items-start justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+        <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-md shadow-2xl border border-gray-200 dark:border-gray-700 transform scale-95 transition-transform m-auto" id="linkConstructorContent">
           <div class="flex items-center gap-3 mb-6"><div class="p-2.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl"><i data-lucide="link" class="w-5 h-5"></i></div><h3 class="text-xl font-black dark:text-white">Закладка на ресурс</h3></div>
           <div class="space-y-4">
             <input type="text" id="linkTitle" placeholder="Короткое название..." class="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none focus:border-gray-900 dark:focus:border-white font-bold dark:text-white">
