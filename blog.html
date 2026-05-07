@@ -18,21 +18,24 @@
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
-    /* ENTERPRISE: Жесткая фиксация вьюпорта для мобильных устройств */
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
       height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      overflow: hidden; /* Запрет глобального скролла */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
+  
 <!-- Фоновые неоновые блики (Изумрудно-синие для Блога) -->
 <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
@@ -54,8 +57,7 @@
   </button>
 </header>
 
-<main class="p-8 max-w-6xl mx-auto w-full flex-1 mb-20">
-  
+<main class="p-8 max-w-6xl mx-auto w-full flex-1 mb-20 overflow-y-auto hide-scroll">  
   <!-- Hero Section & Поиск -->
   <div class="text-center mb-16 mt-8 relative z-10">
     <div class="inline-flex items-center justify-center p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl mb-6 shadow-sm border border-blue-100 dark:border-blue-800/50">
