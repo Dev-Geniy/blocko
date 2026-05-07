@@ -122,7 +122,7 @@
     <h3 class="font-black text-lg flex items-center gap-2 text-gray-900 dark:text-white"><i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i> Вид календаря</h3>
     <button onclick="toggleSettings()" class="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
   </div>
-  <div class="p-6 space-y-8">
+  <div class="p-6 space-y-8 flex-1 overflow-y-auto hide-scroll">
      <div>
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Режим отображения</label>
         <div class="space-y-3">
@@ -130,7 +130,7 @@
               <div class="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-indigo-500"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
               <div><div class="text-sm font-bold text-gray-900 dark:text-white">Стандартный</div><div class="text-[10px] text-gray-500">Сетка на один месяц</div></div>
            </button>
-           <button onclick="setViewMode('minimalist')" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700">
+           <button onclick="setViewMode('minimalist')" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50">
               <div class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-400"><i data-lucide="columns-3" class="w-5 h-5"></i></div>
               <div><div class="text-sm font-bold text-gray-900 dark:text-white">Квартальный</div><div class="text-[10px] text-gray-500">3 месяца в ряд (Мини)</div></div>
            </button>
@@ -967,7 +967,6 @@
           endD.setDate(endD.getDate() + 1);
           const endStr = endD.toISOString().split('T')[0].replace(/-/g, '');
 
-          // Экранирование спецсимволов для безопасности формата iCal
           const escapeIcal = (str) => (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 
           icsContent += "BEGIN:VEVENT\n";
@@ -990,7 +989,6 @@
           return showSystemToast('Нет дедлайнов', 'В выбранном проекте нет задач с установленной датой.', 'info', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
       }
 
-      // Создание и скачивание виртуального файла
       const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
