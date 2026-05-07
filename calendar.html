@@ -61,7 +61,7 @@
   </script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
-<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ -->
+
 <div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
   <div class="flex flex-col items-center scale-110">
     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-3xl text-white shadow-2xl shadow-indigo-500/40 mb-6">
@@ -76,7 +76,6 @@
   </div>
 </div>
 
-<!-- Неоновые блики -->
 <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
@@ -103,19 +102,16 @@
   </div>
 </header>
 
-  <main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full">
+<main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full">
   
-  <!-- Панель управления календарем -->
-  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md">
+  <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md flex-shrink-0">
     
-    <!-- Переключатель Месяцев -->
     <div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
       <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
       <h2 id="currentMonthYear" class="text-lg font-black text-gray-900 dark:text-white w-40 text-center tracking-tight">Загрузка...</h2>
       <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
     </div>
 
-    <!-- Smart Фильтры -->
     <div class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner overflow-x-auto hide-scroll w-full sm:w-auto">
       <button onclick="setFilter('all')" class="filter-btn px-4 py-2 rounded-xl text-xs font-bold bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm transition-all whitespace-nowrap" data-filter="all">
         Все задачи
@@ -128,7 +124,6 @@
       </button>
     </div>
 
-    <!-- Режимы и Сегодня -->
     <div class="flex items-center gap-3">
       <button onclick="goToToday()" class="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-all shadow-sm border border-indigo-200 dark:border-indigo-800/50 active:scale-95 whitespace-nowrap">
         Сегодня
@@ -136,7 +131,6 @@
     </div>
   </div>
 
-  <!-- Сетка календаря -->
   <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative z-10 min-h-[400px]">
     
     <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
@@ -212,7 +206,6 @@
   </div>
 </div>
   
-<!-- Пуш Уведомления -->
 <div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
   <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
   <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
@@ -227,7 +220,7 @@
   }
   lucide.createIcons();
 
-  // ФИКС №2 и №3: Инициализация Firebase Auth и Firestore (Безопасный фоллбэк)
+  // Инициализация Firebase Auth и Firestore (Безопасный фоллбэк)
   const db = window.db || firebase.firestore();
   const auth = window.auth || firebase.auth();
 
@@ -237,7 +230,7 @@
   let sortableZones = [];
   let currentFilter = 'all'; // Глобальный фильтр приоритетов
 
-  // ФИКС №8: Базовая санитизация против XSS
+  // Базовая санитизация против XSS
   const escapeHTML = (str) => {
       if (!str) return '';
       return String(str).replace(/[&<>'"]/g, tag => ({
@@ -245,7 +238,7 @@
       }[tag] || tag));
   };
 
-  // ФИКС №5: Оптимизация рендера с requestAnimationFrame (Debouncing)
+  // Оптимизация рендера с requestAnimationFrame (Debouncing)
   let renderRAF = null;
   function triggerRender() {
       if (renderRAF) cancelAnimationFrame(renderRAF);
@@ -331,7 +324,7 @@
       // 2. ОБЛАЧНЫЕ ДОСКИ (Firestore)
       if (navigator.onLine) {
           try {
-              // ФИКС №6: Оптимизируем загрузку, избегая N+1. Выполняем подзапросы параллельно.
+              // Оптимизируем загрузку, избегая N+1. Выполняем подзапросы параллельно.
               const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
               
               const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
@@ -445,7 +438,6 @@
           cellCount++;
       }
 
-      // ФИКС №1: Убрано дублирование инициализации grid (оставили только один раз rowsCount)
       const rowsCount = totalCells === 42 ? 6 : 5;
       grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
       
@@ -541,7 +533,7 @@
   // --- ДВИЖОК ОБНОВЛЕНИЯ ДАТЫ ПРИ DRAG & DROP ---
   async function updateTaskDate(boardId, taskId, newDateStr, isLocal) {
       const taskIndex = allTasks.findIndex(t => t.id === taskId);
-      // ФИКС №7: Запоминаем старую дату на случай ошибки (Anti-Race Condition)
+      // Запоминаем старую дату на случай ошибки (Anti-Race Condition)
       const oldDateStr = taskIndex !== -1 ? allTasks[taskIndex].dueDate : null;
       
       if (taskIndex !== -1) {
@@ -570,7 +562,7 @@
               showSystemToast('Дедлайн изменен', `Задача перенесена на ${newDateStr}.`, 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
           } catch (e) {
               console.error(e);
-              // ФИКС №7: Откат UI при падении запроса
+              // Откат UI при падении запроса
               if (taskIndex !== -1 && oldDateStr) {
                   allTasks[taskIndex].dueDate = oldDateStr;
                   triggerRender();
@@ -828,7 +820,7 @@
       }
   }
 
-  // ФИКС №4: Единый глобальный слушатель кликов
+  // Единый глобальный слушатель кликов
   window.addEventListener('click', (e) => {
       if (e.target.id === 'dayViewModal') closeDayModal();
       if (e.target.id === 'quickAddModal') closeQuickAddModal();
