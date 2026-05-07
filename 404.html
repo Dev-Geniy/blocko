@@ -49,14 +49,14 @@
 
 <!-- Минималистичный хедер -->
 <header class="px-8 py-6 w-full absolute top-0 left-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-3">
+  <a href="index.html" class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity active:scale-95" title="Вернуться на главную">
     <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
       <i data-lucide="layers" class="w-5 h-5"></i>
     </div>
     <h1 class="text-xl font-bold tracking-tight">
       Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
     </h1>
-  </div>
+  </a>
   <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50">
     <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
   </button>
@@ -84,11 +84,11 @@
     <canvas id="gameCanvas" width="800" height="250" class="w-full h-[200px] sm:h-[250px] block cursor-pointer"></canvas>
     
     <!-- Оверлей игры (Старт / Конец) -->
-    <div id="gameOverlay" class="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[4px] flex flex-col items-center justify-center transition-opacity duration-300">
-       <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-indigo-100 dark:border-indigo-800/50 animate-bounce">
-         <i data-lucide="gamepad-2" class="w-8 h-8"></i>
+    <div id="gameOverlay" onclick="jump()" class="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-[4px] flex flex-col items-center justify-center transition-opacity duration-300 cursor-pointer group">
+       <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-indigo-100 dark:border-indigo-800/50 animate-bounce group-hover:scale-110 transition-transform">
+         <i data-lucide="gamepad-2" class="w-8 h-8 pointer-events-none"></i>
        </div>
-       <h3 id="gameMessage" class="text-xl font-black text-gray-900 dark:text-white mb-2">Нажмите ПРОБЕЛ, чтобы начать</h3>
+       <h3 id="gameMessage" class="text-xl font-black text-gray-900 dark:text-white mb-2 text-center px-4">Нажмите ПРОБЕЛ или кликните мышью</h3>
        <p id="gameScoreText" class="text-xs font-bold text-gray-500 uppercase tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg">Лучший счет: 0</p>
     </div>
   </div>
@@ -175,7 +175,7 @@
       localStorage.setItem('blocko_runner_highscore', highScore);
       msgText.innerText = `Новый рекорд: ${score}! 🎉`;
     }
-    scoreText.innerText = `Лучший счет: ${highScore} | Пробел для рестарта`;
+    scoreText.innerText = `Лучший счет: ${highScore} | Кликните для рестарта`;
   }
 
   function jump() {
