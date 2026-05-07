@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
     .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     
     /* Анимации парения для текста 404 */
@@ -23,20 +23,26 @@
     }
     .animate-float { animation: float 6s ease-in-out infinite; }
 
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
       height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      overflow: hidden; /* Запрет глобального скролла */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
+    
+    /* Скрытие скроллбара для эстетики */
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
+  
 <!-- Фоновые неоновые блики -->
 <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/20 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] pointer-events-none -z-10"></div>
@@ -56,9 +62,11 @@
   </button>
 </header>
 
-<main class="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-4xl mx-auto relative z-10 mt-10">
+<main class="flex-1 w-full relative z-10 overflow-y-auto hide-scroll flex flex-col">
   
-  <div class="text-center mb-8 animate-float">
+  <div class="m-auto w-full max-w-4xl flex flex-col items-center justify-center p-6 mt-16 sm:mt-10">
+    <div class="text-center mb-8 animate-float">
+      
     <h1 class="text-[8rem] sm:text-[10rem] leading-none font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 tracking-tighter drop-shadow-2xl select-none">
       404
     </h1>
@@ -94,6 +102,7 @@
     </a>
   </div>
 
+  </div>
 </main>
 
 <script>
