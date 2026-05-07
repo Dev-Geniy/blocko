@@ -219,10 +219,6 @@
   }
   lucide.createIcons();
 
-  // Безопасная инициализация Firebase (защита от ошибок)
-  const db = window.db || firebase.firestore();
-  const auth = window.auth || firebase.auth();
-
   let currentUser = null;
   let allTasks = [];
   let currentViewDate = new Date();
