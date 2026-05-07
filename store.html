@@ -34,6 +34,15 @@
     .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
     .delay-200 { animation-delay: 0.2s; }
     .delay-400 { animation-delay: 0.4s; }
+
+    html, body {
+      height: 100dvh;
+      width: 100%;
+      touch-action: none; /* Предотвращает масштабирование и левые жесты на уровне браузера */
+      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
+      overflow-y: auto;   /* Разрешаем вертикальный скролл */
+      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    }
   </style>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
