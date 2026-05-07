@@ -126,11 +126,11 @@
      <div>
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Режим отображения</label>
         <div class="space-y-3">
-           <button onclick="setViewMode('standard'); toggleSettings()" id="modeBtn_standard" class="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800">
+           <button onclick="setViewMode('standard')" id="modeBtn_standard" class="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800 shadow-sm">
               <div class="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-indigo-500"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
               <div><div class="text-sm font-bold text-gray-900 dark:text-white">Стандартный</div><div class="text-[10px] text-gray-500">Сетка на один месяц</div></div>
            </button>
-           <button onclick="setViewMode('minimalist'); toggleSettings()" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300">
+           <button onclick="setViewMode('minimalist')" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700">
               <div class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-400"><i data-lucide="columns-3" class="w-5 h-5"></i></div>
               <div><div class="text-sm font-bold text-gray-900 dark:text-white">Квартальный</div><div class="text-[10px] text-gray-500">3 месяца в ряд (Мини)</div></div>
            </button>
@@ -139,8 +139,7 @@
      
      <div class="sm:hidden">
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Фильтр проектов</label>
-        <div id="mobileProjectFilters" class="space-y-2">
-           </div>
+        <div id="mobileProjectFilters" class="space-y-2"></div>
      </div>
   </div>
 </aside>
@@ -265,6 +264,7 @@
      sidebar.classList.toggle('translate-x-full');
   }
 
+  // ЭНТЕРПРАЙЗ: Стабильный переключатель режимов вида с защитой от NULL (Фикс лоадера)
   function setViewMode(mode) {
      currentViewMode = mode;
      localStorage.setItem('blocko_calendar_mode', mode);
@@ -273,8 +273,11 @@
      const btnMinimalist = document.getElementById('modeBtn_minimalist');
 
      if (btnStandard && btnMinimalist) {
-         btnStandard.className = mode === 'standard' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
-         btnMinimalist.className = mode === 'minimalist' ? "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800" : "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+         const activeClasses = "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800 shadow-sm";
+         const inactiveClasses = "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
+         
+         btnStandard.className = mode === 'standard' ? activeClasses : inactiveClasses;
+         btnMinimalist.className = mode === 'minimalist' ? activeClasses : inactiveClasses;
      }
      
      triggerRender();
@@ -426,24 +429,31 @@
       setViewMode(currentViewMode);
   }
 
-  function changeMonth(offset) {
-      currentViewDate.setMonth(currentViewDate.getMonth() + offset);
-      
-      const grid = document.getElementById('calendarGrid');
-      grid.classList.remove('grid-animate');
-      void grid.offsetWidth;
-      grid.classList.add('grid-animate');
-      
-      triggerRender();
-  }
-
   function goToToday() {
       currentViewDate = new Date();
       triggerRender();
   }
 
+  // ЭНТЕРПРАЙЗ: Пуленепробиваемый переключатель месяцев (Поддержка Квартального вида)
+  function changeMonth(offset) {
+      currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+      
+      const grid = document.getElementById('calendarGrid');
+      const viewport = document.getElementById('calendarViewport');
+      
+      // Добавляем эффект плавного перехода
+      if (viewport) {
+          viewport.classList.remove('grid-animate');
+          void viewport.offsetWidth; 
+          viewport.classList.add('grid-animate');
+      }
+      
+      triggerRender();
+  }
+
   function renderCalendar() {
       const viewport = document.getElementById('calendarViewport');
+      if (!viewport) return;
       
       if (currentViewMode === 'minimalist') {
           renderQuarterView(viewport);
@@ -458,7 +468,6 @@
 
       const year = currentViewDate.getFullYear();
       const month = currentViewDate.getMonth();
-
       const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
       
       const firstDay = new Date(year, month, 1);
@@ -467,86 +476,44 @@
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       const daysInPrevMonth = new Date(year, month, 0).getDate();
-
       const today = new Date();
       const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-      const todayDate = today.getDate();
 
       let html = '';
       let cellCount = 0;
 
-      for (let i = startDay - 1; i >= 0; i--) {
-          const d = daysInPrevMonth - i;
-          html += createDayCell(null, d, true, false, cellCount);
-          cellCount++;
-      }
-
+      for (let i = startDay - 1; i >= 0; i--) { html += createDayCell(null, daysInPrevMonth - i, true, false, cellCount); cellCount++; }
       for (let d = 1; d <= daysInMonth; d++) {
-          const isToday = isCurrentMonth && d === todayDate;
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          html += createDayCell(dateStr, d, false, isToday, cellCount);
+          html += createDayCell(dateStr, d, false, (isCurrentMonth && d === today.getDate()), cellCount);
           cellCount++;
       }
+      while (cellCount < (cellCount <= 35 ? 35 : 42)) { html += createDayCell(null, (cellCount % 7) + 1, true, false, cellCount); cellCount++; }
 
-      const totalCells = cellCount <= 35 ? 35 : 42; 
-      let nextMonthDay = 1;
-      while (cellCount < totalCells) {
-          html += createDayCell(null, nextMonthDay, true, false, cellCount);
-          nextMonthDay++;
-          cellCount++;
-      }
-
-      const rowsCount = totalCells === 42 ? 6 : 5;
-      const minCellHeight = window.innerWidth < 640 ? '70px' : '0';
-      
       container.innerHTML = `
         <div class="flex items-center justify-between mb-4 bg-white/50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md flex-shrink-0">
           <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-          <h2 class="text-lg font-black text-gray-900 dark:text-white w-48 text-center tracking-tight">${monthNames[month]} ${year}</h2>
+          <h2 id="currentMonthYear" class="text-lg font-black text-gray-900 dark:text-white w-48 text-center tracking-tight">${monthNames[month]} ${year}</h2>
           <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
         </div>
-        <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col relative">
+        <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden flex flex-col relative shadow-xl">
           <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пн</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Вт</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Ср</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Чт</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-gray-400 border-r border-gray-200 dark:border-gray-800">Пт</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 border-r border-gray-200 dark:border-gray-800 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Сб</div>
-            <div class="py-2 sm:py-3 text-center text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-rose-400 bg-rose-50/30 dark:bg-rose-900/10 shadow-inner">Вс</div>
+            ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => `<div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400">${d}</div>`).join('')}
           </div>
-          <div class="flex-1 overflow-y-auto relative bg-gray-200 dark:bg-gray-800 hide-scroll">
-            <div class="min-h-full grid grid-cols-7 gap-px grid-animate" style="grid-template-rows: repeat(${rowsCount}, minmax(${minCellHeight}, 1fr));">
+          <div class="flex-1 overflow-y-auto bg-gray-200 dark:bg-gray-800 hide-scroll">
+            <div id="calendarGrid" class="min-h-full grid grid-cols-7 gap-px grid-animate" style="grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));">
               ${html}
             </div>
           </div>
-        </div>
-      `;
+        </div>`;
 
-      // Инициализация Drag and Drop
       document.querySelectorAll('.calendar-day-dropzone').forEach(zone => {
           sortableZones.push(new Sortable(zone, {
-              group: 'calendar-tasks',
-              animation: 150,
-              ghostClass: 'opacity-50',
-              dragClass: 'sortable-drag',
-              easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+              group: 'calendar-tasks', animation: 150, ghostClass: 'opacity-50', dragClass: 'sortable-drag',
               delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
-              fallbackTolerance: 5,
-              onAdd: function (evt) {
-                  const itemEl = evt.item;
-                  const newDate = evt.to.dataset.date;
-                  const taskId = itemEl.dataset.taskId;
-                  const boardId = itemEl.dataset.boardId;
-                  const isLocal = itemEl.dataset.isLocal === 'true';
-                  
-                  if (newDate) {
-                      updateTaskDate(boardId, taskId, newDate, isLocal);
-                  }
-              }
+              onAdd: (evt) => updateTaskDate(evt.item.dataset.boardId, evt.item.dataset.taskId, evt.to.dataset.date, evt.item.dataset.isLocal === 'true')
           }));
       });
-
       lucide.createIcons({ root: container });
   }
 
