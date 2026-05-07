@@ -88,7 +88,7 @@
 </aside>
 
 <!-- Main -->
-<main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+<main class="flex-1 flex flex-col h-full w-full overflow-hidden relative">
   <!-- Boot Loader -->
   <div id="loader" class="absolute inset-0 bg-[#0B0F19] z-50 flex flex-col items-center justify-center transition-opacity duration-500">
      <i data-lucide="loader-2" class="w-10 h-10 text-indigo-500 animate-spin mb-4"></i>
@@ -462,8 +462,8 @@
 </main>
 
 <!-- Ticket Details Modal -->
-<div id="ticketModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-2xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative flex flex-col max-h-[90vh]" id="ticketModalContent">
+<div id="ticketModal" class="hidden fixed inset-0 z-[150] flex items-start justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-2xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative flex flex-col max-h-[90vh] m-auto" id="ticketModalContent">
     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
     <div class="flex justify-between items-start mb-6 flex-shrink-0">
       <div class="flex items-center gap-4">
@@ -497,8 +497,8 @@
 </div>
 
 <!-- User Profile & Edit Modal -->
-<div id="userProfileModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-4xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative overflow-hidden flex flex-col max-h-[90vh]" id="userProfileModalContent">
+<div id="userProfileModal" class="hidden fixed inset-0 z-[100] flex items-start justify-center bg-black/80 glass-panel opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-gray-900 p-8 rounded-[2rem] w-full max-w-4xl shadow-2xl border border-gray-800 transform scale-95 transition-transform relative overflow-hidden flex flex-col max-h-[90vh] m-auto" id="userProfileModalContent">
     <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
     <div class="flex justify-between items-start mb-6 flex-shrink-0">
       <div class="flex items-center gap-4">
@@ -1913,9 +1913,9 @@
           // 3. Собираем монолитный HTML окна
           const modalDOM = document.createElement('div');
           modalDOM.id = 'cpaInspectModal';
-          modalDOM.className = 'fixed inset-0 z-[1000] flex items-center justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto';
+          modalDOM.className = 'fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/90 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 py-10 overflow-y-auto';
           modalDOM.innerHTML = `
-            <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform relative flex flex-col my-auto" id="cpaInspectContent">
+            <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2.5rem] w-full max-w-5xl shadow-2xl border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform relative flex flex-col m-auto" id="cpaInspectContent">
               <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
               <button onclick="window.closeCpaInspectModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
 
