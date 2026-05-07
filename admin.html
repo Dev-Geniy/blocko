@@ -23,20 +23,21 @@
     ::-webkit-scrollbar-track { background: transparent; }
     .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 
-    /* ENTERPRISE: Жесткая фиксация вьюпорта для мобильных устройств */
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
       height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      overflow: hidden; /* Запрет глобального скролла */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col lg:flex-row transition-colors duration-300">
+  
 <!-- Sidebar -->
 <aside class="w-20 lg:w-64 border-r border-gray-800 bg-gray-900/50 glass-panel flex flex-col items-center lg:items-stretch py-6 transition-all z-20">
   <div class="flex items-center gap-3 px-0 lg:px-6 mb-10 justify-center lg:justify-start">
