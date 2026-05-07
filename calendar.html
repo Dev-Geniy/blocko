@@ -432,6 +432,12 @@
       const minCellHeight = window.innerWidth < 640 ? '70px' : '0';
       grid.style.gridTemplateRows = `repeat(${rowsCount}, minmax(${minCellHeight}, 1fr))`;
       
+      const rowsCount = totalCells === 42 ? 6 : 5;
+      grid.className = `min-h-full grid grid-cols-7 gap-px grid-animate bg-gray-200 dark:bg-gray-800`;
+      
+      // ЭНТЕРПРАЙЗ: minmax(0, 1fr) - заставляет сетку идеально делиться на весь экран. Скролл работает внутри самих ячеек.
+      grid.style.gridTemplateRows = `repeat(${rowsCount}, minmax(0, 1fr))`;
+      
       grid.innerHTML = html;
 
       // Инициализация Drag and Drop
@@ -442,6 +448,9 @@
               ghostClass: 'opacity-50',
               dragClass: 'sortable-drag',
               easing: "cubic-bezier(0.25, 1, 0.5, 1)",
+              // ФИКС СКРОЛЛА НА МОБИЛЬНЫХ: Добавляем таймаут и порог сдвига
+              delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
+              fallbackTolerance: 5,
               onAdd: function (evt) {
                   const itemEl = evt.item;
                   const newDate = evt.to.dataset.date;
@@ -485,22 +494,23 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
           : `bg-white dark:bg-gray-900 ${weekendBg}`;
 
       let tasksHtml = tasksForDay.map(t => {
-          // ЭНТЕРПРАЙЗ: Адаптивные классы. На мобилках - тонкая полоска (h-1.5), на ПК - карточка с текстом
           let priorityClass = "bg-blue-500 sm:bg-blue-50 sm:text-blue-700 sm:border-blue-200 dark:sm:bg-blue-900/30 dark:sm:text-blue-400 dark:sm:border-blue-800/50 hover:sm:bg-blue-100";
           if (t.priority === 'high') priorityClass = "bg-amber-500 sm:bg-amber-50 sm:text-amber-700 sm:border-amber-200 dark:sm:bg-amber-900/30 dark:sm:text-amber-400 dark:sm:border-amber-800/50 hover:sm:bg-amber-100";
           if (t.priority === 'critical') priorityClass = "bg-rose-500 sm:bg-rose-50 sm:text-rose-700 sm:border-rose-200 dark:sm:bg-rose-900/30 dark:sm:text-rose-400 dark:sm:border-rose-800/50 hover:sm:bg-rose-100 shadow-sm";
 
+          // ЭНТЕРПРАЙЗ: Заменили тег <a> на <div>. Ссылки больше нет. 
+          // Убрали onclick="event.stopPropagation()", чтобы клик пробивал насквозь в ячейку!
           return `
-            <a href="board.html?b=${t.boardId}&c=${t.id}" target="_blank" data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" onclick="event.stopPropagation()" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1 sm:h-auto ${priorityClass}" title="${t.title}">
-               <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60">
+            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1 sm:h-auto ${priorityClass}" title="${t.title}">
+               <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
                  ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
                  <span class="truncate max-w-[60px] lg:max-w-[80px]">${t.boardTitle}</span>
                </div>
-               <span class="hidden sm:inline truncate w-full block">${t.title}</span>
-            </a>`;
+               <span class="hidden sm:inline truncate w-full block pointer-events-none">${t.title}</span>
+            </div>`;
       }).join('');
 
-      // min-h-0 спасает от разрыва сетки! gap-px в контейнере рисует идеальные 1px бордеры.
+      // ЭНТЕРПРАЙЗ: Убрали onclick="event.stopPropagation()" из calendar-day-dropzone. Теперь вся площадь кликабельна!
       return `
         <div class="flex flex-col ${bgClass} transition-colors group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 min-h-0 relative" onclick="openDayModal('${dateStr}')">
           <div class="p-1 sm:p-2 flex justify-center sm:justify-between items-center transition-colors pointer-events-none flex-shrink-0">
@@ -512,7 +522,7 @@ function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0
                </button>
             </div>
           </div>
-          <div class="flex-1 p-0.5 sm:p-1.5 flex flex-col overflow-y-auto hide-scroll calendar-day-dropzone min-h-[30px] sm:min-h-[50px]" data-date="${dateStr}" onclick="event.stopPropagation()">
+          <div class="flex-1 p-0.5 sm:p-1.5 flex flex-col overflow-y-auto hide-scroll calendar-day-dropzone min-h-[30px] sm:min-h-[50px]" data-date="${dateStr}">
             ${tasksHtml}
           </div>
         </div>`;
