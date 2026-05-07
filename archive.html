@@ -43,21 +43,23 @@
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
     .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
-    /* ENTERPRISE: Жесткая фиксация вьюпорта для мобильных устройств */
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
       height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      overflow: hidden; /* Запрет глобального скролла */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
   
 <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center">
   <div class="flex items-center gap-4">
@@ -87,7 +89,7 @@
   </div>
 </header>
 
-<main class="p-8 max-w-7xl mx-auto w-full flex-1">
+<main class="p-8 max-w-7xl mx-auto w-full flex-1 overflow-y-auto hide-scroll">
   <div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm animate-pulse flex flex-col h-40">
       <div class="flex justify-between mb-4"><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-16"></div><div class="h-4 bg-gray-200 dark:bg-gray-800 rounded w-20"></div></div>
@@ -107,8 +109,8 @@
   </div>
 </main>
 
-<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
+<div id="customConfirmModal" class="hidden fixed inset-0 z-[200] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95 m-auto" id="confirmModalContent">
     <div id="confirmIconBg" class="mx-auto w-16 h-16 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-2xl flex items-center justify-center mb-5 shadow-sm">
       <i id="confirmIcon" data-lucide="alert-triangle" class="w-8 h-8"></i>
     </div>
