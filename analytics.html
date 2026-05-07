@@ -35,13 +35,13 @@
     .delay-200 { animation-delay: 0.2s; }
     .delay-400 { animation-delay: 0.4s; }
 
-    /* ENTERPRISE: Жесткая фиксация вьюпорта для мобильных устройств */
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
       height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      overflow: hidden; /* Запрет глобального скролла */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
 
@@ -49,7 +49,7 @@
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
   
 <!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ -->
 <div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
@@ -93,7 +93,7 @@
   </div>
 </header>
 
-<main class="p-4 sm:p-8 max-w-[1400px] mx-auto w-full flex-1 flex flex-col mb-10">
+<main class="p-4 sm:p-8 max-w-[1400px] mx-auto w-full flex-1 flex flex-col mb-10 overflow-y-auto hide-scroll">
   
   <!-- Верхние виджеты (Сводка) -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
