@@ -89,22 +89,22 @@
     .sortable-ghost { opacity: 0.4; transform: scale(0.95); }
     .sortable-drag { cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
 
-    /* ENTERPRISE: Жесткая фиксация вьюпорта для мобильных устройств */
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-    }
-  </style>
+    /* ENTERPRISE: Архитектура PWA-вьюпорта */
+        html, body {
+          height: 100dvh;
+          width: 100%;
+          overflow: hidden; /* Запрет глобального скролла для предотвращения баунса на iOS */
+          overscroll-behavior: none;
+          -webkit-overflow-scrolling: touch;
+        }
+      </style>
 
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
-  </script>
-</head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
-
+      <script>
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
+      </script>
+    </head>
+    <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
+      
 <!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
 <div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
   <div class="flex flex-col items-center scale-110">
@@ -136,7 +136,7 @@
   </div>
 </div>
 
-<div id="dashboardScreen" class="hidden flex-col h-screen w-full overflow-y-auto">
+<div id="dashboardScreen" class="hidden flex-col flex-1 h-full w-full overflow-y-auto overflow-x-hidden relative scroll-smooth overscroll-contain">
   <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
   <div class="flex items-center gap-3 select-none">
     <div onclick="openAboutModal()" class="cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20 transition-transform hover:scale-105">
@@ -275,9 +275,8 @@
     </div>
   </main>
 
-  <div id="createBoardModal" class="hidden fixed inset-0 z-50 flex bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity duration-200 px-4 overflow-y-auto py-10">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 m-auto flex flex-col h-fit">
-      <button onclick="closeCreateModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
+  <div id="createBoardModal" class="hidden fixed inset-0 z-50 flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity duration-200 px-4 overflow-y-auto py-10">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 m-auto flex flex-col">      <button onclick="closeCreateModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
       
       <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white pr-8">Новый проект</h2>
       
@@ -600,13 +599,12 @@
   </div>
 </div>
 
-<div id="planDetailsModal" class="hidden fixed inset-0 z-[400] bg-white/95 dark:bg-black/95 glass-modal flex flex-col items-center justify-center opacity-0 transition-opacity duration-500 px-6 overflow-y-auto py-10">
-  <button onclick="closePlanDetails()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-4 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900">
+<div id="planDetailsModal" class="hidden fixed inset-0 z-[400] bg-white/95 dark:bg-black/95 glass-modal flex flex-col items-center justify-start opacity-0 transition-opacity duration-500 px-6 overflow-y-auto py-10">
+  <button onclick="closePlanDetails()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-4 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900 z-20">
     <i data-lucide="x" class="w-8 h-8"></i>
   </button>
   
-  <div class="max-w-5xl w-full text-center flex flex-col items-center transform scale-95 transition-transform duration-500 my-auto" id="planDetailsContent">
-    <div id="planIconWrapper" class="w-24 h-24 rounded-[2rem] flex items-center justify-center mb-8 mx-auto shadow-2xl relative">
+  <div class="max-w-5xl w-full text-center flex flex-col items-center transform scale-95 transition-transform duration-500 m-auto" id="planDetailsContent">    <div id="planIconWrapper" class="w-24 h-24 rounded-[2rem] flex items-center justify-center mb-8 mx-auto shadow-2xl relative">
       <div id="planIconGlow" class="absolute inset-0 rounded-[2rem] blur-2xl opacity-50"></div>
       <i id="planIcon" data-lucide="star" class="w-12 h-12 relative z-10"></i>
     </div>
@@ -819,9 +817,8 @@
   </div>
 
 <!-- Прайс модальное окно -->
-<div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-6xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="pricingContent">
-    
+<div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-start justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-6xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="pricingContent">    
     <div class="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -953,9 +950,8 @@
 </div>
 
 <!-- Партнёрка модальное окно -->
-<div id="affiliateModal" class="hidden fixed inset-0 z-[150] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-4xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="affiliateContent">
-    
+<div id="affiliateModal" class="hidden fixed inset-0 z-[150] flex items-start justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
+  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-4xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="affiliateContent">    
     <div class="absolute -top-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
