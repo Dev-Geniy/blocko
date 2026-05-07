@@ -141,9 +141,20 @@
         <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Фильтр проектов</label>
         <div id="mobileProjectFilters" class="space-y-2"></div>
      </div>
+
+     <div class="pt-2 border-t border-gray-200 dark:border-gray-800">
+        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block pt-6">Интеграции</label>
+        <button onclick="exportToICal()" class="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group shadow-sm active:scale-95">
+            <div class="flex items-center gap-4">
+                <div class="p-2 bg-gray-100 dark:bg-gray-800 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/40 rounded-xl text-gray-400 group-hover:text-emerald-500 transition-colors shadow-sm"><i data-lucide="calendar-plus" class="w-5 h-5"></i></div>
+                <div><div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Экспорт в iCal</div><div class="text-[10px] text-gray-500">Google / Apple Calendar</div></div>
+            </div>
+            <i data-lucide="download" class="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors"></i>
+        </button>
+     </div>
   </div>
 </aside>
-
+  
 <main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full bg-gray-50/50 dark:bg-black/20">
   
   <div id="desktopProjectTabs" class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto hide-scroll w-full mb-4 flex-shrink-0">
@@ -929,6 +940,70 @@
           btn.innerHTML = ogHtml;
           lucide.createIcons({ root: btn.parentElement });
       }
+  }
+
+  // ЭНТЕРПРАЙЗ: Генерация .ics файла на стороне клиента (Zero-Latency)
+  function exportToICal() {
+      if (!allTasks || allTasks.length === 0) {
+          return showSystemToast('Архив пуст', 'Сначала дождитесь синхронизации задач.', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+      }
+
+      const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Calendar//RU\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\nX-WR-CALNAME:Blocko Pro Задачи\n";
+
+      let exportedCount = 0;
+
+      allTasks.forEach(t => {
+          if (!t.dueDate) return;
+          // Экспортируем только те задачи, которые соответствуют текущему фильтру (чтобы юзер мог выгрузить конкретный проект)
+          if (filterBoardId !== 'all' && t.boardId !== filterBoardId) return;
+          
+          exportedCount++;
+
+          const dateOnly = t.dueDate.replace(/-/g, '');
+          
+          // Для iCal событий "весь день" нужно указать следующую дату как END
+          const endD = new Date(t.dueDate);
+          endD.setDate(endD.getDate() + 1);
+          const endStr = endD.toISOString().split('T')[0].replace(/-/g, '');
+
+          // Экранирование спецсимволов для безопасности формата iCal
+          const escapeIcal = (str) => (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+
+          icsContent += "BEGIN:VEVENT\n";
+          icsContent += `UID:${t.id}@blocko.pro\n`;
+          icsContent += `DTSTAMP:${now}\n`;
+          icsContent += `DTSTART;VALUE=DATE:${dateOnly}\n`;
+          icsContent += `DTEND;VALUE=DATE:${endStr}\n`;
+          icsContent += `SUMMARY:${escapeIcal(t.title)} [${escapeIcal(t.boardTitle)}]\n`;
+          
+          let desc = escapeIcal(t.description) || "Запланировано в Blocko Pro";
+          if (t.priority) desc += `\\n\\nПриоритет: ${t.priority}`;
+          
+          icsContent += `DESCRIPTION:${desc}\n`;
+          icsContent += "END:VEVENT\n";
+      });
+
+      icsContent += "END:VCALENDAR";
+
+      if (exportedCount === 0) {
+          return showSystemToast('Нет дедлайнов', 'В выбранном проекте нет задач с установленной датой.', 'info', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+      }
+
+      // Создание и скачивание виртуального файла
+      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Blocko_Pro_Calendar.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showSystemToast('Экспорт завершен', `Добавлено ${exportedCount} задач в системный календарь. Откройте скачанный файл!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+      if (window.innerWidth < 768) toggleSettings();
+      lucide.createIcons();
   }
 
   // ЕДИНЫЙ, СТРОГИЙ ОБРАБОТЧИК КЛИКОВ (Никаких дубликатов)
