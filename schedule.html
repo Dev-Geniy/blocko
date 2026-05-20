@@ -32,7 +32,7 @@
       overscroll-behavior: none;
       -webkit-overflow-scrolling: touch;
     }
-    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+    .glass-modal { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   </style>
 
   <script>
@@ -86,14 +86,14 @@
         <span>Проекты и Папки</span>
         <button onclick="createNewFolder()" class="text-rose-500 hover:text-rose-600 transition-colors"><i data-lucide="folder-plus" class="w-4 h-4"></i></button>
       </h3>
-      <div id="foldersContainer" class="space-y-1 max-h-60 overflow-y-auto hide-scroll">
+      <div id="foldersContainer" class="space-y-1 max-h-[40vh] overflow-y-auto hide-scroll pb-2">
         </div>
     </div>
 
     <div class="border-t border-gray-150 dark:border-gray-800 pt-4">
       <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Удаленный доступ</h3>
       <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 space-y-3 shadow-inner">
-        <p class="text-[11px] text-gray-500 leading-relaxed">Вставьте уникальный секретный ключ, чтобы просматривать изменения графика сотрудника в реальном времени.</p>
+        <p class="text-[11px] text-gray-500 leading-relaxed">Вставьте уникальный ключ, чтобы просматривать изменения графика сотрудника онлайн.</p>
         <input type="text" id="shareKeyInput" placeholder="Введите ключ доступа..." class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none dark:text-white focus:border-rose-500 transition-all font-mono">
         <button onclick="connectScheduleByKey()" class="w-full py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-xs hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-1.5"><i data-lucide="key" class="w-3.5 h-3.5"></i> Подключить файл</button>
       </div>
@@ -111,7 +111,7 @@
 
   <main class="flex-1 flex flex-col md:flex-row overflow-hidden bg-gray-50/50 dark:bg-black/20">
     
-    <div class="w-full md:w-[380px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5 overflow-y-auto hide-scroll flex-shrink-0">
+    <div class="w-full md:w-[320px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5 overflow-y-auto hide-scroll flex-shrink-0">
       
       <div class="bg-gray-50 dark:bg-gray-950/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80 shadow-sm flex items-center justify-between">
          <div class="truncate">
@@ -121,57 +121,21 @@
          <button id="btnCopyKey" onclick="copyActiveShareKey()" class="p-2 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 rounded-xl transition-all hidden active:scale-95" title="Скопировать Live-ключ доступа"><i data-lucide="share-2" class="w-4 h-4"></i></button>
       </div>
 
-      <div class="space-y-4" id="scheduleFormBlock">
-        <h3 class="font-extrabold text-sm text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-4 h-4 text-rose-500"></i> Запланировать смену</h3>
-        
-        <div>
-          <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Событие / Задача / Смена</label>
-          <input type="text" id="schTitle" placeholder="Например: Смена на складе" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-medium">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Дата начала</label>
-            <input type="date" id="schDate" onchange="syncDuplicationDate(this.value)" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
-          </div>
-          <div class="flex gap-2">
-            <div>
-              <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Старт</label>
-              <input type="time" id="schStart" value="09:00" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
-            </div>
-            <div>
-              <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Конец</label>
-              <input type="time" id="schEnd" value="18:00" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-gray-50 dark:bg-gray-950 p-4 rounded-2xl border border-gray-200 dark:border-gray-700/60">
-          <label class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-3 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3.5 h-3.5"></i> Размножить смену</label>
-          <p class="text-[11px] text-gray-500 mb-3 leading-tight">Выберите дни текущей недели, в которые нужно продублировать эту смену:</p>
-          <div class="flex justify-between gap-1" id="duplicationDaysWrapper">
-            ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d, i) => `
-              <button onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-9 h-9 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400">${d}</button>
-            `).join('')}
-          </div>
-        </div>
-
-        <button onclick="addScheduleItem()" class="w-full py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <i data-lucide="plus" class="w-4 h-4"></i> Сохранить событие
-        </button>
-      </div>
+      <button id="btnOpenShiftModal" onclick="openShiftModal()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl text-sm shadow-xl shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="calendar-plus" class="w-5 h-5"></i> Планировать смену
+      </button>
 
       <div class="border-t border-gray-150 dark:border-gray-800 pt-4 flex-1 flex flex-col min-h-[180px]">
         <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Хроника смен файла</h3>
-        <div id="scheduleTimelineList" class="space-y-2 flex-1 overflow-y-auto hide-scroll text-sm">
+        <div id="scheduleTimelineList" class="space-y-2 flex-1 overflow-y-auto hide-scroll text-sm pr-1">
            </div>
       </div>
 
     </div>
 
-    <div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-950">
+    <div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-950 relative">
        
-       <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/40 backdrop-blur-md">
+       <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/40 backdrop-blur-md z-10 relative">
           <div class="flex items-center gap-2">
              <button onclick="changeViewDate(-1)" class="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:text-rose-500 transition-all"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
              <h3 id="currentGridDateTitle" class="text-sm font-black text-gray-900 dark:text-white tracking-tight w-44 text-center uppercase">Дата</h3>
@@ -180,13 +144,60 @@
           <button onclick="setViewToToday()" class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-bold rounded-xl transition-all hover:border-gray-400">Сегодня</button>
        </div>
 
-       <div class="flex-1 overflow-y-auto p-6 space-y-0.5 relative hide-scroll bg-gray-100/50 dark:bg-gray-950" id="hourlyGridWrapper">
+       <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-0 relative hide-scroll bg-gray-50/30 dark:bg-gray-950" id="hourlyGridWrapper">
           </div>
 
     </div>
 
   </main>
+</div>
 
+<div id="shiftModal" class="fixed inset-0 z-[500] hidden items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300">
+  <div class="bg-white dark:bg-gray-900 w-full max-w-md mx-4 rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-95 transition-transform duration-300" id="shiftModalContent">
+    
+    <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
+       <h3 class="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-rose-500"></i> Запланировать событие</h3>
+       <button onclick="closeShiftModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 p-2 rounded-full transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+
+    <div class="p-6 space-y-5">
+      <div>
+        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Событие / Задача / Смена</label>
+        <input type="text" id="schTitle" placeholder="Например: Смена на складе" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-medium">
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Дата начала</label>
+          <input type="date" id="schDate" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
+        </div>
+        <div class="flex gap-2">
+          <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Старт</label>
+            <input type="time" id="schStart" value="09:00" class="w-full px-2 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Конец</label>
+            <input type="time" id="schEnd" value="18:00" class="w-full px-2 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+        <label class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3.5 h-3.5"></i> Размножить смену</label>
+        <p class="text-[11px] text-gray-500 mb-3 leading-tight">Выберите дни текущей недели, в которые нужно продублировать эту смену:</p>
+        <div class="flex justify-between gap-1" id="duplicationDaysWrapper">
+          ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d, i) => `
+            <button onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none">${d}</button>
+          `).join('')}
+        </div>
+      </div>
+
+      <button onclick="addScheduleItem()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="check" class="w-5 h-5"></i> Сохранить в график
+      </button>
+    </div>
+  </div>
 </div>
 
 <div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
@@ -208,10 +219,20 @@
   const escapeHTML = (str) => str ? String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)) : '';
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Дефолтная дата в инпут
     document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
     lucide.createIcons();
+    renderDuplicationButtons();
   });
+
+  // Рендер кнопок дублирования внутри модалки
+  function renderDuplicationButtons() {
+     const wrap = document.getElementById('duplicationDaysWrapper');
+     if(wrap) {
+        wrap.innerHTML = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d, i) => `
+          <button onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none">${d}</button>
+        `).join('');
+     }
+  }
 
   auth.onAuthStateChanged(async (user) => {
     const loader = document.getElementById('globalLoader');
@@ -219,7 +240,6 @@
       currentUser = user;
       activeScheduleData.owner = user.uid;
       
-      // Первичная подгрузка структуры структуры
       await loadStructureFromCloud();
       await selectScheduleFile(currentFileId);
 
@@ -235,17 +255,18 @@
     localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
   }
 
-  // --- ДВИЖОК СТРУКТУРЫ (ПАПКИ И ФАЙЛЫ СОТРУДНИКОВ) ---
+  // --- ДВИЖОК СТРУКТУРЫ (ПАПКИ И ФАЙЛЫ) ---
   async function loadStructureFromCloud() {
       if (navigator.onLine && currentUser) {
           try {
               const doc = await db.collection('users').doc(currentUser.uid).get();
               if (doc.exists && doc.data().scheduleFolders) {
-                  folders = doc.data().scheduleFolders;
+                  folders = Object.assign({ "Основной Проект": [] }, doc.data().scheduleFolders);
                   localStorage.setItem('blocko_sch_folders', JSON.stringify(folders));
               }
           } catch(e) {}
       }
+      if(!folders["Основной Проект"]) folders["Основной Проект"] = [];
       renderFoldersTree();
   }
 
@@ -269,24 +290,34 @@
               const activeClass = isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-bold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40';
               const fileIcon = file.isShared ? 'cloud-lightning' : 'file-text';
               return `
-                <div onclick="selectScheduleFile('${file.id}')" class="flex items-center justify-between pl-8 pr-2 py-2 rounded-xl text-xs cursor-pointer transition-all ${activeClass}">
+                <div onclick="selectScheduleFile('${file.id}')" class="flex items-center justify-between pl-8 pr-2 py-2.5 rounded-xl text-xs cursor-pointer transition-all group/file ${activeClass}">
                    <div class="flex items-center gap-2 truncate pr-2">
                      <i data-lucide="${fileIcon}" class="w-3.5 h-3.5 flex-shrink-0"></i>
                      <span class="truncate">${escapeHTML(file.title)}</span>
                    </div>
-                   <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 hover:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                   ${file.id !== 'primary' ? `
+                     <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 group-hover/file:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity focus:outline-none" title="Удалить файл"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                   ` : ''}
                 </div>
               `;
           }).join('');
 
+          // Кнопка удаления папки доступна для всех, кроме "Основной Проект"
+          const deleteFolderBtn = folderName !== 'Основной Проект' && folderName !== 'Подключенные графики' 
+              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none" title="Удалить папку"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`
+              : '';
+
           html += `
-            <div class="mb-2">
+            <div class="mb-2 group/folder">
               <div class="flex items-center justify-between p-2 rounded-xl bg-gray-50 dark:bg-gray-800/30 border border-gray-100 dark:border-gray-800/40 mb-1">
                  <div class="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-gray-300">
                     <i data-lucide="folder" class="w-4 h-4 text-amber-500 fill-current"></i>
                     <span>${escapeHTML(folderName)}</span>
                  </div>
-                 <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
+                 <div class="flex items-center gap-0.5">
+                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none" title="Создать файл графика"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
+                    ${deleteFolderBtn}
+                 </div>
               </div>
               <div class="space-y-0.5">${filesHtml}</div>
             </div>
@@ -298,11 +329,38 @@
   }
 
   function createNewFolder() {
-      const name = prompt("Введите название папки проекта:");
+      const name = prompt("Введите название новой папки:");
       if (!name) return;
       if (folders[name]) return showSystemToast("Внимание", "Папка с таким именем уже существует.", "alert-circle", "text-amber-500", "bg-amber-50");
       folders[name] = [];
       saveStructureToCloud();
+  }
+
+  async function deleteFolder(folderName) {
+      if(folderName === 'Основной Проект') return;
+      if(!confirm(`Удалить папку "${folderName}" и все файлы графиков внутри нее? Это действие необратимо.`)) return;
+
+      // Удаляем из базы все файлы, которые не являются расшаренными
+      if(navigator.onLine && folders[folderName]) {
+          for(let file of folders[folderName]) {
+              if(!file.isShared) {
+                  try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){}
+              }
+              localStorage.removeItem('blocko_sch_data_' + file.id);
+          }
+      }
+
+      // Проверяем, не открыт ли сейчас файл из удаляемой папки
+      let isCurrentFileDeleted = folders[folderName].some(f => f.id === currentFileId);
+      
+      delete folders[folderName];
+      saveStructureToCloud();
+
+      if(isCurrentFileDeleted) {
+          selectScheduleFile('primary');
+      }
+      
+      showSystemToast("Папка удалена", "Папка и её содержимое успешно стерты.", "trash-2", "text-gray-500", "bg-gray-100");
   }
 
   function createNewFileInFolder(folderName) {
@@ -316,38 +374,41 @@
   }
 
   async function deleteFile(folderName, fileId) {
-      if(!confirm("Вы уверены, что хотите удалить этот файл графика?")) return;
+      if(fileId === 'primary') return;
+      if(!confirm("Удалить этот файл графика навсегда?")) return;
+      
       folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
       
-      if(currentFileId === fileId) currentFileId = 'primary';
-      
-      // Удаляем из Firestore
       if(navigator.onLine) {
           try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){}
       }
       localStorage.removeItem('blocko_sch_data_' + fileId);
 
       saveStructureToCloud();
-      selectScheduleFile(currentFileId);
+      
+      if(currentFileId === fileId) {
+         selectScheduleFile('primary');
+      }
   }
 
-  // --- ЛОГИКА ВЫБОРА И ПОДКЛЮЧЕНИЯ ФАЙЛОВ ---
+  // --- ВЫБОР ФАЙЛА ---
   async function selectScheduleFile(fileId, forcedTitle = '', forcedFolder = '') {
       currentFileId = fileId;
       localStorage.setItem('blocko_sch_current_id', fileId);
 
-      // Сбрасываем видимость кнопок шеринга и форм
       document.getElementById('btnCopyKey').classList.add('hidden');
-      document.getElementById('scheduleFormBlock').classList.remove('opacity-50', 'pointer-events-none');
+      
+      // Скрываем или показываем кнопку добавления смены
+      const btnAdd = document.getElementById('btnOpenShiftModal');
 
       if (fileId === 'primary') {
           document.getElementById('activeFileName').innerText = "Мой основной график";
           activeScheduleData = JSON.parse(localStorage.getItem('blocko_sch_data_primary')) || { id: 'primary', title: 'Мой график', folder: 'Основной Проект', items: [], owner: currentUser.uid };
+          btnAdd.classList.remove('hidden');
           renderActiveSchedule();
           return;
       }
 
-      // Ищем файл в метаданных локальной структуры папок
       let fileMeta = null;
       Object.keys(folders).forEach(fol => {
           const found = folders[fol].find(f => f.id === fileId);
@@ -355,19 +416,18 @@
       });
 
       if (fileMeta && fileMeta.isShared) {
-          // ЧУЖОЙ STREAM-ГРАФИК (Read Only)
+          // Чужой график по ссылке
           document.getElementById('activeFileName').innerText = `👀 ${fileMeta.title}`;
-          document.getElementById('scheduleFormBlock').classList.add('opacity-50', 'pointer-events-none');
-          // Данные подтянутся автоматически из стрима snapshot
+          btnAdd.classList.add('hidden'); // Запрещаем планировать в чужом файле
           return;
       }
 
-      // СВОЙ ЛОКАЛЬНЫЙ / ОБЛАЧНЫЙ ФАЙЛ
+      // Свой файл
       const title = fileMeta ? fileMeta.title : forcedTitle || 'График';
       document.getElementById('activeFileName').innerText = title;
       document.getElementById('btnCopyKey').classList.remove('hidden');
+      btnAdd.classList.remove('hidden');
 
-      // Пробуем загрузить данные
       let cached = localStorage.getItem('blocko_sch_data_' + fileId);
       if (cached) activeScheduleData = JSON.parse(cached);
       else activeScheduleData = { id: fileId, title: title, folder: forcedFolder, items: [], owner: currentUser.uid };
@@ -379,7 +439,6 @@
                   activeScheduleData = doc.data();
                   localStorage.setItem('blocko_sch_data_' + fileId, JSON.stringify(activeScheduleData));
               } else {
-                  // Первичный форсированный пуш файла в облако
                   await db.collection('schedules_v2').doc(fileId).set(activeScheduleData);
               }
           } catch(e){}
@@ -389,52 +448,36 @@
       if(typeof renderFoldersTree === 'function') renderFoldersTree();
   }
 
-  // Стриминг подключенного чужого расписания по ключу
-  function connectScheduleByKey() {
-      const key = document.getElementById('shareKeyInput').value.trim();
-      if(!key) return;
-
-      if(connectedStreams[key]) return showSystemToast("Инфо", "Этот поток уже подключен.", "info", "text-blue-500", "bg-blue-50");
-
-      showSystemToast("Синхронизация...", "Ищем расписание в облаке...", "loader-2", "text-rose-500 animate-spin", "bg-rose-50");
-
-      connectedStreams[key] = db.collection('schedules_v2').doc(key).onSnapshot((doc) => {
-          if (!doc.exists) {
-              showSystemToast("Ошибка доступа", "Файл не найден или ключ недействителен.", "x-circle", "text-red-500", "bg-red-50");
-              return;
-          }
-
-          const remoteData = doc.data();
-          
-          // Добавляем метаданные в "Подключенные графики" если их нет
-          if (!folders["Подключенные графики"]) folders["Подключенные графики"] = [];
-          
-          const hasMeta = folders["Подключенные графики"].some(f => f.id === remoteData.id);
-          if(!hasMeta) {
-              folders["Подключенные графики"].push({ id: remoteData.id, title: remoteData.title + ' (Владелец)', isShared: true, key: key });
-              saveStructureToCloud();
-          }
-
-          if (currentFileId === remoteData.id) {
-              activeScheduleData = remoteData;
-              renderActiveSchedule();
-          }
-          
-          showSystemToast("Синхронизация Live", `График "${remoteData.title}" успешно обновлен в реальном времени.`, "refresh-cw", "text-green-500", "bg-emerald-50");
-      }, (err) => {
-          showSystemToast("Отказ", "Нет прав на чтение.", "shield-alert", "text-red-500", "bg-red-50");
-      });
-
-      document.getElementById('shareKeyInput').value = '';
+  // --- УПРАВЛЕНИЕ МОДАЛЬНЫМ ОКНОМ ---
+  function openShiftModal() {
+      const modal = document.getElementById('shiftModal');
+      const content = document.getElementById('shiftModalContent');
+      // Синхронизируем дату модалки с датой грида
+      document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
+      
+      modal.classList.remove('hidden');
+      // Небольшая задержка для анимации
+      setTimeout(() => {
+          modal.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+          content.classList.add('scale-100');
+      }, 10);
   }
 
-  function copyActiveShareKey() {
-      if(currentFileId === 'primary') return;
-      navigator.clipboard.writeText(currentFileId);
-      showSystemToast("Ключ скопирован!", "Передайте этот уникальный ID коллегам для просмотра вашего графика в реальном времени.", "copy", "text-rose-500", "bg-rose-50");
+  function closeShiftModal() {
+      const modal = document.getElementById('shiftModal');
+      const content = document.getElementById('shiftModalContent');
+      
+      modal.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      
+      setTimeout(() => {
+          modal.classList.add('hidden');
+      }, 300); // время анимации
   }
 
-  // --- ЛОГИКА СМЕН И ПОЧАСОВОЙ СЕТКИ (GOOGLE CALENDAR STYLE) ---
+  // --- ПОЧАСОВАЯ СЕТКА И РЕНДЕР ---
   function renderActiveSchedule() {
       renderTimelineList();
       renderHourlyGrid();
@@ -451,14 +494,14 @@
           return;
       }
 
-      list.innerHTML = items.slice(0, 15).map(i => `
-        <div class="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-800/50 flex justify-between items-center group">
+      list.innerHTML = items.slice(0, 30).map(i => `
+        <div class="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-800/50 flex justify-between items-center group/item transition-colors hover:border-gray-200 dark:hover:border-gray-700">
           <div class="truncate pr-2">
-            <h5 class="font-bold text-gray-800 dark:text-gray-200 truncate leading-tight">${escapeHTML(i.title)}</h5>
-            <p class="text-[10px] text-gray-400 font-medium mt-1">${i.date} | ${i.timeStart} - ${i.timeEnd}</p>
+            <h5 class="font-bold text-gray-800 dark:text-gray-200 truncate leading-tight text-[13px]">${escapeHTML(i.title)}</h5>
+            <p class="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${i.date} | ${i.timeStart} - ${i.timeEnd}</p>
           </div>
           ${activeScheduleData.owner === currentUser.uid || currentFileId === 'primary' ? `
-            <button onclick="deleteShiftItem('${i.id}')" class="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <button onclick="deleteShiftItem('${i.id}')" class="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           ` : ''}
         </div>
       `).join('');
@@ -469,20 +512,16 @@
       const grid = document.getElementById('hourlyGridWrapper');
       const dateStr = viewDate.toISOString().split('T')[0];
       
-      // Локализация шапки даты
       const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
       document.getElementById('currentGridDateTitle').innerText = viewDate.toLocaleDateString('ru-RU', options);
 
-      // Фильтруем смены текущего открытого файла на выбранную дату
       const dayShifts = (activeScheduleData.items || []).filter(s => s.date === dateStr);
 
       let html = '';
       
-      // Рендерим 24-часовой таймлайн (от 00:00 до 23:00)
       for (let hour = 0; hour < 24; hour++) {
           const currentHourStr = String(hour).padStart(2, '0') + ':00';
           
-          // Ищем смены, пересекающие этот конкретный час
           const shiftsInThisHour = dayShifts.filter(s => {
               const startH = parseInt(s.timeStart.split(':')[0]);
               const endH = parseInt(s.timeEnd.split(':')[0]);
@@ -492,21 +531,21 @@
           let blocksHtml = shiftsInThisHour.map(s => {
               const isStartHour = parseInt(s.timeStart.split(':')[0]) === hour;
               return `
-                <div class="bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border-l-4 border-rose-500 px-3 py-1.5 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full">
+                <div class="bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border-l-[3px] border-rose-500 px-3 py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm">
                   <div class="truncate">
-                    <span class="font-extrabold block truncate">${isStartHour ? escapeHTML(s.title) : '... продолжение смены'}</span>
-                    <span class="text-[10px] opacity-75 font-bold">${s.timeStart} - ${s.timeEnd}</span>
+                    <span class="font-extrabold block truncate text-[13px]">${isStartHour ? escapeHTML(s.title) : '<span class="opacity-60 font-medium">... продолжение смены</span>'}</span>
+                    <span class="text-[10px] opacity-80 font-bold">${s.timeStart} - ${s.timeEnd}</span>
                   </div>
                   ${(activeScheduleData.owner === currentUser.uid || currentFileId === 'primary') && isStartHour ? `
-                     <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                     <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md"><i data-lucide="x" class="w-4 h-4"></i></button>
                   ` : ''}
                 </div>
               `;
           }).join('');
 
           html += `
-            <div onclick="setFormTimeSlot(${hour})" class="flex items-start gap-4 p-2 min-h-[64px] border-b border-gray-100 dark:border-gray-900/60 hover:bg-gray-50/50 dark:hover:bg-gray-900/20 transition-colors cursor-pointer group">
-               <div class="w-12 text-right text-xs font-black text-gray-400 group-hover:text-rose-500 transition-colors tabular-nums">${currentHourStr}</div>
+            <div onclick="setFormTimeSlot(${hour})" class="flex items-start gap-4 p-2 min-h-[72px] border-b border-gray-100 dark:border-gray-900/60 hover:bg-white dark:hover:bg-gray-900/40 transition-colors cursor-pointer group">
+               <div class="w-12 text-right text-xs font-black text-gray-300 dark:text-gray-600 group-hover:text-rose-500 transition-colors tabular-nums pt-1">${currentHourStr}</div>
                <div class="flex-1 flex flex-col gap-1 w-full pointer-events-auto">
                   ${blocksHtml}
                </div>
@@ -518,15 +557,19 @@
       lucide.createIcons({ root: grid });
   }
 
+  // Клик по ячейке сетки: ставим время и открываем модалку
   function setFormTimeSlot(hour) {
-      // Пресет времени при клике на почасовую строчку
+      if (document.getElementById('btnOpenShiftModal').classList.contains('hidden')) return; // если чужой файл
+
       const startH = String(hour).padStart(2, '0') + ':00';
       const endH = String(Math.min(hour + 1, 23)).padStart(2, '0') + ':00';
       document.getElementById('schStart').value = startH;
       document.getElementById('schEnd').value = endH;
+      
+      openShiftModal();
   }
 
-  // --- УМНОЕ ЦИКЛИЧЕСКОЕ ДУБЛИРОВАНИЕ ---
+  // --- ЛОГИКА ДОБАВЛЕНИЯ И ДУБЛИРОВАНИЯ ---
   function toggleDuplicationDay(dayNum) {
       const btn = document.querySelector(`[data-day="${dayNum}"]`);
       if (selectedDuplicationDays.includes(dayNum)) {
@@ -540,13 +583,6 @@
       }
   }
 
-  function syncDuplicationDate(val) {
-      if(!val) return;
-      viewDate = new Date(val);
-      renderHourlyGrid();
-  }
-
-  // Алгоритм размножения смен по недельной сетке
   async function addScheduleItem() {
       const title = document.getElementById('schTitle').value.trim() || 'Смена';
       const baseDateStr = document.getElementById('schDate').value;
@@ -557,28 +593,22 @@
 
       if (!activeScheduleData.items) activeScheduleData.items = [];
 
-      // 1. Создаем базовое событие
       const baseId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
       activeScheduleData.items.push({ id: baseId, title, date: baseDateStr, timeStart, timeEnd });
 
-      // 2. ДВИЖОК ДУБЛИРОВАНИЯ: Размножаем на выбранные дни недели
       if (selectedDuplicationDays.length > 0) {
           const currentBaseDate = new Date(baseDateStr);
-          // Вычисляем понедельник текущей выбранной недели
-          const currentDayOfWeek = currentBaseDate.getDay(); // 0 (Вс) - 6 (Сб)
+          const currentDayOfWeek = currentBaseDate.getDay(); 
           const distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
           
           const mondayDate = new Date(currentBaseDate);
           mondayDate.setDate(currentBaseDate.getDate() + distanceToMonday);
 
           selectedDuplicationDays.forEach(dayIndex => {
-              // Корректируем дату под выбранный день недели (1 = Пн, 7 = Вс)
               const targetDate = new Date(mondayDate);
               targetDate.setDate(mondayDate.getDate() + (dayIndex - 1));
-              
               const targetDateStr = targetDate.toISOString().split('T')[0];
               
-              // Исключаем дублирование на саму базовую дату, если день совпал
               if (targetDateStr !== baseDateStr) {
                   const duplicatedId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
                   activeScheduleData.items.push({
@@ -594,13 +624,14 @@
 
       await commitActiveSchedule();
       
-      // Сброс формы и дней дублирования
+      // Сброс и закрытие модалки
       document.getElementById('schTitle').value = '';
       selectedDuplicationDays = [];
       document.querySelectorAll('.dup-day-btn').forEach(b => {
-          b.className = "dup-day-btn w-9 h-9 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400";
+          b.className = "dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none";
       });
 
+      closeShiftModal();
       showSystemToast("Успешно сохранено", "Смены добавлены и синхронизированы в сетке.", "check-circle", "text-emerald-500", "bg-emerald-50");
   }
 
@@ -617,24 +648,60 @@
       if (navigator.onLine && currentFileId !== 'primary') {
           try {
               await db.collection('schedules_v2').doc(currentFileId).set(activeScheduleData, { merge: true });
-          } catch(e) { console.error("Cloud push failed:", e); }
+          } catch(e) {}
       }
   }
 
-  // --- НАВИГАЦИЯ ДАТЫ ---
+  // --- ПРОЧИЕ ФУНКЦИИ ---
   function changeViewDate(offset) {
       viewDate.setDate(viewDate.getDate() + offset);
-      document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
       renderHourlyGrid();
   }
   function setViewToToday() {
       viewDate = new Date();
-      document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
       renderHourlyGrid();
   }
+  
+  function connectScheduleByKey() {
+      const key = document.getElementById('shareKeyInput').value.trim();
+      if(!key) return;
+      if(connectedStreams[key]) return showSystemToast("Инфо", "Этот поток уже подключен.", "info", "text-blue-500", "bg-blue-50");
 
-  // --- ЭКСПОРТ / ИМПОРТ ФАЙЛОВ НА ДИСК (JSON / iCal) ---
-  function downloadActiveSchedule() {
+      showSystemToast("Синхронизация...", "Ищем расписание в облаке...", "loader-2", "text-rose-500 animate-spin", "bg-rose-50");
+
+      connectedStreams[key] = db.collection('schedules_v2').doc(key).onSnapshot((doc) => {
+          if (!doc.exists) {
+              showSystemToast("Ошибка доступа", "Файл не найден или ключ недействителен.", "x-circle", "text-red-500", "bg-red-50");
+              return;
+          }
+          const remoteData = doc.data();
+          if (!folders["Подключенные графики"]) folders["Подключенные графики"] = [];
+          
+          const hasMeta = folders["Подключенные графики"].some(f => f.id === remoteData.id);
+          if(!hasMeta) {
+              folders["Подключенные графики"].push({ id: remoteData.id, title: remoteData.title + ' (Владелец)', isShared: true, key: key });
+              saveStructureToCloud();
+          }
+
+          if (currentFileId === remoteData.id) {
+              activeScheduleData = remoteData;
+              renderActiveSchedule();
+          }
+          showSystemToast("Синхронизация Live", `График "${remoteData.title}" успешно обновлен.`, "refresh-cw", "text-green-500", "bg-emerald-50");
+      }, (err) => {
+          showSystemToast("Отказ", "Нет прав на чтение.", "shield-alert", "text-red-500", "bg-red-50");
+      });
+
+      document.getElementById('shareKeyInput').value = '';
+  }
+
+  function copyActiveShareKey() {
+      if(currentFileId === 'primary') return;
+      navigator.clipboard.writeText(currentFileId);
+      showSystemToast("Ключ скопирован!", "Передайте этот ID коллегам для просмотра графика онлайн.", "copy", "text-rose-500", "bg-rose-50");
+  }
+
+  function downloadActiveSchedule() { /* Существующий код экпорта json */
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeScheduleData));
       const dlAnchor = document.createElement('a');
       dlAnchor.setAttribute("href", dataStr);
@@ -644,21 +711,18 @@
       dlAnchor.remove();
   }
 
-  function importScheduleFile(event) {
+  function importScheduleFile(event) { /* Существующий код импорта */
       const file = event.target.files[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = async function(e) {
           try {
               const imported = JSON.parse(e.target.result);
               if (!imported.title || !Array.isArray(imported.items)) throw new Error();
-              
               const newId = 'sch_file_' + Date.now();
               imported.id = newId;
               imported.owner = currentUser.uid;
 
-              // Добавляем в дефолтную первую папку метаданные
               const firstFolder = Object.keys(folders)[0] || "Импортированные";
               if(!folders[firstFolder]) folders[firstFolder] = [];
               folders[firstFolder].push({ id: newId, title: imported.title, isShared: false });
@@ -666,7 +730,6 @@
               localStorage.setItem('blocko_sch_data_' + newId, JSON.stringify(imported));
               await saveStructureToCloud();
               await selectScheduleFile(newId);
-
               showSystemToast("График импортирован", `Файл "${imported.title}" успешно развернут.`, "check-circle", "text-emerald-500", "bg-emerald-50");
           } catch(err) {
               showSystemToast("Ошибка импорта", "Файл поврежден или имеет неверный формат.", "x-circle", "text-red-500", "bg-red-50");
@@ -675,16 +738,13 @@
       reader.readAsText(file);
   }
 
-  function exportToICal() {
+  function exportToICal() { /* Существующий код экспорта iCal */
       const items = activeScheduleData.items || [];
-      if (items.length === 0) return showSystemToast("Инфо", "График пуст. Нечего экспортировать.", "info", "text-blue-500", "bg-blue-50");
-
+      if (items.length === 0) return showSystemToast("Инфо", "График пуст.", "info", "text-blue-500", "bg-blue-50");
       let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Schedule Engine//RU\nCALSCALE:GREGORIAN\n";
-      
       items.forEach(i => {
           const start = i.date.replace(/-/g, '') + 'T' + i.timeStart.replace(/:/g, '') + '00';
           const end = i.date.replace(/-/g, '') + 'T' + i.timeEnd.replace(/:/g, '') + '00';
-          
           ics += "BEGIN:VEVENT\n";
           ics += `UID:${i.id}@blocko.pro\n`;
           ics += `DTSTART:${start}\n`;
@@ -693,9 +753,7 @@
           ics += `DESCRIPTION:Рабочий график Blocko Pro для файла: ${activeScheduleData.title}\n`;
           ics += "END:VEVENT\n";
       });
-
       ics += "END:VCALENDAR";
-
       const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
