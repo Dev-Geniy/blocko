@@ -33,6 +33,9 @@
       -webkit-overflow-scrolling: touch;
     }
     .glass-modal { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    
+    @keyframes pulse-dot { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
+    .time-indicator-dot { animation: pulse-dot 2s infinite; }
   </style>
 
   <script>
@@ -80,14 +83,12 @@
 <div class="flex-1 flex overflow-hidden w-full h-[calc(100vh-73px)]">
   
   <aside class="w-80 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col gap-6 overflow-y-auto hide-scroll flex-shrink-0">
-    
     <div>
       <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center justify-between">
         <span>Проекты и Папки</span>
         <button onclick="createNewFolder()" class="text-rose-500 hover:text-rose-600 transition-colors"><i data-lucide="folder-plus" class="w-4 h-4"></i></button>
       </h3>
-      <div id="foldersContainer" class="space-y-1 max-h-[40vh] overflow-y-auto hide-scroll pb-2">
-        </div>
+      <div id="foldersContainer" class="space-y-1 max-h-[40vh] overflow-y-auto hide-scroll pb-2"></div>
     </div>
 
     <div class="border-t border-gray-150 dark:border-gray-800 pt-4">
@@ -106,12 +107,11 @@
         <input type="file" id="importScheduleInput" accept=".json" class="hidden" onchange="importScheduleFile(event)">
       </label>
     </div>
-
   </aside>
 
   <main class="flex-1 flex flex-col md:flex-row overflow-hidden bg-gray-50/50 dark:bg-black/20">
     
-    <div class="w-full md:w-[320px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5 overflow-y-auto hide-scroll flex-shrink-0">
+    <div class="w-full md:w-[320px] border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col gap-5 overflow-y-auto hide-scroll flex-shrink-0 relative z-10">
       
       <div class="bg-gray-50 dark:bg-gray-950/60 p-4 rounded-2xl border border-gray-100 dark:border-gray-800/80 shadow-sm flex items-center justify-between">
          <div class="truncate">
@@ -122,30 +122,47 @@
       </div>
 
       <button id="btnOpenShiftModal" onclick="openShiftModal()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-2xl text-sm shadow-xl shadow-rose-500/20 active:scale-95 transition-all flex items-center justify-center gap-2">
-        <i data-lucide="calendar-plus" class="w-5 h-5"></i> Планировать смену
+        <i data-lucide="calendar-plus" class="w-5 h-5"></i> Запланировать смену
       </button>
 
       <div class="border-t border-gray-150 dark:border-gray-800 pt-4 flex-1 flex flex-col min-h-[180px]">
-        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Хроника смен файла</h3>
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Хроника смен</h3>
+        
+        <div class="relative mb-3">
+           <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400"></i>
+           <input type="text" id="searchTimeline" oninput="filterTimelineList()" placeholder="Поиск по графику..." class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl pl-9 pr-4 py-2 text-xs outline-none dark:text-white focus:border-rose-500 transition-colors">
+        </div>
+
         <div id="scheduleTimelineList" class="space-y-2 flex-1 overflow-y-auto hide-scroll text-sm pr-1">
            </div>
       </div>
-
     </div>
 
     <div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-950 relative">
        
-       <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/40 backdrop-blur-md z-10 relative">
-          <div class="flex items-center gap-2">
-             <button onclick="changeViewDate(-1)" class="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:text-rose-500 transition-all"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
-             <h3 id="currentGridDateTitle" class="text-sm font-black text-gray-900 dark:text-white tracking-tight w-44 text-center uppercase">Дата</h3>
-             <button onclick="changeViewDate(1)" class="p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:text-rose-500 transition-all"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+       <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex flex-col bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-20 relative">
+          
+          <div class="flex justify-between items-center w-full mb-3">
+             <div class="flex items-center gap-2">
+                <button onclick="changeViewDate(-1)" class="p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:text-rose-500 hover:border-rose-300 transition-all active:scale-95"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                <h3 id="currentGridDateTitle" class="text-sm font-black text-gray-900 dark:text-white tracking-tight w-48 text-center uppercase">Дата</h3>
+                <button onclick="changeViewDate(1)" class="p-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:text-rose-500 hover:border-rose-300 transition-all active:scale-95"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+             </div>
+             <div class="flex items-center gap-3">
+                <div id="dailyTotalBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800/50 rounded-lg text-xs font-bold" title="Общее количество рабочих часов за этот день">
+                   <i data-lucide="clock-4" class="w-3.5 h-3.5"></i> <span id="dailyTotalHours">0 ч</span>
+                </div>
+                <button onclick="setViewToToday()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-xs font-bold rounded-xl transition-all active:scale-95">Сегодня</button>
+             </div>
           </div>
-          <button onclick="setViewToToday()" class="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-bold rounded-xl transition-all hover:border-gray-400">Сегодня</button>
+
+          <div id="weekDaysBar" class="flex items-center justify-between w-full gap-2 overflow-x-auto hide-scroll pb-1">
+             </div>
+
        </div>
 
-       <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-0 relative hide-scroll bg-gray-50/30 dark:bg-gray-950" id="hourlyGridWrapper">
-          </div>
+       <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-0 relative hide-scroll bg-gray-50/50 dark:bg-gray-950" id="hourlyGridWrapper">
+       </div>
 
     </div>
 
@@ -156,11 +173,13 @@
   <div class="bg-white dark:bg-gray-900 w-full max-w-md mx-4 rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-95 transition-transform duration-300" id="shiftModalContent">
     
     <div class="px-6 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
-       <h3 class="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-rose-500"></i> Запланировать событие</h3>
+       <h3 id="modalTitle" class="font-extrabold text-base text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-rose-500"></i> Запланировать событие</h3>
        <button onclick="closeShiftModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 p-2 rounded-full transition-all"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
 
     <div class="p-6 space-y-5">
+      <input type="hidden" id="schEditId" value="">
+
       <div>
         <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Событие / Задача / Смена</label>
         <input type="text" id="schTitle" placeholder="Например: Смена на складе" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-medium">
@@ -168,12 +187,12 @@
 
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Дата начала</label>
+          <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Дата</label>
           <input type="date" id="schDate" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
         </div>
         <div class="flex gap-2">
           <div>
-            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Старт</label>
+            <label class="text-[10px] font-bold text-gray-400 uppercase mb-1.5 block">Начало</label>
             <input type="time" id="schStart" value="09:00" class="w-full px-2 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-bold">
           </div>
           <div>
@@ -183,17 +202,24 @@
         </div>
       </div>
 
-      <div class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
-        <label class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3.5 h-3.5"></i> Размножить смену</label>
-        <p class="text-[11px] text-gray-500 mb-3 leading-tight">Выберите дни текущей недели, в которые нужно продублировать эту смену:</p>
-        <div class="flex justify-between gap-1" id="duplicationDaysWrapper">
-          ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d, i) => `
-            <button onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none">${d}</button>
-          `).join('')}
-        </div>
+      <div>
+         <label class="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Цвет (Тип события)</label>
+         <div class="flex gap-3" id="colorPickerContainer">
+            <button onclick="selectShiftColor('rose')" data-color="rose" class="color-btn w-8 h-8 rounded-full bg-rose-500 border-2 border-transparent hover:scale-110 transition-transform ring-offset-2 dark:ring-offset-gray-900 ring-2 ring-rose-500"></button>
+            <button onclick="selectShiftColor('blue')" data-color="blue" class="color-btn w-8 h-8 rounded-full bg-blue-500 border-2 border-transparent hover:scale-110 transition-transform ring-offset-2 dark:ring-offset-gray-900"></button>
+            <button onclick="selectShiftColor('emerald')" data-color="emerald" class="color-btn w-8 h-8 rounded-full bg-emerald-500 border-2 border-transparent hover:scale-110 transition-transform ring-offset-2 dark:ring-offset-gray-900"></button>
+            <button onclick="selectShiftColor('amber')" data-color="amber" class="color-btn w-8 h-8 rounded-full bg-amber-500 border-2 border-transparent hover:scale-110 transition-transform ring-offset-2 dark:ring-offset-gray-900"></button>
+            <button onclick="selectShiftColor('purple')" data-color="purple" class="color-btn w-8 h-8 rounded-full bg-purple-500 border-2 border-transparent hover:scale-110 transition-transform ring-offset-2 dark:ring-offset-gray-900"></button>
+         </div>
       </div>
 
-      <button onclick="addScheduleItem()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center gap-2">
+      <div id="duplicationBlock" class="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
+        <label class="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3.5 h-3.5"></i> Размножить смену</label>
+        <p class="text-[11px] text-gray-500 mb-3 leading-tight">Выберите дни текущей недели, в которые нужно продублировать эту смену:</p>
+        <div class="flex justify-between gap-1" id="duplicationDaysWrapper"></div>
+      </div>
+
+      <button id="btnSaveShift" onclick="saveScheduleItem()" class="w-full py-4 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-rose-500/30 active:scale-95 transition-all flex items-center justify-center gap-2">
         <i data-lucide="check" class="w-5 h-5"></i> Сохранить в график
       </button>
     </div>
@@ -211,25 +237,41 @@
   let currentFileId = localStorage.getItem('blocko_sch_current_id') || 'primary';
   let activeScheduleData = { id: 'primary', title: 'Мой график', folder: 'Основной Проект', items: [], owner: '' };
   
-  let connectedStreams = {}; // Слушатели удаленных Snapshot
+  let connectedStreams = {}; 
   let selectedDuplicationDays = [];
   let viewDate = new Date();
+  let currentSelectedColor = 'rose';
 
-  // Безопасный рендер строк
+  const UI_COLORS = {
+     rose: { border: 'border-rose-500', bg: 'bg-rose-500/10 dark:bg-rose-500/20', text: 'text-rose-600 dark:text-rose-400' },
+     blue: { border: 'border-blue-500', bg: 'bg-blue-500/10 dark:bg-blue-500/20', text: 'text-blue-600 dark:text-blue-400' },
+     emerald: { border: 'border-emerald-500', bg: 'bg-emerald-500/10 dark:bg-emerald-500/20', text: 'text-emerald-600 dark:text-emerald-400' },
+     amber: { border: 'border-amber-500', bg: 'bg-amber-500/10 dark:bg-amber-500/20', text: 'text-amber-600 dark:text-amber-400' },
+     purple: { border: 'border-purple-500', bg: 'bg-purple-500/10 dark:bg-purple-500/20', text: 'text-purple-600 dark:text-purple-400' }
+  };
+
   const escapeHTML = (str) => str ? String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t)) : '';
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
     lucide.createIcons();
     renderDuplicationButtons();
+    setInterval(updateTimeIndicator, 60000); 
+
+    // Закрытие модального окна по Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('shiftModal');
+            if (!modal.classList.contains('hidden')) closeShiftModal();
+        }
+    });
   });
 
-  // Рендер кнопок дублирования внутри модалки
   function renderDuplicationButtons() {
      const wrap = document.getElementById('duplicationDaysWrapper');
      if(wrap) {
         wrap.innerHTML = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map((d, i) => `
-          <button onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none">${d}</button>
+          <button type="button" onclick="toggleDuplicationDay(${i+1})" data-day="${i+1}" class="dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none">${d}</button>
         `).join('');
      }
   }
@@ -255,7 +297,6 @@
     localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
   }
 
-  // --- ДВИЖОК СТРУКТУРЫ (ПАПКИ И ФАЙЛЫ) ---
   async function loadStructureFromCloud() {
       if (navigator.onLine && currentUser) {
           try {
@@ -274,16 +315,13 @@
       localStorage.setItem('blocko_sch_folders', JSON.stringify(folders));
       renderFoldersTree();
       if (navigator.onLine && currentUser) {
-          try {
-              await db.collection('users').doc(currentUser.uid).set({ scheduleFolders: folders }, { merge: true });
-          } catch(e) {}
+          try { await db.collection('users').doc(currentUser.uid).set({ scheduleFolders: folders }, { merge: true }); } catch(e) {}
       }
   }
 
   function renderFoldersTree() {
       const container = document.getElementById('foldersContainer');
       let html = '';
-
       Object.keys(folders).forEach(folderName => {
           let filesHtml = folders[folderName].map(file => {
               const isSelected = currentFileId === file.id;
@@ -296,15 +334,14 @@
                      <span class="truncate">${escapeHTML(file.title)}</span>
                    </div>
                    ${file.id !== 'primary' ? `
-                     <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 group-hover/file:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity focus:outline-none" title="Удалить файл"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                     <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 group-hover/file:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity focus:outline-none"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                    ` : ''}
                 </div>
               `;
           }).join('');
 
-          // Кнопка удаления папки доступна для всех, кроме "Основной Проект"
           const deleteFolderBtn = folderName !== 'Основной Проект' && folderName !== 'Подключенные графики' 
-              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none" title="Удалить папку"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`
+              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>`
               : '';
 
           html += `
@@ -315,7 +352,7 @@
                     <span>${escapeHTML(folderName)}</span>
                  </div>
                  <div class="flex items-center gap-0.5">
-                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none" title="Создать файл графика"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
                     ${deleteFolderBtn}
                  </div>
               </div>
@@ -323,7 +360,6 @@
             </div>
           `;
       });
-
       container.innerHTML = html;
       lucide.createIcons({ root: container });
   }
@@ -338,36 +374,26 @@
 
   async function deleteFolder(folderName) {
       if(folderName === 'Основной Проект') return;
-      if(!confirm(`Удалить папку "${folderName}" и все файлы графиков внутри нее? Это действие необратимо.`)) return;
+      if(!confirm(`Удалить папку "${folderName}" и все файлы графиков внутри нее?`)) return;
 
-      // Удаляем из базы все файлы, которые не являются расшаренными
       if(navigator.onLine && folders[folderName]) {
           for(let file of folders[folderName]) {
-              if(!file.isShared) {
-                  try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){}
-              }
+              if(!file.isShared) { try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){} }
               localStorage.removeItem('blocko_sch_data_' + file.id);
           }
       }
-
-      // Проверяем, не открыт ли сейчас файл из удаляемой папки
       let isCurrentFileDeleted = folders[folderName].some(f => f.id === currentFileId);
-      
       delete folders[folderName];
       saveStructureToCloud();
 
-      if(isCurrentFileDeleted) {
-          selectScheduleFile('primary');
-      }
-      
-      showSystemToast("Папка удалена", "Папка и её содержимое успешно стерты.", "trash-2", "text-gray-500", "bg-gray-100");
+      if(isCurrentFileDeleted) selectScheduleFile('primary');
+      showSystemToast("Папка удалена", "Папка и её содержимое стерты.", "trash-2", "text-gray-500", "bg-gray-100");
   }
 
   function createNewFileInFolder(folderName) {
-      const title = prompt("Введите имя сотрудника или название графика:");
+      const title = prompt("Имя сотрудника или название графика:");
       if (!title) return;
       const fileId = 'sch_file_' + Date.now();
-      
       folders[folderName].push({ id: fileId, title: title, isShared: false });
       saveStructureToCloud();
       selectScheduleFile(fileId, title, folderName);
@@ -376,29 +402,17 @@
   async function deleteFile(folderName, fileId) {
       if(fileId === 'primary') return;
       if(!confirm("Удалить этот файл графика навсегда?")) return;
-      
       folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
-      
-      if(navigator.onLine) {
-          try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){}
-      }
+      if(navigator.onLine) { try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){} }
       localStorage.removeItem('blocko_sch_data_' + fileId);
-
       saveStructureToCloud();
-      
-      if(currentFileId === fileId) {
-         selectScheduleFile('primary');
-      }
+      if(currentFileId === fileId) selectScheduleFile('primary');
   }
 
-  // --- ВЫБОР ФАЙЛА ---
   async function selectScheduleFile(fileId, forcedTitle = '', forcedFolder = '') {
       currentFileId = fileId;
       localStorage.setItem('blocko_sch_current_id', fileId);
-
       document.getElementById('btnCopyKey').classList.add('hidden');
-      
-      // Скрываем или показываем кнопку добавления смены
       const btnAdd = document.getElementById('btnOpenShiftModal');
 
       if (fileId === 'primary') {
@@ -416,13 +430,11 @@
       });
 
       if (fileMeta && fileMeta.isShared) {
-          // Чужой график по ссылке
           document.getElementById('activeFileName').innerText = `👀 ${fileMeta.title}`;
-          btnAdd.classList.add('hidden'); // Запрещаем планировать в чужом файле
+          btnAdd.classList.add('hidden'); 
           return;
       }
 
-      // Свой файл
       const title = fileMeta ? fileMeta.title : forcedTitle || 'График';
       document.getElementById('activeFileName').innerText = title;
       document.getElementById('btnCopyKey').classList.remove('hidden');
@@ -443,69 +455,171 @@
               }
           } catch(e){}
       }
-
       renderActiveSchedule();
       if(typeof renderFoldersTree === 'function') renderFoldersTree();
   }
 
-  // --- УПРАВЛЕНИЕ МОДАЛЬНЫМ ОКНОМ ---
-  function openShiftModal() {
+  function selectShiftColor(colorKey) {
+      currentSelectedColor = colorKey;
+      document.querySelectorAll('.color-btn').forEach(btn => {
+          btn.classList.remove('ring-2');
+          if(btn.dataset.color === colorKey) btn.classList.add('ring-2');
+      });
+  }
+
+  function openShiftModal(editId = null) {
       const modal = document.getElementById('shiftModal');
       const content = document.getElementById('shiftModalContent');
-      // Синхронизируем дату модалки с датой грида
-      document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
+      const btnSave = document.getElementById('btnSaveShift');
+      const dupBlock = document.getElementById('duplicationBlock');
+      const titleEl = document.getElementById('modalTitle');
       
+      document.getElementById('schEditId').value = editId || '';
+
+      if (editId) {
+          const shift = (activeScheduleData.items || []).find(s => s.id === editId);
+          if (shift) {
+              document.getElementById('schTitle').value = shift.title;
+              document.getElementById('schDate').value = shift.date;
+              document.getElementById('schStart').value = shift.timeStart;
+              document.getElementById('schEnd').value = shift.timeEnd;
+              selectShiftColor(shift.color || 'rose');
+              titleEl.innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-rose-500"></i> Редактировать смену`;
+              btnSave.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> Обновить данные`;
+              dupBlock.classList.add('hidden'); 
+          }
+      } else {
+          document.getElementById('schTitle').value = '';
+          document.getElementById('schDate').value = viewDate.toISOString().split('T')[0];
+          selectShiftColor('rose');
+          titleEl.innerHTML = `<i data-lucide="calendar-plus" class="w-5 h-5 text-rose-500"></i> Запланировать событие`;
+          btnSave.innerHTML = `<i data-lucide="check" class="w-5 h-5"></i> Сохранить в график`;
+          dupBlock.classList.remove('hidden');
+          
+          selectedDuplicationDays = [];
+          document.querySelectorAll('.dup-day-btn').forEach(b => {
+             b.className = "dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none";
+          });
+      }
+
+      lucide.createIcons({ root: content });
       modal.classList.remove('hidden');
-      // Небольшая задержка для анимации
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          content.classList.remove('scale-95');
-          content.classList.add('scale-100');
-      }, 10);
+      setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
   }
 
   function closeShiftModal() {
       const modal = document.getElementById('shiftModal');
       const content = document.getElementById('shiftModalContent');
-      
       modal.classList.add('opacity-0');
       content.classList.remove('scale-100');
       content.classList.add('scale-95');
-      
-      setTimeout(() => {
-          modal.classList.add('hidden');
-      }, 300); // время анимации
+      setTimeout(() => { modal.classList.add('hidden'); }, 300);
   }
 
   // --- ПОЧАСОВАЯ СЕТКА И РЕНДЕР ---
   function renderActiveSchedule() {
-      renderTimelineList();
+      filterTimelineList();
       renderHourlyGrid();
+      renderWeekBar();
   }
 
-  function renderTimelineList() {
+  function filterTimelineList() {
       const list = document.getElementById('scheduleTimelineList');
+      const query = document.getElementById('searchTimeline').value.toLowerCase();
       const items = activeScheduleData.items || [];
       
       items.sort((a,b) => new Date(a.date + 'T' + a.timeStart) - new Date(b.date + 'T' + b.timeStart));
+      let filtered = items;
+      
+      if(query) {
+         filtered = items.filter(i => i.title.toLowerCase().includes(query) || i.date.includes(query));
+      } else {
+         const todayStr = new Date().toISOString().split('T')[0];
+         filtered = items.filter(i => i.date >= todayStr);
+      }
 
-      if (items.length === 0) {
-          list.innerHTML = '<div class="text-center text-gray-400 py-6 text-xs font-medium">График пуст.</div>';
+      if (filtered.length === 0) {
+          list.innerHTML = '<div class="text-center text-gray-400 py-6 text-xs font-medium">Ничего не найдено.</div>';
           return;
       }
 
-      list.innerHTML = items.slice(0, 30).map(i => `
-        <div class="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-800/50 flex justify-between items-center group/item transition-colors hover:border-gray-200 dark:hover:border-gray-700">
-          <div class="truncate pr-2">
-            <h5 class="font-bold text-gray-800 dark:text-gray-200 truncate leading-tight text-[13px]">${escapeHTML(i.title)}</h5>
-            <p class="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${i.date} | ${i.timeStart} - ${i.timeEnd}</p>
+      list.innerHTML = filtered.slice(0, 30).map(i => {
+        const style = UI_COLORS[i.color || 'rose'];
+        const canEdit = activeScheduleData.owner === currentUser.uid || currentFileId === 'primary';
+        
+        return `
+        <div ${canEdit ? `onclick="openShiftModal('${i.id}')"` : ''} class="p-3 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-100 dark:border-gray-800/50 flex justify-between items-center group/item transition-all hover:border-gray-300 dark:hover:border-gray-600 ${canEdit ? 'cursor-pointer hover:shadow-md' : ''}">
+          <div class="flex items-center gap-3 truncate pr-2">
+            <div class="w-2 h-8 rounded-full ${style.bg.split(' ')[0]} border ${style.border}"></div>
+            <div class="truncate">
+              <h5 class="font-bold text-gray-800 dark:text-gray-200 truncate leading-tight text-[13px]">${escapeHTML(i.title)}</h5>
+              <p class="text-[10px] text-gray-400 font-medium mt-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${i.date} | ${i.timeStart} - ${i.timeEnd}</p>
+            </div>
           </div>
-          ${activeScheduleData.owner === currentUser.uid || currentFileId === 'primary' ? `
-            <button onclick="deleteShiftItem('${i.id}')" class="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+          ${canEdit ? `
+            <button onclick="event.stopPropagation(); deleteShiftItem('${i.id}')" class="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-100 dark:border-gray-800 focus:outline-none"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           ` : ''}
         </div>
-      `).join('');
+      `}).join('');
       lucide.createIcons({ root: list });
+  }
+
+  function calculateDailyHours(dayShifts) {
+      let totalMin = 0;
+      dayShifts.forEach(s => {
+          let [startH, startM] = s.timeStart.split(':').map(Number);
+          let [endH, endM] = s.timeEnd.split(':').map(Number);
+          let startTotal = startH * 60 + startM;
+          let endTotal = endH * 60 + endM;
+          if(endTotal < startTotal) endTotal += 24 * 60; // Переход через полночь
+          totalMin += (endTotal - startTotal);
+      });
+      let h = Math.floor(totalMin / 60);
+      let m = totalMin % 60;
+      let res = [];
+      if(h > 0) res.push(`${h} ч`);
+      if(m > 0) res.push(`${m} мин`);
+      return res.length > 0 ? res.join(' ') : '0 ч';
+  }
+
+  function renderWeekBar() {
+      const bar = document.getElementById('weekDaysBar');
+      if(!bar) return;
+
+      const currentDay = new Date(viewDate);
+      const dayOfWeek = currentDay.getDay();
+      const distanceToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      
+      const monday = new Date(currentDay);
+      monday.setDate(currentDay.getDate() + distanceToMonday);
+
+      let html = '';
+      const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+      
+      for(let i = 0; i < 7; i++) {
+          const iterDate = new Date(monday);
+          iterDate.setDate(monday.getDate() + i);
+          const iterDateStr = iterDate.toISOString().split('T')[0];
+          const isSelected = iterDateStr === viewDate.toISOString().split('T')[0];
+          
+          const activeClass = isSelected 
+              ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30' 
+              : 'bg-white dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700 hover:border-rose-300 dark:hover:border-rose-700';
+
+          html += `
+             <button onclick="setSpecificDate('${iterDateStr}')" class="flex-1 flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all active:scale-95 min-w-[40px] ${activeClass}">
+                <span class="text-[9px] uppercase font-bold opacity-80 mb-0.5">${dayNames[i]}</span>
+                <span class="text-sm font-black">${iterDate.getDate()}</span>
+             </button>
+          `;
+      }
+      bar.innerHTML = html;
+  }
+
+  function setSpecificDate(dateStr) {
+      viewDate = new Date(dateStr);
+      renderHourlyGrid();
+      renderWeekBar();
   }
 
   function renderHourlyGrid() {
@@ -516,8 +630,21 @@
       document.getElementById('currentGridDateTitle').innerText = viewDate.toLocaleDateString('ru-RU', options);
 
       const dayShifts = (activeScheduleData.items || []).filter(s => s.date === dateStr);
+      
+      // Обновляем бейдж часов
+      document.getElementById('dailyTotalHours').innerText = calculateDailyHours(dayShifts);
 
       let html = '';
+      const canEditAll = activeScheduleData.owner === currentUser.uid || currentFileId === 'primary';
+      
+      if (dayShifts.length === 0) {
+         html = `
+           <div class="absolute inset-0 flex flex-col items-center justify-center opacity-60 pointer-events-none">
+              <i data-lucide="calendar-x-2" class="w-16 h-16 text-gray-300 dark:text-gray-700 mb-4"></i>
+              <p class="text-sm font-bold text-gray-400 dark:text-gray-600">На этот день ничего не запланировано</p>
+           </div>
+         `;
+      }
       
       for (let hour = 0; hour < 24; hour++) {
           const currentHourStr = String(hour).padStart(2, '0') + ':00';
@@ -530,23 +657,25 @@
 
           let blocksHtml = shiftsInThisHour.map(s => {
               const isStartHour = parseInt(s.timeStart.split(':')[0]) === hour;
+              const style = UI_COLORS[s.color || 'rose'];
+              
               return `
-                <div class="bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 border-l-[3px] border-rose-500 px-3 py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm">
+                <div ${canEditAll ? `onclick="event.stopPropagation(); openShiftModal('${s.id}')"` : ''} class="${style.bg} ${style.text} border-l-[3px] ${style.border} px-3 py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm ${canEditAll ? 'cursor-pointer hover:opacity-90' : ''}">
                   <div class="truncate">
                     <span class="font-extrabold block truncate text-[13px]">${isStartHour ? escapeHTML(s.title) : '<span class="opacity-60 font-medium">... продолжение смены</span>'}</span>
                     <span class="text-[10px] opacity-80 font-bold">${s.timeStart} - ${s.timeEnd}</span>
                   </div>
-                  ${(activeScheduleData.owner === currentUser.uid || currentFileId === 'primary') && isStartHour ? `
-                     <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md"><i data-lucide="x" class="w-4 h-4"></i></button>
+                  ${canEditAll && isStartHour ? `
+                     <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md focus:outline-none"><i data-lucide="x" class="w-4 h-4"></i></button>
                   ` : ''}
                 </div>
               `;
           }).join('');
 
           html += `
-            <div onclick="setFormTimeSlot(${hour})" class="flex items-start gap-4 p-2 min-h-[72px] border-b border-gray-100 dark:border-gray-900/60 hover:bg-white dark:hover:bg-gray-900/40 transition-colors cursor-pointer group">
-               <div class="w-12 text-right text-xs font-black text-gray-300 dark:text-gray-600 group-hover:text-rose-500 transition-colors tabular-nums pt-1">${currentHourStr}</div>
-               <div class="flex-1 flex flex-col gap-1 w-full pointer-events-auto">
+            <div onclick="setFormTimeSlot(${hour})" class="flex items-start gap-4 p-2 min-h-[72px] border-b border-gray-100 dark:border-gray-900/60 hover:bg-white dark:hover:bg-gray-900/40 transition-colors cursor-pointer group relative">
+               <div class="w-12 text-right text-xs font-black text-gray-300 dark:text-gray-600 group-hover:text-rose-500 transition-colors tabular-nums pt-1 z-10">${currentHourStr}</div>
+               <div class="flex-1 flex flex-col gap-1 w-full pointer-events-auto z-10">
                   ${blocksHtml}
                </div>
             </div>
@@ -555,21 +684,58 @@
 
       grid.innerHTML = html;
       lucide.createIcons({ root: grid });
+      updateTimeIndicator();
   }
 
-  // Клик по ячейке сетки: ставим время и открываем модалку
-  function setFormTimeSlot(hour) {
-      if (document.getElementById('btnOpenShiftModal').classList.contains('hidden')) return; // если чужой файл
+  function updateTimeIndicator() {
+      const grid = document.getElementById('hourlyGridWrapper');
+      if(!grid) return;
+      
+      const oldInd = document.getElementById('currentTimeIndicator');
+      if(oldInd) oldInd.remove();
 
+      const todayStr = new Date().toISOString().split('T')[0];
+      const viewStr = viewDate.toISOString().split('T')[0];
+      if (todayStr !== viewStr) return;
+
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      
+      const rowElements = grid.querySelectorAll('.flex.items-start.gap-4');
+      if(rowElements && rowElements[h]) {
+         const targetRow = rowElements[h];
+         const percentOfHour = m / 60;
+         const rowHeight = targetRow.offsetHeight;
+         const topOffset = targetRow.offsetTop + (rowHeight * percentOfHour);
+
+         const indicator = document.createElement('div');
+         indicator.id = 'currentTimeIndicator';
+         indicator.className = 'absolute left-4 right-4 z-20 flex items-center pointer-events-none transition-all duration-1000';
+         indicator.style.top = `${topOffset}px`;
+         
+         indicator.innerHTML = `
+            <div class="time-indicator-dot w-2.5 h-2.5 rounded-full bg-rose-500 -ml-1"></div>
+            <div class="h-[2px] bg-rose-500/60 w-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+         `;
+         grid.appendChild(indicator);
+         
+         if (grid.scrollTop === 0 && h > 4) {
+             grid.scrollTo({ top: targetRow.offsetTop - 100, behavior: 'smooth' });
+         }
+      }
+  }
+
+  function setFormTimeSlot(hour) {
+      if (document.getElementById('btnOpenShiftModal').classList.contains('hidden')) return; 
       const startH = String(hour).padStart(2, '0') + ':00';
       const endH = String(Math.min(hour + 1, 23)).padStart(2, '0') + ':00';
       document.getElementById('schStart').value = startH;
       document.getElementById('schEnd').value = endH;
-      
       openShiftModal();
   }
 
-  // --- ЛОГИКА ДОБАВЛЕНИЯ И ДУБЛИРОВАНИЯ ---
+  // --- ЛОГИКА СОХРАНЕНИЯ ---
   function toggleDuplicationDay(dayNum) {
       const btn = document.querySelector(`[data-day="${dayNum}"]`);
       if (selectedDuplicationDays.includes(dayNum)) {
@@ -583,83 +749,77 @@
       }
   }
 
-  async function addScheduleItem() {
+  async function saveScheduleItem() {
       const title = document.getElementById('schTitle').value.trim() || 'Смена';
       const baseDateStr = document.getElementById('schDate').value;
       const timeStart = document.getElementById('schStart').value;
       const timeEnd = document.getElementById('schEnd').value;
+      const editId = document.getElementById('schEditId').value;
 
-      if (!baseDateStr) return showSystemToast("Ошибка", "Выберите базовую дату события.", "alert-circle", "text-red-500", "bg-red-50");
-
+      if (!baseDateStr) return showSystemToast("Ошибка", "Выберите дату события.", "alert-circle", "text-red-500", "bg-red-50");
       if (!activeScheduleData.items) activeScheduleData.items = [];
 
-      const baseId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-      activeScheduleData.items.push({ id: baseId, title, date: baseDateStr, timeStart, timeEnd });
+      if (editId) {
+          const index = activeScheduleData.items.findIndex(s => s.id === editId);
+          if (index !== -1) {
+              activeScheduleData.items[index] = { ...activeScheduleData.items[index], title, date: baseDateStr, timeStart, timeEnd, color: currentSelectedColor };
+          }
+      } else {
+          const baseId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+          activeScheduleData.items.push({ id: baseId, title, date: baseDateStr, timeStart, timeEnd, color: currentSelectedColor });
 
-      if (selectedDuplicationDays.length > 0) {
-          const currentBaseDate = new Date(baseDateStr);
-          const currentDayOfWeek = currentBaseDate.getDay(); 
-          const distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
-          
-          const mondayDate = new Date(currentBaseDate);
-          mondayDate.setDate(currentBaseDate.getDate() + distanceToMonday);
-
-          selectedDuplicationDays.forEach(dayIndex => {
-              const targetDate = new Date(mondayDate);
-              targetDate.setDate(mondayDate.getDate() + (dayIndex - 1));
-              const targetDateStr = targetDate.toISOString().split('T')[0];
+          if (selectedDuplicationDays.length > 0) {
+              const currentBaseDate = new Date(baseDateStr);
+              const currentDayOfWeek = currentBaseDate.getDay(); 
+              const distanceToMonday = currentDayOfWeek === 0 ? -6 : 1 - currentDayOfWeek;
               
-              if (targetDateStr !== baseDateStr) {
-                  const duplicatedId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
-                  activeScheduleData.items.push({
-                      id: duplicatedId,
-                      title: title,
-                      date: targetDateStr,
-                      timeStart: timeStart,
-                      timeEnd: timeEnd
-                  });
-              }
-          });
+              const mondayDate = new Date(currentBaseDate);
+              mondayDate.setDate(currentBaseDate.getDate() + distanceToMonday);
+
+              selectedDuplicationDays.forEach(dayIndex => {
+                  const targetDate = new Date(mondayDate);
+                  targetDate.setDate(mondayDate.getDate() + (dayIndex - 1));
+                  const targetDateStr = targetDate.toISOString().split('T')[0];
+                  
+                  if (targetDateStr !== baseDateStr) {
+                      const duplicatedId = 'shift_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                      activeScheduleData.items.push({
+                          id: duplicatedId, title: title, date: targetDateStr, timeStart: timeStart, timeEnd: timeEnd, color: currentSelectedColor
+                      });
+                  }
+              });
+          }
       }
 
       await commitActiveSchedule();
-      
-      // Сброс и закрытие модалки
-      document.getElementById('schTitle').value = '';
-      selectedDuplicationDays = [];
-      document.querySelectorAll('.dup-day-btn').forEach(b => {
-          b.className = "dup-day-btn w-10 h-10 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-gray-500 transition-all hover:border-indigo-400 focus:outline-none";
-      });
-
       closeShiftModal();
-      showSystemToast("Успешно сохранено", "Смены добавлены и синхронизированы в сетке.", "check-circle", "text-emerald-500", "bg-emerald-50");
+      showSystemToast("Готово", editId ? "Данные смены обновлены." : "Смены добавлены в график.", "check-circle", "text-emerald-500", "bg-emerald-50");
   }
 
   async function deleteShiftItem(id) {
+      if(!confirm("Удалить эту запись?")) return;
       activeScheduleData.items = (activeScheduleData.items || []).filter(s => s.id !== id);
       await commitActiveSchedule();
-      showSystemToast("Удалено", "Смена стерта из файла.", "trash-2", "text-gray-500", "bg-gray-100");
+      showSystemToast("Удалено", "Запись убрана из графика.", "trash-2", "text-gray-500", "bg-gray-100");
   }
 
   async function commitActiveSchedule() {
       localStorage.setItem('blocko_sch_data_' + currentFileId, JSON.stringify(activeScheduleData));
       renderActiveSchedule();
-      
       if (navigator.onLine && currentFileId !== 'primary') {
-          try {
-              await db.collection('schedules_v2').doc(currentFileId).set(activeScheduleData, { merge: true });
-          } catch(e) {}
+          try { await db.collection('schedules_v2').doc(currentFileId).set(activeScheduleData, { merge: true }); } catch(e) {}
       }
   }
 
-  // --- ПРОЧИЕ ФУНКЦИИ ---
   function changeViewDate(offset) {
       viewDate.setDate(viewDate.getDate() + offset);
       renderHourlyGrid();
+      renderWeekBar();
   }
   function setViewToToday() {
       viewDate = new Date();
       renderHourlyGrid();
+      renderWeekBar();
   }
   
   function connectScheduleByKey() {
@@ -668,50 +828,40 @@
       if(connectedStreams[key]) return showSystemToast("Инфо", "Этот поток уже подключен.", "info", "text-blue-500", "bg-blue-50");
 
       showSystemToast("Синхронизация...", "Ищем расписание в облаке...", "loader-2", "text-rose-500 animate-spin", "bg-rose-50");
-
       connectedStreams[key] = db.collection('schedules_v2').doc(key).onSnapshot((doc) => {
-          if (!doc.exists) {
-              showSystemToast("Ошибка доступа", "Файл не найден или ключ недействителен.", "x-circle", "text-red-500", "bg-red-50");
-              return;
-          }
+          if (!doc.exists) return showSystemToast("Ошибка", "Файл не найден.", "x-circle", "text-red-500", "bg-red-50");
           const remoteData = doc.data();
           if (!folders["Подключенные графики"]) folders["Подключенные графики"] = [];
           
-          const hasMeta = folders["Подключенные графики"].some(f => f.id === remoteData.id);
-          if(!hasMeta) {
+          if(!folders["Подключенные графики"].some(f => f.id === remoteData.id)) {
               folders["Подключенные графики"].push({ id: remoteData.id, title: remoteData.title + ' (Владелец)', isShared: true, key: key });
               saveStructureToCloud();
           }
-
           if (currentFileId === remoteData.id) {
               activeScheduleData = remoteData;
               renderActiveSchedule();
           }
-          showSystemToast("Синхронизация Live", `График "${remoteData.title}" успешно обновлен.`, "refresh-cw", "text-green-500", "bg-emerald-50");
-      }, (err) => {
-          showSystemToast("Отказ", "Нет прав на чтение.", "shield-alert", "text-red-500", "bg-red-50");
-      });
-
+          showSystemToast("Синхронизация Live", `График "${remoteData.title}" обновлен.`, "refresh-cw", "text-green-500", "bg-emerald-50");
+      }, (err) => showSystemToast("Отказ", "Нет прав.", "shield-alert", "text-red-500", "bg-red-50"));
       document.getElementById('shareKeyInput').value = '';
   }
 
   function copyActiveShareKey() {
       if(currentFileId === 'primary') return;
       navigator.clipboard.writeText(currentFileId);
-      showSystemToast("Ключ скопирован!", "Передайте этот ID коллегам для просмотра графика онлайн.", "copy", "text-rose-500", "bg-rose-50");
+      showSystemToast("Ключ скопирован!", "Передайте этот ID коллегам.", "copy", "text-rose-500", "bg-rose-50");
   }
 
-  function downloadActiveSchedule() { /* Существующий код экпорта json */
+  function downloadActiveSchedule() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeScheduleData));
       const dlAnchor = document.createElement('a');
       dlAnchor.setAttribute("href", dataStr);
-      dlAnchor.setAttribute("download", `blocko_schedule_${activeScheduleData.title}.json`);
+      dlAnchor.setAttribute("download", `blocko_schedule.json`);
       document.body.appendChild(dlAnchor);
-      dlAnchor.click();
-      dlAnchor.remove();
+      dlAnchor.click(); dlAnchor.remove();
   }
 
-  function importScheduleFile(event) { /* Существующий код импорта */
+  function importScheduleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -720,8 +870,7 @@
               const imported = JSON.parse(e.target.result);
               if (!imported.title || !Array.isArray(imported.items)) throw new Error();
               const newId = 'sch_file_' + Date.now();
-              imported.id = newId;
-              imported.owner = currentUser.uid;
+              imported.id = newId; imported.owner = currentUser.uid;
 
               const firstFolder = Object.keys(folders)[0] || "Импортированные";
               if(!folders[firstFolder]) folders[firstFolder] = [];
@@ -730,39 +879,26 @@
               localStorage.setItem('blocko_sch_data_' + newId, JSON.stringify(imported));
               await saveStructureToCloud();
               await selectScheduleFile(newId);
-              showSystemToast("График импортирован", `Файл "${imported.title}" успешно развернут.`, "check-circle", "text-emerald-500", "bg-emerald-50");
-          } catch(err) {
-              showSystemToast("Ошибка импорта", "Файл поврежден или имеет неверный формат.", "x-circle", "text-red-500", "bg-red-50");
-          }
+              showSystemToast("Импорт", "Файл загружен.", "check", "text-emerald-500", "bg-emerald-50");
+          } catch(err) { showSystemToast("Ошибка", "Неверный формат.", "x", "text-red-500", "bg-red-50"); }
       };
       reader.readAsText(file);
   }
 
-  function exportToICal() { /* Существующий код экспорта iCal */
+  function exportToICal() {
       const items = activeScheduleData.items || [];
       if (items.length === 0) return showSystemToast("Инфо", "График пуст.", "info", "text-blue-500", "bg-blue-50");
       let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Schedule Engine//RU\nCALSCALE:GREGORIAN\n";
       items.forEach(i => {
           const start = i.date.replace(/-/g, '') + 'T' + i.timeStart.replace(/:/g, '') + '00';
           const end = i.date.replace(/-/g, '') + 'T' + i.timeEnd.replace(/:/g, '') + '00';
-          ics += "BEGIN:VEVENT\n";
-          ics += `UID:${i.id}@blocko.pro\n`;
-          ics += `DTSTART:${start}\n`;
-          ics += `DTEND:${end}\n`;
-          ics += `SUMMARY:${i.title}\n`;
-          ics += `DESCRIPTION:Рабочий график Blocko Pro для файла: ${activeScheduleData.title}\n`;
-          ics += "END:VEVENT\n";
+          ics += "BEGIN:VEVENT\nUID:${i.id}@blocko.pro\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:${i.title}\nEND:VEVENT\n";
       });
       ics += "END:VCALENDAR";
       const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Schedule_${activeScheduleData.title}.ics`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const a = document.createElement('a'); a.href = url; a.download = `Schedule.ics`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
   function showSystemToast(title, desc, iconName, iconColor, bgColor) {
