@@ -108,6 +108,10 @@
   </div>
 
   <div class="flex items-center gap-3">
+    <div class="hidden md:flex bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl items-center mr-2 border border-gray-200 dark:border-gray-700 shadow-inner">
+      <button id="viewToggleTasks" onclick="switchCalendarTarget('tasks')" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white transition-all">Задачи</button>
+      <button id="viewToggleSchedule" onclick="switchCalendarTarget('schedule')" class="px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all">График</button>
+    </div>
     <button onclick="fetchCalendarTasks()" class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95">
       <i data-lucide="refresh-cw" class="w-4 h-4"></i> Синхронизация
     </button>
@@ -260,6 +264,25 @@
       });
   }
 
+  let allSchedule = [];
+  let currentTarget = 'tasks'; // 'tasks' или 'schedule'
+
+  function switchCalendarTarget(target) {
+      currentTarget = target;
+      
+      const btnTasks = document.getElementById('viewToggleTasks');
+      const btnSchedule = document.getElementById('viewToggleSchedule');
+      
+      if (target === 'tasks') {
+          btnTasks.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white transition-all";
+          btnSchedule.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
+      } else {
+          btnSchedule.className = "px-4 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-white transition-all";
+          btnTasks.className = "px-4 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-all";
+      }
+      triggerRender();
+  }
+  
   auth.onAuthStateChanged(async (user) => {
       const loader = document.getElementById('globalLoader');
       if (user) {
@@ -437,6 +460,19 @@
       Object.values(localBoards).forEach(b => {
           allBoardsData[b.id] = { id: b.id, title: b.title, isLocal: true };
       });
+      
+      // Загрузка графика работы
+      try {
+          const userDoc = await db.collection('users').doc(currentUser.uid).get();
+          if (userDoc.exists && userDoc.data().schedule) {
+              allSchedule = userDoc.data().schedule;
+              localStorage.setItem('blocko_schedule', JSON.stringify(allSchedule));
+          } else {
+              allSchedule = JSON.parse(localStorage.getItem('blocko_schedule')) || [];
+          }
+      } catch(e) {
+          allSchedule = JSON.parse(localStorage.getItem('blocko_schedule')) || [];
+      }
 
       populateProjectFilters();
       // Инициализация правильного режима в UI шторке
@@ -543,9 +579,15 @@
             </div>`;
       }
 
-      let tasksForDay = allTasks.filter(t => t.dueDate === dateStr);
-      if (filterBoardId !== 'all') {
-          tasksForDay = tasksForDay.filter(t => t.boardId === filterBoardId);
+      let itemsForDay = [];
+      if (currentTarget === 'tasks') {
+          itemsForDay = allTasks.filter(t => t.dueDate === dateStr);
+          if (filterBoardId !== 'all') {
+              itemsForDay = itemsForDay.filter(t => t.boardId === filterBoardId);
+          }
+      } else {
+          // Если выбран "График", ищем расписание на этот день
+          itemsForDay = allSchedule.filter(s => s.date === dateStr);
       }
       
       const badgeClass = isToday 
@@ -556,21 +598,33 @@
           ? "bg-indigo-50/10 dark:bg-indigo-900/20 ring-inset ring-2 ring-indigo-500/50 shadow-inner z-10" 
           : `bg-white dark:bg-gray-900 ${weekendBg}`;
 
-      let tasksHtml = tasksForDay.map(t => {
-          // ЭНТЕРПРАЙЗ: Генерация цвета по проекту для визуального отличия
-          const charCode = t.boardId ? t.boardId.charCodeAt(t.boardId.length - 1) : 0;
-          const colorList = ['blue', 'emerald', 'amber', 'purple', 'rose', 'cyan'];
-          const cTheme = colorList[charCode % colorList.length];
-          const colorClass = `bg-${cTheme}-500 sm:bg-${cTheme}-50 sm:text-${cTheme}-700 sm:border-${cTheme}-200 dark:sm:bg-${cTheme}-900/30 dark:sm:text-${cTheme}-400 dark:sm:border-${cTheme}-800/50 hover:sm:bg-${cTheme}-100`;
+      let tasksHtml = itemsForDay.map(t => {
+          if (currentTarget === 'schedule') {
+              // Рендер карточки графика (расписания)
+              return `
+                <div class="block mb-0.5 sm:mb-1.5 sm:p-2 border rounded-full sm:rounded-xl text-[10px] font-bold w-full h-1.5 sm:h-auto bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50" title="${escapeHTML(t.title)} (${t.timeStart} - ${t.timeEnd})">
+                   <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-80 pointer-events-none">
+                     <i data-lucide="clock" class="w-3 h-3"></i>
+                     <span class="truncate max-w-[80px]">${t.timeStart} - ${t.timeEnd}</span>
+                   </div>
+                   <span class="hidden sm:inline truncate w-full block pointer-events-none">${escapeHTML(t.title)}</span>
+                </div>`;
+          } else {
+              // Стандартный рендер задач
+              const charCode = t.boardId ? t.boardId.charCodeAt(t.boardId.length - 1) : 0;
+              const colorList = ['blue', 'emerald', 'amber', 'purple', 'rose', 'cyan'];
+              const cTheme = colorList[charCode % colorList.length];
+              const colorClass = `bg-${cTheme}-500 sm:bg-${cTheme}-50 sm:text-${cTheme}-700 sm:border-${cTheme}-200 dark:sm:bg-${cTheme}-900/30 dark:sm:text-${cTheme}-400 dark:sm:border-${cTheme}-800/50 hover:sm:bg-${cTheme}-100`;
 
-          return `
-            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${colorClass}" title="${escapeHTML(t.title)}">
-               <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
-                 ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
-                 <span class="truncate max-w-[60px] lg:max-w-[80px]">${escapeHTML(t.boardTitle)}</span>
-               </div>
-               <span class="hidden sm:inline truncate w-full block pointer-events-none">${escapeHTML(t.title)}</span>
-            </div>`;
+              return `
+                <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${colorClass}" title="${escapeHTML(t.title)}">
+                   <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
+                     ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
+                     <span class="truncate max-w-[60px] lg:max-w-[80px]">${escapeHTML(t.boardTitle)}</span>
+                   </div>
+                   <span class="hidden sm:inline truncate w-full block pointer-events-none">${escapeHTML(t.title)}</span>
+                </div>`;
+          }
       }).join('');
 
       return `
