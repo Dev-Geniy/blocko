@@ -25,9 +25,7 @@
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
     
-    html, body {
-      height: 100dvh; width: 100%; overflow: hidden; overscroll-behavior: none; -webkit-overflow-scrolling: touch;
-    }
+    html, body { height: 100dvh; width: 100%; overflow: hidden; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
     .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     
     @keyframes pulse-dot { 0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); } }
@@ -38,9 +36,9 @@
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col transition-colors duration-300 relative">
 
-<div id="globalLoader" class="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
+<div id="globalLoader" class="fixed inset-0 z-[2000] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
   <div class="flex flex-col items-center scale-110">
     <div class="bg-gradient-to-br from-rose-500 to-orange-500 p-4 rounded-3xl text-white shadow-2xl shadow-rose-500/40 mb-6">
       <i data-lucide="clock" class="w-12 h-12"></i>
@@ -86,7 +84,6 @@
   <div id="mobileOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass-modal opacity-0 transition-opacity"></div>
 
   <aside id="mainSidebar" class="absolute inset-y-0 left-0 z-50 w-[280px] md:w-[320px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full md:translate-x-0 md:relative transition-transform duration-300 flex flex-col flex-shrink-0 shadow-2xl md:shadow-none">
-    
     <div class="p-5 flex flex-col h-full overflow-hidden">
       
       <div class="flex p-1 bg-gray-100 dark:bg-gray-950 rounded-[14px] mb-5 border border-gray-200/50 dark:border-gray-800/50 shadow-inner">
@@ -121,14 +118,12 @@
         <div id="scheduleTimelineList" class="flex-1 overflow-y-auto hide-scroll space-y-2 pb-2">
            </div>
       </div>
-
     </div>
   </aside>
 
   <main class="flex-1 flex flex-col min-w-0 bg-gray-50/30 dark:bg-[#0b0f19]">
     
     <div class="px-4 py-3 md:px-6 md:py-4 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md z-20 border-b border-gray-200 dark:border-gray-800 flex flex-col shadow-sm">
-       
        <div class="flex justify-between items-center mb-3">
           <div class="flex items-center gap-3">
              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/20">
@@ -164,17 +159,17 @@
     </div>
 
     <div class="flex-1 overflow-y-auto p-2 sm:p-4 relative hide-scroll" id="hourlyGridWrapper">
-       </div>
+    </div>
 
   </main>
 </div>
 
-<div id="shiftModal" class="fixed inset-0 z-[500] hidden items-center justify-center bg-gray-900/40 dark:bg-black/60 glass-modal opacity-0 transition-opacity duration-300 px-4">
+<div id="shiftModal" class="fixed inset-0 z-[500] hidden items-center justify-center bg-gray-900/60 dark:bg-black/70 glass-modal opacity-0 transition-opacity duration-300 px-4">
   <div class="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform scale-95 transition-transform duration-300" id="shiftModalContent">
     
     <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-900/50">
        <h3 id="modalTitle" class="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2"><i data-lucide="calendar-plus" class="w-4 h-4 text-rose-500"></i> Запланировать</h3>
-       <button onclick="closeShiftModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1.5 rounded-full transition-all bg-gray-100 dark:bg-gray-800"><i data-lucide="x" class="w-4 h-4"></i></button>
+       <button onclick="closeShiftModal()" class="text-gray-400 hover:text-gray-700 dark:hover:text-white p-1.5 rounded-full transition-all bg-gray-100 dark:bg-gray-800 hover:bg-gray-200"><i data-lucide="x" class="w-4 h-4"></i></button>
     </div>
 
     <div class="p-5 space-y-4">
@@ -225,6 +220,19 @@
   </div>
 </div>
 
+<div id="customDialogOverlay" class="fixed inset-0 z-[1000] hidden items-center justify-center bg-gray-900/60 dark:bg-black/70 glass-modal opacity-0 transition-opacity duration-300 px-4">
+  <div class="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] shadow-2xl border border-gray-200 dark:border-gray-800 p-6 transform scale-95 transition-transform duration-300 flex flex-col" id="customDialogContent">
+    <div class="flex items-center gap-3 mb-3" id="dialogHeader">
+        </div>
+    <p id="dialogMessage" class="text-sm text-gray-500 dark:text-gray-400 mb-5 leading-relaxed"></p>
+    
+    <input type="text" id="dialogInput" class="hidden w-full px-4 py-3 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all mb-5">
+    
+    <div class="flex gap-3 justify-end mt-auto" id="dialogButtons">
+       </div>
+  </div>
+</div>
+
 <div id="globalToast" class="fixed bottom-6 right-6 z-[1000] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-3 max-w-[300px] pointer-events-none">
   <div id="toastIconBg" class="p-2 rounded-full flex-shrink-0 bg-rose-50 dark:bg-rose-900/30"><i id="toastIcon" data-lucide="info" class="w-4 h-4 text-rose-500"></i></div>
   <div><h4 id="toastTitle" class="text-[13px] font-bold text-gray-900 dark:text-white mb-0.5 leading-tight">Уведомление</h4><p id="toastDesc" class="text-[11px] text-gray-500 leading-tight"></p></div>
@@ -232,12 +240,12 @@
 
 <script>
   let currentUser = null;
-  let folders = JSON.parse(localStorage.getItem('blocko_sch_folders')) || { "Основной Проект": [] };
+  // ВАЖНО: Мы больше не хардкодим пустую папку, она создастся с файлом по-умолчанию при инициализации
+  let folders = JSON.parse(localStorage.getItem('blocko_sch_folders')) || {};
   let currentFileId = localStorage.getItem('blocko_sch_current_id') || 'primary';
-  let activeScheduleData = { id: 'primary', title: 'Мой график', folder: 'Основной Проект', items: [], owner: '' };
+  let activeScheduleData = { id: 'primary', title: 'Мой первый график', folder: 'Основной Проект', items: [], owner: '' };
   
-  let unsubSharedStream = null; // Критически важно для фикса бага с Live-обновлением
-  
+  let unsubSharedStream = null; 
   let selectedDuplicationDays = [];
   let viewDate = new Date();
   let currentSelectedColor = 'rose';
@@ -258,13 +266,99 @@
     renderDuplicationButtons();
     setInterval(updateTimeIndicator, 60000); 
 
+    // Глобальное закрытие окон по Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            const modal = document.getElementById('shiftModal');
-            if (!modal.classList.contains('hidden')) closeShiftModal();
+            const shiftModal = document.getElementById('shiftModal');
+            const customDialog = document.getElementById('customDialogOverlay');
+            if (!shiftModal.classList.contains('hidden')) closeShiftModal();
+            if (!customDialog.classList.contains('hidden')) closeCustomDialog();
         }
     });
   });
+
+  // ==========================================
+  // ДВИЖОК КАСТОМНЫХ ДИАЛОГОВ (EXPERT UI)
+  // ==========================================
+  let dialogCallback = null;
+
+  function closeCustomDialog() {
+      const overlay = document.getElementById('customDialogOverlay');
+      const content = document.getElementById('customDialogContent');
+      overlay.classList.add('opacity-0');
+      content.classList.remove('scale-100');
+      content.classList.add('scale-95');
+      setTimeout(() => {
+          overlay.classList.remove('flex');
+          overlay.classList.add('hidden');
+          document.getElementById('dialogInput').value = '';
+          dialogCallback = null;
+      }, 300);
+  }
+
+  function showCustomDialogBase(options) {
+      const overlay = document.getElementById('customDialogOverlay');
+      const content = document.getElementById('customDialogContent');
+      
+      document.getElementById('dialogHeader').innerHTML = `
+         <div class="p-2 rounded-xl bg-${options.color || 'rose'}-100 dark:bg-${options.color || 'rose'}-900/30 text-${options.color || 'rose'}-500">
+            <i data-lucide="${options.icon || 'info'}" class="w-5 h-5"></i>
+         </div>
+         <h3 class="text-base font-bold text-gray-900 dark:text-white">${options.title}</h3>
+      `;
+      document.getElementById('dialogMessage').innerHTML = options.message;
+      
+      const input = document.getElementById('dialogInput');
+      if (options.type === 'prompt') {
+          input.classList.remove('hidden');
+          input.placeholder = options.placeholder || '';
+          setTimeout(() => input.focus(), 300);
+      } else {
+          input.classList.add('hidden');
+      }
+
+      let buttonsHtml = `<button onclick="closeCustomDialog()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl">Отмена</button>`;
+      
+      if (options.type === 'alert') buttonsHtml = ''; // Для алерта кнопка отмены не нужна
+      
+      buttonsHtml += `<button id="btnDialogAction" class="px-4 py-2 text-sm font-bold bg-${options.color || 'rose'}-600 hover:bg-${options.color || 'rose'}-500 text-white rounded-xl shadow-lg shadow-${options.color || 'rose'}-500/30 transition-all active:scale-95">${options.confirmText || 'ОК'}</button>`;
+      
+      document.getElementById('dialogButtons').innerHTML = buttonsHtml;
+      lucide.createIcons({ root: document.getElementById('dialogHeader') });
+
+      dialogCallback = options.callback;
+
+      document.getElementById('btnDialogAction').onclick = () => {
+          if (options.type === 'prompt') {
+              const val = input.value.trim();
+              if (dialogCallback) dialogCallback(val);
+          } else {
+              if (dialogCallback) dialogCallback(true);
+          }
+          closeCustomDialog();
+      };
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+      setTimeout(() => {
+          overlay.classList.remove('opacity-0');
+          content.classList.remove('scale-95');
+          content.classList.add('scale-100');
+      }, 10);
+  }
+
+  // Шорткаты для вызова диалогов
+  const SysDialog = {
+      confirm: (title, message, onConfirm, isDanger = false) => {
+          showCustomDialogBase({ type: 'confirm', title, message, color: isDanger ? 'red' : 'rose', icon: isDanger ? 'alert-triangle' : 'help-circle', confirmText: isDanger ? 'Удалить' : 'Продолжить', callback: onConfirm });
+      },
+      prompt: (title, message, placeholder, onSubmit) => {
+          showCustomDialogBase({ type: 'prompt', title, message, placeholder, color: 'indigo', icon: 'edit-3', confirmText: 'Сохранить', callback: onSubmit });
+      },
+      alert: (title, message) => {
+          showCustomDialogBase({ type: 'alert', title, message, color: 'amber', icon: 'info', confirmText: 'Понятно' });
+      }
+  };
 
   // --- УПРАВЛЕНИЕ UI И САЙДБАРОМ ---
   function toggleSidebar() {
@@ -331,16 +425,29 @@
   }
 
   async function loadStructureFromCloud() {
+      let isFirstTime = false;
       if (navigator.onLine && currentUser) {
           try {
               const doc = await db.collection('users').doc(currentUser.uid).get();
               if (doc.exists && doc.data().scheduleFolders) {
-                  folders = Object.assign({ "Основной Проект": [] }, doc.data().scheduleFolders);
+                  folders = Object.assign({}, doc.data().scheduleFolders);
                   localStorage.setItem('blocko_sch_folders', JSON.stringify(folders));
+              } else {
+                  isFirstTime = true;
               }
           } catch(e) {}
+      } else {
+          if (!localStorage.getItem('blocko_sch_folders')) isFirstTime = true;
       }
+
+      // ЛОГИКА "ПЕРВОГО ФАЙЛА": Если папки нет или она пуста, создаем физический файл
       if(!folders["Основной Проект"]) folders["Основной Проект"] = [];
+      if (folders["Основной Проект"].length === 0 || isFirstTime) {
+          // Создаем файл "primary", чтобы он был виден в UI как реальный файл
+          folders["Основной Проект"].push({ id: 'primary', title: 'Мой первый график', isShared: false });
+          saveStructureToCloud();
+      }
+
       renderFoldersTree();
   }
 
@@ -356,11 +463,11 @@
       const container = document.getElementById('foldersContainer');
       let html = '';
       Object.keys(folders).forEach(folderName => {
-          if (folders[folderName].length === 0 && folderName !== 'Основной Проект') return; // Прячем пустые для чистоты
+          if (folders[folderName].length === 0 && folderName !== 'Основной Проект') return;
 
           let filesHtml = folders[folderName].map(file => {
               const isSelected = currentFileId === file.id;
-              const activeClass = isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 font-bold shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40';
+              const activeClass = isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 font-bold shadow-sm border border-rose-100 dark:border-rose-900/50' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 border border-transparent';
               const fileIcon = file.isShared ? 'cloud-lightning' : 'file-text';
               return `
                 <div onclick="selectScheduleFile('${file.id}')" class="flex items-center justify-between pl-8 pr-2 py-2 rounded-xl text-xs cursor-pointer transition-all group/file ${activeClass} mb-0.5">
@@ -368,7 +475,7 @@
                      <i data-lucide="${fileIcon}" class="w-3.5 h-3.5 flex-shrink-0 ${file.isShared ? 'text-indigo-500' : ''}"></i>
                      <span class="truncate">${escapeHTML(file.title)}</span>
                    </div>
-                   ${file.id !== 'primary' ? `
+                   ${folders[folderName].length > 1 || file.isShared ? `
                      <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 group-hover/file:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity focus:outline-none"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                    ` : ''}
                 </div>
@@ -396,59 +503,63 @@
           `;
       });
       
-      // Кнопка создания новой папки в самом низу дерева
       html += `<button onclick="createNewFolder()" class="mt-2 w-full flex items-center justify-center gap-1.5 py-2 text-[10px] font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-xl transition-all uppercase tracking-widest"><i data-lucide="folder-plus" class="w-3 h-3"></i> Новая папка</button>`;
       
       container.innerHTML = html;
       lucide.createIcons({ root: container });
   }
 
+  // Замена браузерных диалогов на кастомные
   function createNewFolder() {
-      const name = prompt("Введите название новой папки:");
-      if (!name) return;
-      if (folders[name]) return showSystemToast("Внимание", "Папка уже существует.", "alert-circle", "text-amber-500", "bg-amber-50");
-      folders[name] = [];
-      saveStructureToCloud();
+      SysDialog.prompt("Новая папка", "Придумайте название для нового проекта или отдела:", "Например: Дизайн отдел", (name) => {
+          if (!name) return;
+          if (folders[name]) return showSystemToast("Внимание", "Папка уже существует.", "alert-circle", "text-amber-500", "bg-amber-50");
+          folders[name] = [];
+          saveStructureToCloud();
+          showSystemToast("Успех", `Папка "${name}" создана.`, "folder", "text-emerald-500", "bg-emerald-50");
+      });
   }
 
-  async function deleteFolder(folderName) {
+  function deleteFolder(folderName) {
       if(folderName === 'Основной Проект') return;
-      if(!confirm(`Удалить папку "${folderName}" и все файлы внутри?`)) return;
-
-      if(navigator.onLine && folders[folderName]) {
-          for(let file of folders[folderName]) {
-              if(!file.isShared) { try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){} }
-              localStorage.removeItem('blocko_sch_data_' + file.id);
+      SysDialog.confirm("Удалить папку?", `Вы собираетесь удалить папку <b>${escapeHTML(folderName)}</b> и все графики внутри неё. Это действие необратимо.`, async () => {
+          if(navigator.onLine && folders[folderName]) {
+              for(let file of folders[folderName]) {
+                  if(!file.isShared) { try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){} }
+                  localStorage.removeItem('blocko_sch_data_' + file.id);
+              }
           }
-      }
-      let isCurrentFileDeleted = folders[folderName].some(f => f.id === currentFileId);
-      delete folders[folderName];
-      saveStructureToCloud();
+          let isCurrentFileDeleted = folders[folderName].some(f => f.id === currentFileId);
+          delete folders[folderName];
+          saveStructureToCloud();
 
-      if(isCurrentFileDeleted) selectScheduleFile('primary');
-      showSystemToast("Папка удалена", "Папка стерта.", "trash-2", "text-gray-500", "bg-gray-100");
+          if(isCurrentFileDeleted) selectScheduleFile('primary');
+          showSystemToast("Папка удалена", "Все данные успешно стерты.", "trash-2", "text-gray-500", "bg-gray-100");
+      }, true);
   }
 
   function createNewFileInFolder(folderName) {
-      const title = prompt("Название графика или имя сотрудника:");
-      if (!title) return;
-      const fileId = 'sch_file_' + Date.now();
-      folders[folderName].push({ id: fileId, title: title, isShared: false });
-      saveStructureToCloud();
-      selectScheduleFile(fileId, title, folderName);
+      SysDialog.prompt("Новый график", "Введите имя сотрудника или название расписания:", "Например: Иван Иванов", (title) => {
+          if (!title) return;
+          const fileId = 'sch_file_' + Date.now();
+          folders[folderName].push({ id: fileId, title: title, isShared: false });
+          saveStructureToCloud();
+          selectScheduleFile(fileId, title, folderName);
+      });
   }
 
-  async function deleteFile(folderName, fileId) {
-      if(fileId === 'primary') return;
-      if(!confirm("Удалить файл графика навсегда?")) return;
-      folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
-      if(navigator.onLine) { try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){} }
-      localStorage.removeItem('blocko_sch_data_' + fileId);
-      saveStructureToCloud();
-      if(currentFileId === fileId) selectScheduleFile('primary');
+  function deleteFile(folderName, fileId) {
+      SysDialog.confirm("Удалить файл?", "Этот график будет удален навсегда.", async () => {
+          folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
+          if(navigator.onLine) { try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){} }
+          localStorage.removeItem('blocko_sch_data_' + fileId);
+          saveStructureToCloud();
+          if(currentFileId === fileId) selectScheduleFile('primary');
+          showSystemToast("Файл удален", "График был удален.", "trash", "text-gray-500", "bg-gray-100");
+      }, true);
   }
 
-  // --- ГЛАВНАЯ ЛОГИКА ЗАГРУЗКИ ФАЙЛА (С ФИКСОМ БАГА SHARE) ---
+  // --- ЛОГИКА ЗАГРУЗКИ ФАЙЛА ---
   async function selectScheduleFile(fileId, forcedTitle = '', forcedFolder = '') {
       currentFileId = fileId;
       localStorage.setItem('blocko_sch_current_id', fileId);
@@ -456,24 +567,12 @@
       const btnAdd = document.getElementById('btnOpenShiftModal');
       const btnKey = document.getElementById('btnHeaderCopyKey');
       
-      // Сбрасываем старый слушатель, чтобы не было утечек данных
       if (unsubSharedStream) {
           unsubSharedStream();
           unsubSharedStream = null;
       }
 
-      if (window.innerWidth < 768) toggleSidebar(); // Закрываем меню на мобилках при выборе
-
-      if (fileId === 'primary') {
-          document.getElementById('activeFileName').innerText = "Мой график";
-          document.getElementById('activeFileDesc').innerText = "Основной проект";
-          activeScheduleData = JSON.parse(localStorage.getItem('blocko_sch_data_primary')) || { id: 'primary', title: 'Мой график', folder: 'Основной Проект', items: [], owner: currentUser.uid };
-          btnAdd.classList.remove('hidden');
-          btnKey.classList.add('hidden');
-          renderActiveSchedule();
-          if(typeof renderFoldersTree === 'function') renderFoldersTree();
-          return;
-      }
+      if (window.innerWidth < 768) toggleSidebar(); 
 
       let fileMeta = null;
       Object.keys(folders).forEach(fol => {
@@ -481,36 +580,34 @@
           if (found) { fileMeta = found; fileMeta.folder = fol; }
       });
 
-      const title = fileMeta ? fileMeta.title : forcedTitle || 'График';
-      const folderName = fileMeta ? fileMeta.folder : forcedFolder || '';
+      const title = fileMeta ? fileMeta.title : forcedTitle || 'Мой график';
+      const folderName = fileMeta ? fileMeta.folder : forcedFolder || 'Основной Проект';
       
       document.getElementById('activeFileName').innerText = title;
       document.getElementById('activeFileDesc').innerText = folderName;
 
-      // --- ЛОГИКА ДЛЯ РАСШАРЕННОГО ФАЙЛА (ИСПРАВЛЕНА) ---
+      // ЛОГИКА ДЛЯ РАСШАРЕННОГО ФАЙЛА
       if (fileMeta && fileMeta.isShared) {
           document.getElementById('activeFileName').innerText = `👀 ${title}`;
           btnAdd.classList.add('hidden'); 
           btnKey.classList.add('hidden');
           
-          showSystemToast("Синхронизация", "Загрузка данных из облака...", "refresh-cw", "text-blue-500 animate-spin", "bg-blue-50");
+          showSystemToast("Синхронизация", "Загрузка данных...", "refresh-cw", "text-blue-500 animate-spin", "bg-blue-50");
           
-          // Подключаем Live-слушатель именно для этого чужого файла
           if (navigator.onLine) {
              unsubSharedStream = db.collection('schedules_v2').doc(fileId).onSnapshot((doc) => {
                  if (doc.exists) {
                      activeScheduleData = doc.data();
                      renderActiveSchedule();
                  } else {
-                     showSystemToast("Ошибка доступа", "Владелец удалил график.", "x-circle", "text-red-500", "bg-red-50");
+                     SysDialog.alert("Ошибка доступа", "Владелец удалил этот график или закрыл доступ.");
                      activeScheduleData = { id: fileId, title: title, items: [], owner: '' };
                      renderActiveSchedule();
                  }
-             }, (error) => {
+             }, () => {
                  showSystemToast("Ошибка", "Нет прав для чтения графика.", "shield-alert", "text-red-500", "bg-red-50");
              });
           } else {
-             // Если оффлайн, пытаемся достать кэш
              let cached = localStorage.getItem('blocko_sch_data_' + fileId);
              activeScheduleData = cached ? JSON.parse(cached) : { id: fileId, title: title, items: [] };
              renderActiveSchedule();
@@ -519,7 +616,7 @@
           return;
       }
 
-      // --- ЛОГИКА ДЛЯ СВОЕГО ФАЙЛА ---
+      // ЛОГИКА ДЛЯ СВОЕГО ФАЙЛА
       btnAdd.classList.remove('hidden');
       btnKey.classList.remove('hidden');
 
@@ -542,38 +639,34 @@
       if(typeof renderFoldersTree === 'function') renderFoldersTree();
   }
 
-  // Подключение файла через инпут
   async function connectScheduleByKey() {
       const key = document.getElementById('shareKeyInput').value.trim();
       if(!key) return;
       
       showSystemToast("Проверка...", "Ищем расписание в облаке...", "loader-2", "text-blue-500 animate-spin", "bg-blue-50");
-      
-      if (!navigator.onLine) return showSystemToast("Ошибка", "Нужен интернет.", "wifi-off", "text-red-500", "bg-red-50");
+      if (!navigator.onLine) return SysDialog.alert("Нет сети", "Для подключения графика нужен интернет.");
 
       try {
           const doc = await db.collection('schedules_v2').doc(key).get();
-          if (!doc.exists) return showSystemToast("Ошибка", "Файл не найден или ключ недействителен.", "x-circle", "text-red-500", "bg-red-50");
+          if (!doc.exists) return SysDialog.alert("Неверный ключ", "Файл не найден. Проверьте правильность ключа доступа.");
           
           const remoteData = doc.data();
           if (!folders["Подключенные графики"]) folders["Подключенные графики"] = [];
           
           if(!folders["Подключенные графики"].some(f => f.id === key)) {
-              folders["Подключенные графики"].push({ id: key, title: remoteData.title + ' (Владелец)', isShared: true });
+              folders["Подключенные графики"].push({ id: key, title: remoteData.title + ' (Копия)', isShared: true });
               saveStructureToCloud();
           }
           
           document.getElementById('shareKeyInput').value = '';
           showSystemToast("Успех!", `График "${remoteData.title}" подключен.`, "check", "text-emerald-500", "bg-emerald-50");
-          
-          // Сразу открываем его (там сработает onSnapshot)
           selectScheduleFile(key);
       } catch(err) {
-          showSystemToast("Отказ", "У вас нет прав на этот файл.", "shield-alert", "text-red-500", "bg-red-50");
+          SysDialog.alert("Ошибка доступа", "У вас нет прав на просмотр этого файла.");
       }
   }
 
-  // --- МОДАЛЬНОЕ ОКНО ---
+  // --- МОДАЛЬНОЕ ОКНО СМЕНЫ ---
   function selectShiftColor(colorKey) {
       currentSelectedColor = colorKey;
       document.querySelectorAll('.color-btn').forEach(btn => {
@@ -618,8 +711,16 @@
       }
 
       lucide.createIcons({ root: content });
+      
+      // Фикс центрирования: убираем hidden, добавляем flex
       modal.classList.remove('hidden');
-      setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+      modal.classList.add('flex');
+      
+      setTimeout(() => { 
+          modal.classList.remove('opacity-0'); 
+          content.classList.remove('scale-95'); 
+          content.classList.add('scale-100'); 
+      }, 10);
   }
 
   function closeShiftModal() {
@@ -628,14 +729,17 @@
       modal.classList.add('opacity-0');
       content.classList.remove('scale-100');
       content.classList.add('scale-95');
-      setTimeout(() => { modal.classList.add('hidden'); }, 300);
+      setTimeout(() => { 
+          modal.classList.remove('flex');
+          modal.classList.add('hidden'); 
+      }, 300);
   }
 
   // --- РЕНДЕР СЕТКИ И ДАННЫХ ---
   function renderActiveSchedule() {
-      filterTimelineList(); // Обновляем сайдбар смен
-      renderHourlyGrid();   // Обновляем сетку
-      renderWeekBar();      // Обновляем панель дней
+      filterTimelineList(); 
+      renderHourlyGrid();   
+      renderWeekBar();      
   }
 
   function filterTimelineList() {
@@ -775,8 +879,8 @@
               return `
                 <div ${canEditAll ? `onclick="event.stopPropagation(); openShiftModal('${s.id}')"` : ''} class="${style.bg} ${style.text} border-l-[3px] ${style.border} px-3 py-1.5 sm:py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm ${canEditAll ? 'cursor-pointer hover:opacity-90' : ''}">
                   <div class="truncate">
-                    <span class="font-extrabold block truncate text-xs sm:text-[13px]">${isStartHour ? escapeHTML(s.title) : '<span class="opacity-60 font-medium">... продолжение</span>'}</span>
-                    <span class="text-[9px] sm:text-[10px] opacity-80 font-bold">${s.timeStart} - ${s.timeEnd}</span>
+                     <span class="font-extrabold block truncate text-xs sm:text-[13px]">${isStartHour ? escapeHTML(s.title) : '<span class="opacity-60 font-medium">... продолжение</span>'}</span>
+                     <span class="text-[9px] sm:text-[10px] opacity-80 font-bold">${s.timeStart} - ${s.timeEnd}</span>
                   </div>
                   ${canEditAll && isStartHour ? `
                      <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md focus:outline-none"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
@@ -798,7 +902,6 @@
       grid.innerHTML = html;
       lucide.createIcons({ root: grid });
       
-      // Автоскролл к 08:00 при первой загрузке дня, если скролл наверху
       if (grid.scrollTop === 0) {
           const rowElements = grid.querySelectorAll('.flex.items-start');
           if (rowElements && rowElements[8]) {
@@ -914,11 +1017,12 @@
       showSystemToast("Готово", editId ? "Смена обновлена." : "Смены добавлены.", "check-circle", "text-emerald-500", "bg-emerald-50");
   }
 
-  async function deleteShiftItem(id) {
-      if(!confirm("Удалить запись?")) return;
-      activeScheduleData.items = (activeScheduleData.items || []).filter(s => s.id !== id);
-      await commitActiveSchedule();
-      showSystemToast("Удалено", "Запись стерта.", "trash-2", "text-gray-500", "bg-gray-100");
+  function deleteShiftItem(id) {
+      SysDialog.confirm("Удалить запись?", "Эта смена будет стерта из графика.", async () => {
+          activeScheduleData.items = (activeScheduleData.items || []).filter(s => s.id !== id);
+          await commitActiveSchedule();
+          showSystemToast("Удалено", "Запись стерта.", "trash-2", "text-gray-500", "bg-gray-100");
+      }, true);
   }
 
   async function commitActiveSchedule() {
@@ -962,14 +1066,14 @@
               localStorage.setItem('blocko_sch_data_' + newId, JSON.stringify(imported));
               await saveStructureToCloud(); await selectScheduleFile(newId);
               showSystemToast("Импорт", "Файл загружен.", "check", "text-emerald-500", "bg-emerald-50");
-          } catch(err) { showSystemToast("Ошибка", "Неверный формат.", "x", "text-red-500", "bg-red-50"); }
+          } catch(err) { SysDialog.alert("Ошибка файла", "Файл поврежден или имеет неверный формат."); }
       };
       reader.readAsText(file);
   }
 
   function exportToICal() {
       const items = activeScheduleData.items || [];
-      if (items.length === 0) return showSystemToast("Инфо", "График пуст.", "info", "text-blue-500", "bg-blue-50");
+      if (items.length === 0) return SysDialog.alert("Пустой график", "В этом файле нет смен для экспорта.");
       let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Schedule Engine//RU\nCALSCALE:GREGORIAN\n";
       items.forEach(i => {
           const start = i.date.replace(/-/g, '') + 'T' + i.timeStart.replace(/:/g, '') + '00';
