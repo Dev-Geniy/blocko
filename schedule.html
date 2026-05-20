@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Управление графиками и расписанием — Blocko Pro</title>
+  <title>Управление планами — Blocko Pro</title>
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f43f5e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><polyline points='12 6 12 12 16 14'/></svg>" />
   
@@ -43,7 +43,7 @@
     <div class="bg-gradient-to-br from-rose-500 to-orange-500 p-4 rounded-3xl text-white shadow-2xl shadow-rose-500/40 mb-6">
       <i data-lucide="clock" class="w-12 h-12"></i>
     </div>
-    <h2 class="text-3xl font-black tracking-tighter mb-4">SCHEDULE <span class="text-rose-500">ENGINE</span></h2>
+    <h2 class="text-3xl font-black tracking-tighter mb-4">PLAN <span class="text-rose-500">ENGINE</span></h2>
     <div class="h-1 w-32 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden relative">
       <div class="absolute top-0 left-0 h-full w-12 bg-rose-500 rounded-full animate-[pulse_1s_infinite]"></div>
     </div>
@@ -61,15 +61,12 @@
     </a>
     
     <div>
-      <h1 class="text-lg md:text-xl font-bold tracking-tight leading-tight">Графики</h1>
+      <h1 class="text-lg md:text-xl font-bold tracking-tight leading-tight">Планы</h1>
       <p class="text-[9px] md:text-[10px] text-rose-500 font-bold uppercase tracking-widest flex items-center gap-1"><i data-lucide="shield-check" class="w-3 h-3"></i> Sync V2</p>
     </div>
   </div>
 
   <div class="flex items-center gap-2 md:gap-3">
-    <button id="btnHeaderCopyKey" onclick="copyActiveShareKey()" class="hidden items-center gap-1.5 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-bold text-xs rounded-xl transition-all">
-      <i data-lucide="share-2" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Ключ доступа</span>
-    </button>
     <button onclick="exportToICal()" class="hidden md:flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl transition-all">
       <i data-lucide="download" class="w-4 h-4"></i> Экспорт
     </button>
@@ -97,7 +94,7 @@
 
         <div class="mt-4 pt-4 border-t border-gray-150 dark:border-gray-800 space-y-3">
           <div class="bg-gray-50 dark:bg-gray-950/50 p-3.5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-inner">
-            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="cloud-lightning" class="w-3 h-3 text-amber-500"></i> Подключить Live-график</label>
+            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="cloud-lightning" class="w-3 h-3 text-amber-500"></i> Подключить Live-план</label>
             <input type="text" id="shareKeyInput" placeholder="Введите ключ..." class="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-xs outline-none dark:text-white focus:border-rose-500 transition-all font-mono mb-2">
             <button onclick="connectScheduleByKey()" class="w-full py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold text-xs hover:opacity-90 active:scale-95 transition-all">Подключить</button>
           </div>
@@ -113,7 +110,7 @@
       <div id="tabContentTimeline" class="flex-1 flex flex-col overflow-hidden hidden animate-fade-in">
         <div class="relative mb-4">
            <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-gray-400"></i>
-           <input type="text" id="searchTimeline" oninput="filterTimelineList()" placeholder="Поиск смен..." class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none dark:text-white focus:border-rose-500 transition-colors">
+           <input type="text" id="searchTimeline" oninput="filterTimelineList()" placeholder="Поиск событий..." class="w-full bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl pl-9 pr-4 py-2.5 text-xs outline-none dark:text-white focus:border-rose-500 transition-colors">
         </div>
         <div id="scheduleTimelineList" class="flex-1 overflow-y-auto hide-scroll space-y-2 pb-2">
            </div>
@@ -130,7 +127,7 @@
                 <i data-lucide="calendar" class="w-4 h-4"></i>
              </div>
              <div class="truncate">
-                <h4 id="activeFileName" class="text-sm font-bold dark:text-white truncate leading-none mb-1">Мой график</h4>
+                <h4 id="activeFileName" class="text-sm font-bold dark:text-white truncate leading-none mb-1">Мой первый план</h4>
                 <p class="text-[10px] text-gray-400 font-medium truncate" id="activeFileDesc">Основной проект</p>
              </div>
           </div>
@@ -176,8 +173,8 @@
       <input type="hidden" id="schEditId" value="">
 
       <div>
-        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Название / Задача</label>
-        <input type="text" id="schTitle" placeholder="Смена на складе..." class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-medium">
+        <label class="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Название / Задача / Событие</label>
+        <input type="text" id="schTitle" placeholder="Встреча, проект, задача..." class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl text-sm outline-none dark:text-white focus:border-rose-500 transition-all font-medium">
       </div>
 
       <div class="grid grid-cols-2 gap-3">
@@ -209,7 +206,7 @@
       </div>
 
       <div id="duplicationBlock" class="bg-indigo-50/50 dark:bg-indigo-900/10 p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/30">
-        <label class="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3 h-3"></i> Размножить смену на неделю</label>
+        <label class="text-[9px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-widest mb-2 block flex items-center gap-1"><i data-lucide="copy-check" class="w-3 h-3"></i> Размножить событие на неделю</label>
         <div class="flex justify-between gap-1" id="duplicationDaysWrapper"></div>
       </div>
 
@@ -240,10 +237,9 @@
 
 <script>
   let currentUser = null;
-  // ВАЖНО: Мы больше не хардкодим пустую папку, она создастся с файлом по-умолчанию при инициализации
   let folders = JSON.parse(localStorage.getItem('blocko_sch_folders')) || {};
   let currentFileId = localStorage.getItem('blocko_sch_current_id') || 'primary';
-  let activeScheduleData = { id: 'primary', title: 'Мой первый график', folder: 'Основной Проект', items: [], owner: '' };
+  let activeScheduleData = { id: 'primary', title: 'Мой первый план', folder: 'Основной Проект', items: [], owner: '' };
   
   let unsubSharedStream = null; 
   let selectedDuplicationDays = [];
@@ -266,7 +262,6 @@
     renderDuplicationButtons();
     setInterval(updateTimeIndicator, 60000); 
 
-    // Глобальное закрытие окон по Escape
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             const shiftModal = document.getElementById('shiftModal');
@@ -278,7 +273,7 @@
   });
 
   // ==========================================
-  // ДВИЖОК КАСТОМНЫХ ДИАЛОГОВ (EXPERT UI)
+  // ДВИЖОК КАСТОМНЫХ ДИАЛОГОВ
   // ==========================================
   let dialogCallback = null;
 
@@ -319,7 +314,7 @@
 
       let buttonsHtml = `<button onclick="closeCustomDialog()" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl">Отмена</button>`;
       
-      if (options.type === 'alert') buttonsHtml = ''; // Для алерта кнопка отмены не нужна
+      if (options.type === 'alert') buttonsHtml = ''; 
       
       buttonsHtml += `<button id="btnDialogAction" class="px-4 py-2 text-sm font-bold bg-${options.color || 'rose'}-600 hover:bg-${options.color || 'rose'}-500 text-white rounded-xl shadow-lg shadow-${options.color || 'rose'}-500/30 transition-all active:scale-95">${options.confirmText || 'ОК'}</button>`;
       
@@ -347,7 +342,6 @@
       }, 10);
   }
 
-  // Шорткаты для вызова диалогов
   const SysDialog = {
       confirm: (title, message, onConfirm, isDanger = false) => {
           showCustomDialogBase({ type: 'confirm', title, message, color: isDanger ? 'red' : 'rose', icon: isDanger ? 'alert-triangle' : 'help-circle', confirmText: isDanger ? 'Удалить' : 'Продолжить', callback: onConfirm });
@@ -440,11 +434,9 @@
           if (!localStorage.getItem('blocko_sch_folders')) isFirstTime = true;
       }
 
-      // ЛОГИКА "ПЕРВОГО ФАЙЛА": Если папки нет или она пуста, создаем физический файл
       if(!folders["Основной Проект"]) folders["Основной Проект"] = [];
       if (folders["Основной Проект"].length === 0 || isFirstTime) {
-          // Создаем файл "primary", чтобы он был виден в UI как реальный файл
-          folders["Основной Проект"].push({ id: 'primary', title: 'Мой первый график', isShared: false });
+          folders["Основной Проект"].push({ id: 'primary', title: 'Мой первый план', isShared: false });
           saveStructureToCloud();
       }
 
@@ -463,8 +455,7 @@
       const container = document.getElementById('foldersContainer');
       let html = '';
       Object.keys(folders).forEach(folderName => {
-          if (folders[folderName].length === 0 && folderName !== 'Основной Проект') return;
-
+          
           let filesHtml = folders[folderName].map(file => {
               const isSelected = currentFileId === file.id;
               const activeClass = isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 font-bold shadow-sm border border-rose-100 dark:border-rose-900/50' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 border border-transparent';
@@ -475,15 +466,28 @@
                      <i data-lucide="${fileIcon}" class="w-3.5 h-3.5 flex-shrink-0 ${file.isShared ? 'text-indigo-500' : ''}"></i>
                      <span class="truncate">${escapeHTML(file.title)}</span>
                    </div>
-                   ${folders[folderName].length > 1 || file.isShared ? `
-                     <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="opacity-0 group-hover/file:opacity-100 text-gray-400 hover:text-red-500 p-1 transition-opacity focus:outline-none"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
-                   ` : ''}
+                   
+                   <div class="flex items-center gap-0.5 opacity-0 group-hover/file:opacity-100 transition-opacity">
+                      ${!file.isShared ? `
+                          <button onclick="event.stopPropagation(); renameFile('${folderName}', '${file.id}', '${escapeHTML(file.title)}')" class="text-gray-400 hover:text-blue-500 p-1 focus:outline-none" title="Переименовать"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                      ` : ''}
+                      ${!file.isShared && file.id !== 'primary' ? `
+                          <button onclick="event.stopPropagation(); copyFileShareKey('${file.id}')" class="text-gray-400 hover:text-indigo-500 p-1 focus:outline-none" title="Live-Ключ доступа"><i data-lucide="share-2" class="w-3 h-3"></i></button>
+                      ` : ''}
+                      ${(folders[folderName].length > 1 && file.id !== 'primary') || file.isShared ? `
+                          <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="text-gray-400 hover:text-red-500 p-1 focus:outline-none" title="Удалить"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                      ` : ''}
+                   </div>
                 </div>
               `;
           }).join('');
 
+          if (folders[folderName].length === 0) {
+              filesHtml = `<div class="text-[10px] text-gray-400 italic pl-8 py-1">Папка пуста</div>`;
+          }
+
           const deleteFolderBtn = folderName !== 'Основной Проект' && folderName !== 'Подключенные графики' 
-              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`
+              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none" title="Удалить папку"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`
               : '';
 
           html += `
@@ -494,7 +498,7 @@
                     <span>${escapeHTML(folderName)}</span>
                  </div>
                  <div class="flex items-center gap-0.5">
-                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none" title="Создать план"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
                     ${deleteFolderBtn}
                  </div>
               </div>
@@ -509,7 +513,32 @@
       lucide.createIcons({ root: container });
   }
 
-  // Замена браузерных диалогов на кастомные
+  function renameFile(folderName, fileId, currentTitle) {
+      SysDialog.prompt("Переименовать план", "Введите новое название:", currentTitle, async (newTitle) => {
+          if (!newTitle || newTitle === currentTitle) return;
+          const file = folders[folderName].find(f => f.id === fileId);
+          if (file) {
+              file.title = newTitle;
+              await saveStructureToCloud();
+              
+              if (currentFileId === fileId) {
+                  document.getElementById('activeFileName').innerText = newTitle;
+                  activeScheduleData.title = newTitle;
+                  localStorage.setItem('blocko_sch_data_' + fileId, JSON.stringify(activeScheduleData));
+                  if (navigator.onLine && fileId !== 'primary') {
+                      try { await db.collection('schedules_v2').doc(fileId).set({ title: newTitle }, { merge: true }); } catch(e) {}
+                  }
+              }
+              showSystemToast("Успех", "План переименован.", "edit-2", "text-blue-500", "bg-blue-50");
+          }
+      });
+  }
+
+  function copyFileShareKey(fileId) {
+      navigator.clipboard.writeText(fileId);
+      showSystemToast("Ключ скопирован", "Передайте этот ID коллегам для подключения.", "copy", "text-indigo-500", "bg-indigo-50");
+  }
+
   function createNewFolder() {
       SysDialog.prompt("Новая папка", "Придумайте название для нового проекта или отдела:", "Например: Дизайн отдел", (name) => {
           if (!name) return;
@@ -522,7 +551,7 @@
 
   function deleteFolder(folderName) {
       if(folderName === 'Основной Проект') return;
-      SysDialog.confirm("Удалить папку?", `Вы собираетесь удалить папку <b>${escapeHTML(folderName)}</b> и все графики внутри неё. Это действие необратимо.`, async () => {
+      SysDialog.confirm("Удалить папку?", `Вы собираетесь удалить папку <b>${escapeHTML(folderName)}</b> и все планы внутри неё. Это действие необратимо.`, async () => {
           if(navigator.onLine && folders[folderName]) {
               for(let file of folders[folderName]) {
                   if(!file.isShared) { try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){} }
@@ -539,7 +568,7 @@
   }
 
   function createNewFileInFolder(folderName) {
-      SysDialog.prompt("Новый график", "Введите имя сотрудника или название расписания:", "Например: Иван Иванов", (title) => {
+      SysDialog.prompt("Новый план", "Введите имя сотрудника или название плана:", "Например: Маркетинг план", (title) => {
           if (!title) return;
           const fileId = 'sch_file_' + Date.now();
           folders[folderName].push({ id: fileId, title: title, isShared: false });
@@ -549,13 +578,13 @@
   }
 
   function deleteFile(folderName, fileId) {
-      SysDialog.confirm("Удалить файл?", "Этот график будет удален навсегда.", async () => {
+      SysDialog.confirm("Удалить план?", "Этот файл будет удален навсегда.", async () => {
           folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
           if(navigator.onLine) { try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){} }
           localStorage.removeItem('blocko_sch_data_' + fileId);
           saveStructureToCloud();
           if(currentFileId === fileId) selectScheduleFile('primary');
-          showSystemToast("Файл удален", "График был удален.", "trash", "text-gray-500", "bg-gray-100");
+          showSystemToast("Файл удален", "План был удален.", "trash", "text-gray-500", "bg-gray-100");
       }, true);
   }
 
@@ -565,7 +594,6 @@
       localStorage.setItem('blocko_sch_current_id', fileId);
       
       const btnAdd = document.getElementById('btnOpenShiftModal');
-      const btnKey = document.getElementById('btnHeaderCopyKey');
       
       if (unsubSharedStream) {
           unsubSharedStream();
@@ -580,17 +608,15 @@
           if (found) { fileMeta = found; fileMeta.folder = fol; }
       });
 
-      const title = fileMeta ? fileMeta.title : forcedTitle || 'Мой график';
+      const title = fileMeta ? fileMeta.title : forcedTitle || 'Мой план';
       const folderName = fileMeta ? fileMeta.folder : forcedFolder || 'Основной Проект';
       
       document.getElementById('activeFileName').innerText = title;
       document.getElementById('activeFileDesc').innerText = folderName;
 
-      // ЛОГИКА ДЛЯ РАСШАРЕННОГО ФАЙЛА
       if (fileMeta && fileMeta.isShared) {
           document.getElementById('activeFileName').innerText = `👀 ${title}`;
           btnAdd.classList.add('hidden'); 
-          btnKey.classList.add('hidden');
           
           showSystemToast("Синхронизация", "Загрузка данных...", "refresh-cw", "text-blue-500 animate-spin", "bg-blue-50");
           
@@ -600,12 +626,12 @@
                      activeScheduleData = doc.data();
                      renderActiveSchedule();
                  } else {
-                     SysDialog.alert("Ошибка доступа", "Владелец удалил этот график или закрыл доступ.");
+                     SysDialog.alert("Ошибка доступа", "Владелец удалил этот план или закрыл доступ.");
                      activeScheduleData = { id: fileId, title: title, items: [], owner: '' };
                      renderActiveSchedule();
                  }
              }, () => {
-                 showSystemToast("Ошибка", "Нет прав для чтения графика.", "shield-alert", "text-red-500", "bg-red-50");
+                 showSystemToast("Ошибка", "Нет прав для чтения плана.", "shield-alert", "text-red-500", "bg-red-50");
              });
           } else {
              let cached = localStorage.getItem('blocko_sch_data_' + fileId);
@@ -616,9 +642,7 @@
           return;
       }
 
-      // ЛОГИКА ДЛЯ СВОЕГО ФАЙЛА
       btnAdd.classList.remove('hidden');
-      btnKey.classList.remove('hidden');
 
       let cached = localStorage.getItem('blocko_sch_data_' + fileId);
       if (cached) activeScheduleData = JSON.parse(cached);
@@ -643,8 +667,8 @@
       const key = document.getElementById('shareKeyInput').value.trim();
       if(!key) return;
       
-      showSystemToast("Проверка...", "Ищем расписание в облаке...", "loader-2", "text-blue-500 animate-spin", "bg-blue-50");
-      if (!navigator.onLine) return SysDialog.alert("Нет сети", "Для подключения графика нужен интернет.");
+      showSystemToast("Проверка...", "Ищем план в облаке...", "loader-2", "text-blue-500 animate-spin", "bg-blue-50");
+      if (!navigator.onLine) return SysDialog.alert("Нет сети", "Для подключения плана нужен интернет.");
 
       try {
           const doc = await db.collection('schedules_v2').doc(key).get();
@@ -659,14 +683,13 @@
           }
           
           document.getElementById('shareKeyInput').value = '';
-          showSystemToast("Успех!", `График "${remoteData.title}" подключен.`, "check", "text-emerald-500", "bg-emerald-50");
+          showSystemToast("Успех!", `План "${remoteData.title}" подключен.`, "check", "text-emerald-500", "bg-emerald-50");
           selectScheduleFile(key);
       } catch(err) {
           SysDialog.alert("Ошибка доступа", "У вас нет прав на просмотр этого файла.");
       }
   }
 
-  // --- МОДАЛЬНОЕ ОКНО СМЕНЫ ---
   function selectShiftColor(colorKey) {
       currentSelectedColor = colorKey;
       document.querySelectorAll('.color-btn').forEach(btn => {
@@ -712,7 +735,6 @@
 
       lucide.createIcons({ root: content });
       
-      // Фикс центрирования: убираем hidden, добавляем flex
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       
@@ -735,7 +757,6 @@
       }, 300);
   }
 
-  // --- РЕНДЕР СЕТКИ И ДАННЫХ ---
   function renderActiveSchedule() {
       filterTimelineList(); 
       renderHourlyGrid();   
@@ -956,7 +977,6 @@
       openShiftModal();
   }
 
-  // --- ЛОГИКА СОХРАНЕНИЯ СМЕНЫ ---
   function toggleDuplicationDay(dayNum) {
       const btn = document.querySelector(`[data-day="${dayNum}"]`);
       if (selectedDuplicationDays.includes(dayNum)) {
@@ -971,7 +991,7 @@
   }
 
   async function saveScheduleItem() {
-      const title = document.getElementById('schTitle').value.trim() || 'Смена';
+      const title = document.getElementById('schTitle').value.trim() || 'Событие';
       const baseDateStr = document.getElementById('schDate').value;
       const timeStart = document.getElementById('schStart').value;
       const timeEnd = document.getElementById('schEnd').value;
@@ -1014,11 +1034,11 @@
 
       await commitActiveSchedule();
       closeShiftModal();
-      showSystemToast("Готово", editId ? "Смена обновлена." : "Смены добавлены.", "check-circle", "text-emerald-500", "bg-emerald-50");
+      showSystemToast("Готово", editId ? "Событие обновлено." : "События добавлены.", "check-circle", "text-emerald-500", "bg-emerald-50");
   }
 
   function deleteShiftItem(id) {
-      SysDialog.confirm("Удалить запись?", "Эта смена будет стерта из графика.", async () => {
+      SysDialog.confirm("Удалить запись?", "Это событие будет стерто из плана.", async () => {
           activeScheduleData.items = (activeScheduleData.items || []).filter(s => s.id !== id);
           await commitActiveSchedule();
           showSystemToast("Удалено", "Запись стерта.", "trash-2", "text-gray-500", "bg-gray-100");
@@ -1033,19 +1053,12 @@
       }
   }
 
-  // --- ПРОЧИЕ УТИЛИТЫ ---
   function changeViewDate(offset) { viewDate.setDate(viewDate.getDate() + offset); renderHourlyGrid(); renderWeekBar(); }
   function setViewToToday() { viewDate = new Date(); renderHourlyGrid(); renderWeekBar(); }
-  
-  function copyActiveShareKey() {
-      if(currentFileId === 'primary') return;
-      navigator.clipboard.writeText(currentFileId);
-      showSystemToast("Ключ скопирован", "Передайте ID коллегам.", "copy", "text-indigo-500", "bg-indigo-50");
-  }
 
   function downloadActiveSchedule() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeScheduleData));
-      const dlAnchor = document.createElement('a'); dlAnchor.setAttribute("href", dataStr); dlAnchor.setAttribute("download", `blocko_schedule.json`);
+      const dlAnchor = document.createElement('a'); dlAnchor.setAttribute("href", dataStr); dlAnchor.setAttribute("download", `blocko_plan.json`);
       document.body.appendChild(dlAnchor); dlAnchor.click(); dlAnchor.remove();
   }
 
@@ -1065,7 +1078,7 @@
               
               localStorage.setItem('blocko_sch_data_' + newId, JSON.stringify(imported));
               await saveStructureToCloud(); await selectScheduleFile(newId);
-              showSystemToast("Импорт", "Файл загружен.", "check", "text-emerald-500", "bg-emerald-50");
+              showSystemToast("Импорт", "План загружен.", "check", "text-emerald-500", "bg-emerald-50");
           } catch(err) { SysDialog.alert("Ошибка файла", "Файл поврежден или имеет неверный формат."); }
       };
       reader.readAsText(file);
@@ -1073,7 +1086,7 @@
 
   function exportToICal() {
       const items = activeScheduleData.items || [];
-      if (items.length === 0) return SysDialog.alert("Пустой график", "В этом файле нет смен для экспорта.");
+      if (items.length === 0) return SysDialog.alert("Пустой план", "В этом файле нет событий для экспорта.");
       let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Schedule Engine//RU\nCALSCALE:GREGORIAN\n";
       items.forEach(i => {
           const start = i.date.replace(/-/g, '') + 'T' + i.timeStart.replace(/:/g, '') + '00';
@@ -1083,7 +1096,7 @@
       ics += "END:VCALENDAR";
       const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = `Schedule.ics`;
+      const a = document.createElement('a'); a.href = url; a.download = `Plan.ics`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   }
 
