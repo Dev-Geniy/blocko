@@ -20,10 +20,11 @@
 
     /* ENTERPRISE: Архитектура PWA-вьюпорта */
     html, body {
-      height: 100dvh;
       width: 100%;
-      overflow: hidden; /* Запрет глобального скролла */
-      overscroll-behavior: none;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
     }
     .hide-scroll::-webkit-scrollbar { display: none; }
@@ -34,7 +35,7 @@
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col transition-colors duration-300">
   
 <!-- Фоновые неоновые блики (Изумрудно-синие для Блога) -->
 <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>

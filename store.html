@@ -36,18 +36,19 @@
     .delay-400 { animation-delay: 0.4s; }
 
     html, body {
-      height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
   <script>
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col overflow-x-hidden transition-colors duration-300">
 <!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
 <div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
   <div class="flex flex-col items-center scale-110">

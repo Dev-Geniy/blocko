@@ -20,11 +20,12 @@
     html { scroll-behavior: smooth; }
 
     html, body {
-      height: 100dvh;
       width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
     }
   </style>
 
@@ -32,7 +33,7 @@
     tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
   </script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col overflow-x-hidden transition-colors duration-300">
   
 <!-- Фоновые неоновые блики (Изумрудно-синие для Privacy) -->
 <div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>

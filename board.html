@@ -2089,6 +2089,25 @@ function syncAndRender() {
   });
 }
 
+const pendingChatTempIds = new Set();
+
+function getChatMessageTime(timestamp) {
+  if (!timestamp) return '';
+  const date = typeof timestamp.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function renderOptimisticChatMessage(docRef, msg) {
+  const chatBox = document.getElementById("chatMessages");
+  if (!chatBox) return;
+
+  document.getElementById('emptyChatMsg')?.remove();
+  const tempId = `pending_${docRef.id}`;
+  pendingChatTempIds.add(tempId);
+  renderSingleMessage({ ...msg, timestamp: Date.now(), isPending: true }, chatBox, tempId);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function initChatListener(docRef) {
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
@@ -2101,7 +2120,12 @@ function initChatListener(docRef) {
     } else {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
-          document.getElementById('emptyChatMsg')?.remove(); 
+          document.getElementById('emptyChatMsg')?.remove();
+          const tempId = `pending_${change.doc.id}`;
+          if (pendingChatTempIds.has(tempId)) {
+            document.getElementById('msg_' + tempId)?.remove();
+            pendingChatTempIds.delete(tempId);
+          }
           const msg = change.doc.data();
           renderSingleMessage(msg, chatBox, change.doc.id);
           
@@ -2157,7 +2181,7 @@ let pendingChatFile = null;
 
 function handleChatAttachment(e) {
   if (isLocalBoard) {
-     alert("Вложения работают только в облачных проектах.");
+     showSystemToast('Недоступно', 'Вложения работают только в облачных проектах.', 'cloud-off', 'text-amber-500', 'bg-amber-50');
      e.target.value = ''; return;
   }
   const file = e.target.files[0];
@@ -2791,8 +2815,8 @@ function renderArchiveSidebar() {
   
 function changeUserRole(uid, newRole) {
   if (isLocalBoard) return;
-  if (boardData.owner !== currentUser.id) return alert("Только владелец может менять роли!");
-  if (uid === boardData.owner) return alert("Нельзя изменить роль владельца!");
+  if (boardData.owner !== currentUser.id) return showSystemToast('Нет доступа', 'Только владелец может менять роли.', 'shield-alert', 'text-red-500', 'bg-red-50');
+  if (uid === boardData.owner) return showSystemToast('Защищено', 'Нельзя изменить роль владельца.', 'shield-check', 'text-amber-500', 'bg-amber-50');
   let updatedUsers = { ...boardData.users };
   updatedUsers[uid].role = newRole;
   updateBoardData({ users: updatedUsers });
@@ -2900,7 +2924,7 @@ function removeMember(uid, name) {
   
 function renderSingleMessage(msg, container, msgId) {
   const isMe = msg.user.id === currentUser.id;
-  const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+  const time = getChatMessageTime(msg.timestamp);
   
   let attachHtml = '';
   if (msg.attachment) {
@@ -2957,10 +2981,10 @@ function renderSingleMessage(msg, container, msgId) {
   const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
   
   // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Убраны рамки (ring), добавлены мягкие тени и ID для Optimistic UI
-  const likeBtnHtml = `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
+  const likeBtnHtml = msg.isPending ? '' : `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
 
   container.innerHTML += `
-    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2">
+    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2 ${msg.isPending ? 'opacity-70' : ''}">
       ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
       <div class="flex flex-col w-full min-w-0">
         <div class="flex items-baseline gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}">
@@ -2981,19 +3005,35 @@ function renderSingleMessage(msg, container, msgId) {
   
 function sendChatMessage() {
   if (isLocalBoard) return;
-  const text = document.getElementById('chatInput').value.trim();
-  if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp(), likes: [] });
-  document.getElementById('chatInput').value = '';
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
+  const msg = { text, user: currentUser, likes: [] };
+  input.value = '';
+  renderOptimisticChatMessage(docRef, msg);
+
+  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
+    document.getElementById('msg_pending_' + docRef.id)?.remove();
+    pendingChatTempIds.delete('pending_' + docRef.id);
+    showSystemToast('Ошибка', 'Не удалось отправить сообщение.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error('Chat send failed:', err);
+  });
 }
 
 function sendChatSticker(iconName) {
   if (isLocalBoard) return showSystemToast('Офлайн', 'Стикеры недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-  db.collection("boards").doc(BOARD_ID).collection("chat").add({ 
-    text: "", 
-    sticker: iconName,
-    user: currentUser, 
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    likes: []
+
+  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
+  const msg = { text: "", sticker: iconName, user: currentUser, likes: [] };
+  renderOptimisticChatMessage(docRef, msg);
+
+  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
+    document.getElementById('msg_pending_' + docRef.id)?.remove();
+    pendingChatTempIds.delete('pending_' + docRef.id);
+    showSystemToast('Ошибка', 'Не удалось отправить реакцию.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error('Sticker send failed:', err);
   });
 }
 
@@ -5144,7 +5184,7 @@ async function generateAIQuickDescription() {
   const textarea = document.getElementById('quickAddDesc'); 
   const btn = document.getElementById('aiQuickGenBtn');
   
-  if (!title) return alert("Введите заголовок");
+  if (!title) return showSystemToast('Ошибка', 'Введите заголовок.', 'alert-circle', 'text-red-500', 'bg-red-50');
   
   const ogBtn = btn.innerHTML; 
   btn.disabled = true; 
@@ -5156,7 +5196,7 @@ async function generateAIQuickDescription() {
     const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(`Краткий план (3 пункта): "${title}"`)}?model=openai`);
     textarea.value = await response.text();
   } catch (err) { 
-    alert("Ошибка AI"); 
+    showSystemToast('Ошибка AI', 'Не удалось создать задачу через AI.', 'alert-triangle', 'text-red-500', 'bg-red-50');
   } finally { 
     btn.disabled = false; 
     btn.innerHTML = ogBtn; 
@@ -5558,98 +5598,6 @@ function votePoll(colId, cardId, optionIndex) {
   }
 }
 
-// --- ЛОГИКА ТАЙМЕРА, ЧЕК-ЛИСТА И ССЫЛКИ ---
-function toggleModalAnimation(modalId, contentId, show) {
-  const modal = document.getElementById(modalId);
-  const content = document.getElementById(contentId);
-  if (show) {
-    modal.classList.remove('hidden');
-    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); }, 10);
-  } else {
-    modal.classList.add('opacity-0'); content.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-  }
-}
-
-// Таймер
-function prepareTimerCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true); }
-function closeTimerConstructor() { toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', false); editingSpecificCardId = null; }
-function saveTimer() {
-  const title = document.getElementById('timerTitle').value.trim() || 'Таймер';
-  const targetDate = document.getElementById('timerTargetDate').value;
-  if (!targetDate) return showSystemToast('Ошибка', 'Укажите дату завершения.', 'alert-circle', 'text-red-500', 'bg-red-50');
-
-  if (editingSpecificCardId) {
-    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, targetDate });
-    if (!isLocalBoard) logActivity(`Обновил(а) время в таймере "${title}"`, 'timer');
-  } else {
-    const cardId = 'timer_' + Date.now();
-    const cardData = { id: cardId, title, type: 'timer', targetDate, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { 
-      db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); 
-      logActivity(`Установил(а) таймер дедлайна: "${title}"`, 'alarm-clock');
-    }
-  }
-  closeTimerConstructor();
-}
-
-// Быстрый Чек-лист
-function prepareTodoCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true); }
-function closeTodoConstructor() { toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', false); editingSpecificCardId = null; }
-function saveTodoFast() {
-  const title = document.getElementById('todoFastTitle').value.trim() || 'Чек-лист';
-  const itemsText = document.getElementById('todoFastItems').value.trim();
-  if (!itemsText) return showSystemToast('Ошибка', 'Введите хотя бы один пункт.', 'alert-circle', 'text-red-500', 'bg-red-50');
-
-  const checklist = itemsText.split('\n').filter(t => t.trim() !== '').map(text => ({ text: text.trim(), isCompleted: false }));
-  
-  if (editingSpecificCardId) {
-    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, checklist });
-  } else {
-    const cardId = 'todo_' + Date.now();
-    const cardData = { id: cardId, title, type: 'todo', checklist, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
-  }
-  closeTodoConstructor();
-}
-
-// Управление чекбоксом прямо с доски
-function toggleBoardTodo(colId, cardId, idx) {
-  const col = columns.find(c => c.id == colId);
-  const card = col?.cards.find(c => c.id == cardId);
-  if (!card || !card.checklist) return;
-
-  card.checklist[idx].isCompleted = !card.checklist[idx].isCompleted;
-  if (card.checklist[idx].isCompleted) fireConfetti();
-
-  dispatchCardUpdate(cardId, colId, { checklist: card.checklist });
-}
-
-// Закладка (Ссылка)
-function prepareLinkCreation() { closeMoreAddModal(); editingSpecificCardId = null; toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true); }
-function closeLinkConstructor() { toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', false); editingSpecificCardId = null; }
-function saveLink() {
-  const title = document.getElementById('linkTitle').value.trim() || 'Ссылка';
-  let url = document.getElementById('linkUrl').value.trim();
-  if (!url) return showSystemToast('Ошибка', 'Вставьте ссылку.', 'alert-circle', 'text-red-500', 'bg-red-50');
-  if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
-
-  if (editingSpecificCardId) {
-    dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, url });
-  } else {
-    const cardId = 'link_' + Date.now();
-    const cardData = { id: cardId, title, type: 'link', url, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { 
-      db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); 
-      logActivity(`Добавил(а) важную ссылку: "${title}"`, 'link-2');
-    }
-  }
-  closeLinkConstructor();
-}
-
 // Глобальное управление кастомным плеером
 let currentPlayingAudio = null;
 let currentAudioBtn = null;
@@ -5829,6 +5777,30 @@ function closeContentViewModal() {
 
 let editingSpecificCardId = null;
 
+function getCardById(colId, cardId) {
+  const col = columns.find(c => c.id == colId);
+  const card = col?.cards.find(c => c.id == cardId);
+  return { col, card };
+}
+
+function insertSpecialCard(cardData) {
+  if (isLocalBoard) {
+    const col = columns.find(c => c.id == activeColForMore);
+    if (col) {
+      col.cards.push(cardData);
+      persist();
+      render();
+    }
+    return;
+  }
+
+  db.collection("boards")
+    .doc(BOARD_ID)
+    .collection("cards")
+    .doc(cardData.id)
+    .set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+}
+
 // ЭНТЕРПРАЙЗ: Динамический инжект шаблонов для снижения первичного веса DOM (Lazy Init)
 function renderDynamicModal(type) {
   const container = document.getElementById('dynamicConstructorContainer');
@@ -5907,11 +5879,12 @@ function saveTimer() {
 
   if (editingSpecificCardId) {
     dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, targetDate });
+    if (!isLocalBoard) logActivity(`Обновил(а) время в таймере "${title}"`, 'timer');
   } else {
     const cardId = 'timer_' + Date.now();
     const cardData = { id: cardId, title, type: 'timer', targetDate, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    insertSpecialCard(cardData);
+    if (!isLocalBoard) logActivity(`Установил(а) таймер дедлайна: "${title}"`, 'alarm-clock');
   }
   closeTimerConstructor();
 }
@@ -5926,18 +5899,18 @@ function saveTodoFast() {
   const checklist = itemsText.split('\n').filter(t => t.trim() !== '').map(text => ({ text: text.trim(), isCompleted: false }));
   if (editingSpecificCardId) {
     dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, checklist });
+    if (!isLocalBoard) logActivity(`Обновил(а) чек-лист "${title}"`, 'list-todo');
   } else {
     const cardId = 'todo_' + Date.now();
     const cardData = { id: cardId, title, type: 'todo', checklist, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    insertSpecialCard(cardData);
+    if (!isLocalBoard) logActivity(`Создал(а) чек-лист "${title}"`, 'list-todo');
   }
   closeTodoConstructor();
 }
 
 function toggleBoardTodo(colId, cardId, idx) {
-  const col = columns.find(c => c.id == colId);
-  const card = col?.cards.find(c => c.id == cardId);
+  const { card } = getCardById(colId, cardId);
   if (!card || !card.checklist) return;
   card.checklist[idx].isCompleted = !card.checklist[idx].isCompleted;
   if (card.checklist[idx].isCompleted) fireConfetti();
@@ -5954,11 +5927,12 @@ function saveLink() {
 
   if (editingSpecificCardId) {
     dispatchCardUpdate(editingSpecificCardId, activeColForMore, { title, url });
+    if (!isLocalBoard) logActivity(`Обновил(а) ссылку "${title}"`, 'link-2');
   } else {
     const cardId = 'link_' + Date.now();
     const cardData = { id: cardId, title, type: 'link', url, author: currentUser, archived: false, columnId: activeColForMore, order: allCards.length, comments: [] };
-    if (isLocalBoard) { const col = columns.find(c => c.id == activeColForMore); if (col) { col.cards.push(cardData); persist(); render(); } } 
-    else { db.collection("boards").doc(BOARD_ID).collection("cards").doc(cardId).set({ ...cardData, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+    insertSpecialCard(cardData);
+    if (!isLocalBoard) logActivity(`Добавил(а) важную ссылку: "${title}"`, 'link-2');
   }
   closeLinkConstructor();
 }
@@ -5989,28 +5963,35 @@ function openEditModalFromView() {
   const { type, colId, cardId } = activeContentView;
   closeContentViewModal();
 
-  if (type === 'task' || !type) openEditModal(colId, cardId);
-  else if (type === 'table') openTableEditor(colId, cardId);
-  else if (type === 'timer') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('timerTitle').value = card.title;
+  if (type === 'task' || !type) {
+    openEditModal(colId, cardId);
+    return;
+  }
+  if (type === 'table') {
+    openTableEditor(colId, cardId);
+    return;
+  }
+
+  const { card } = getCardById(colId, cardId);
+  if (!card) return;
+
+  activeColForMore = colId;
+  editingSpecificCardId = cardId;
+
+  if (type === 'timer') {
+    renderDynamicModal('timer');
+    document.getElementById('timerTitle').value = card.title || '';
     document.getElementById('timerTargetDate').value = card.targetDate || '';
-    toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true);
   }
   else if (type === 'todo') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('todoFastTitle').value = card.title;
-    document.getElementById('todoFastItems').value = card.checklist.map(i => i.text).join('\n');
-    toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true);
+    renderDynamicModal('todo');
+    document.getElementById('todoFastTitle').value = card.title || '';
+    document.getElementById('todoFastItems').value = (card.checklist || []).map(i => i.text).join('\n');
   }
   else if (type === 'link') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('linkTitle').value = card.title;
-    document.getElementById('linkUrl').value = card.url;
-    toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true);
+    renderDynamicModal('link');
+    document.getElementById('linkTitle').value = card.title || '';
+    document.getElementById('linkUrl').value = card.url || '';
   }
 }
   
@@ -6351,7 +6332,7 @@ function addTableRow() {
 }
 
 function removeTableColumn(cIdx) {
-   if (activeTableData.cols <= 1) return alert("Минимум 1 колонка!");
+   if (activeTableData.cols <= 1) return showSystemToast('Ошибка', 'Минимум 1 колонка.', 'columns-3', 'text-amber-500', 'bg-amber-50');
    activeTableData.cols--;
    activeTableData.colHeaders.splice(cIdx, 1);
    for(let r=0; r<activeTableData.rows; r++) activeTableData.tableData[r].splice(cIdx, 1);
@@ -6359,7 +6340,7 @@ function removeTableColumn(cIdx) {
 }
 
 function removeTableRow(rIdx) {
-   if (activeTableData.rows <= 1) return alert("Минимум 1 строка!");
+   if (activeTableData.rows <= 1) return showSystemToast('Ошибка', 'Минимум 1 строка.', 'rows-3', 'text-amber-500', 'bg-amber-50');
    activeTableData.rows--;
    activeTableData.rowHeaders.splice(rIdx, 1);
    for(let i = rIdx; i < activeTableData.rows; i++) activeTableData.tableData[i] = activeTableData.tableData[i + 1];
