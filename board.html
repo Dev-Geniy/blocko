@@ -2089,6 +2089,25 @@ function syncAndRender() {
   });
 }
 
+const pendingChatTempIds = new Set();
+
+function getChatMessageTime(timestamp) {
+  if (!timestamp) return '';
+  const date = typeof timestamp.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function renderOptimisticChatMessage(docRef, msg) {
+  const chatBox = document.getElementById("chatMessages");
+  if (!chatBox) return;
+
+  document.getElementById('emptyChatMsg')?.remove();
+  const tempId = `pending_${docRef.id}`;
+  pendingChatTempIds.add(tempId);
+  renderSingleMessage({ ...msg, timestamp: Date.now(), isPending: true }, chatBox, tempId);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function initChatListener(docRef) {
   docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
@@ -2101,7 +2120,12 @@ function initChatListener(docRef) {
     } else {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
-          document.getElementById('emptyChatMsg')?.remove(); 
+          document.getElementById('emptyChatMsg')?.remove();
+          const tempId = `pending_${change.doc.id}`;
+          if (pendingChatTempIds.has(tempId)) {
+            document.getElementById('msg_' + tempId)?.remove();
+            pendingChatTempIds.delete(tempId);
+          }
           const msg = change.doc.data();
           renderSingleMessage(msg, chatBox, change.doc.id);
           
@@ -2900,7 +2924,7 @@ function removeMember(uid, name) {
   
 function renderSingleMessage(msg, container, msgId) {
   const isMe = msg.user.id === currentUser.id;
-  const time = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+  const time = getChatMessageTime(msg.timestamp);
   
   let attachHtml = '';
   if (msg.attachment) {
@@ -2957,10 +2981,10 @@ function renderSingleMessage(msg, container, msgId) {
   const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
   
   // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Убраны рамки (ring), добавлены мягкие тени и ID для Optimistic UI
-  const likeBtnHtml = `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
+  const likeBtnHtml = msg.isPending ? '' : `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
 
   container.innerHTML += `
-    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2">
+    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2 ${msg.isPending ? 'opacity-70' : ''}">
       ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
       <div class="flex flex-col w-full min-w-0">
         <div class="flex items-baseline gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}">
@@ -2981,19 +3005,35 @@ function renderSingleMessage(msg, container, msgId) {
   
 function sendChatMessage() {
   if (isLocalBoard) return;
-  const text = document.getElementById('chatInput').value.trim();
-  if(text) db.collection("boards").doc(BOARD_ID).collection("chat").add({ text, user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp(), likes: [] });
-  document.getElementById('chatInput').value = '';
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
+  const msg = { text, user: currentUser, likes: [] };
+  input.value = '';
+  renderOptimisticChatMessage(docRef, msg);
+
+  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
+    document.getElementById('msg_pending_' + docRef.id)?.remove();
+    pendingChatTempIds.delete('pending_' + docRef.id);
+    showSystemToast('Ошибка', 'Не удалось отправить сообщение.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error('Chat send failed:', err);
+  });
 }
 
 function sendChatSticker(iconName) {
   if (isLocalBoard) return showSystemToast('Офлайн', 'Стикеры недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-  db.collection("boards").doc(BOARD_ID).collection("chat").add({ 
-    text: "", 
-    sticker: iconName,
-    user: currentUser, 
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    likes: []
+
+  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
+  const msg = { text: "", sticker: iconName, user: currentUser, likes: [] };
+  renderOptimisticChatMessage(docRef, msg);
+
+  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
+    document.getElementById('msg_pending_' + docRef.id)?.remove();
+    pendingChatTempIds.delete('pending_' + docRef.id);
+    showSystemToast('Ошибка', 'Не удалось отправить реакцию.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    console.error('Sticker send failed:', err);
   });
 }
 
