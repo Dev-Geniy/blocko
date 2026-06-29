@@ -71,6 +71,20 @@
 
 ---
 
+## ✅ Проверка перед деплоем
+
+Перед публикацией или ревью запустите базовые проверки статического проекта:
+
+```bash
+python3 scripts/check-inline-js.py
+python3 -m json.tool manifest.json >/tmp/blocko-manifest.json
+```
+
+* `scripts/check-inline-js.py` извлекает inline-скрипты из HTML-страниц и проверяет синтаксис через `node --check`.
+* `python3 -m json.tool manifest.json` проверяет корректность PWA-манифеста.
+
+---
+
 ## 📈 Идея как бизнес
 Blocko Pro готов к монетизации по модели Freemium:
 * **Free:** До 3-х досок, базовый AI.
