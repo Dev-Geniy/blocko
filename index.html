@@ -3432,6 +3432,7 @@ async function updateProfileAvatar() {
 // Выход из системы
 async function logout() { 
   closeProfileModal();
+  sessionStorage.clear(); // Полная очистка сессионных ключей перед выходом
   setTimeout(() => {
     auth.signOut().then(() => {
       window.location.reload(); 
