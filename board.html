@@ -5989,28 +5989,36 @@ function openEditModalFromView() {
   const { type, colId, cardId } = activeContentView;
   closeContentViewModal();
 
-  if (type === 'task' || !type) openEditModal(colId, cardId);
-  else if (type === 'table') openTableEditor(colId, cardId);
-  else if (type === 'timer') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('timerTitle').value = card.title;
+  if (type === 'task' || !type) {
+    openEditModal(colId, cardId);
+    return;
+  }
+  if (type === 'table') {
+    openTableEditor(colId, cardId);
+    return;
+  }
+
+  const col = columns.find(c => c.id == colId);
+  const card = col?.cards.find(c => c.id == cardId);
+  if (!card) return;
+
+  activeColForMore = colId;
+  editingSpecificCardId = cardId;
+
+  if (type === 'timer') {
+    renderDynamicModal('timer');
+    document.getElementById('timerTitle').value = card.title || '';
     document.getElementById('timerTargetDate').value = card.targetDate || '';
-    toggleModalAnimation('timerConstructorModal', 'timerConstructorContent', true);
   }
   else if (type === 'todo') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('todoFastTitle').value = card.title;
-    document.getElementById('todoFastItems').value = card.checklist.map(i => i.text).join('\n');
-    toggleModalAnimation('todoConstructorModal', 'todoConstructorContent', true);
+    renderDynamicModal('todo');
+    document.getElementById('todoFastTitle').value = card.title || '';
+    document.getElementById('todoFastItems').value = (card.checklist || []).map(i => i.text).join('\n');
   }
   else if (type === 'link') {
-    const card = columns.find(c => c.id == colId).cards.find(c => c.id == cardId);
-    activeColForMore = colId; editingSpecificCardId = cardId;
-    document.getElementById('linkTitle').value = card.title;
-    document.getElementById('linkUrl').value = card.url;
-    toggleModalAnimation('linkConstructorModal', 'linkConstructorContent', true);
+    renderDynamicModal('link');
+    document.getElementById('linkTitle').value = card.title || '';
+    document.getElementById('linkUrl').value = card.url || '';
   }
 }
   
