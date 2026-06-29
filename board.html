@@ -5932,7 +5932,8 @@ function openEditModalFromView() {
     return;
   }
 
-  const { card } = getCardById(colId, cardId);
+  const col = columns.find(c => c.id == colId);
+  const card = col?.cards.find(c => c.id == cardId);
   if (!card) return;
 
   activeColForMore = colId;
