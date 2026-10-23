@@ -270,60 +270,53 @@
     </div>
   </main>
 
-  <div id="createBoardModal" class="hidden fixed inset-0 z-50 flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-100 transition-opacity duration-200 px-4 overflow-y-auto py-10">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-700 m-auto flex flex-col">      <button onclick="closeCreateModal()" class="absolute top-5 right-5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full transition-colors z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
-      
-      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white pr-8">Новый проект</h2>
-      
+  <div id="createBoardModal" class="hidden fixed inset-0 z-50 flex items-start justify-center bg-gray-900/50 dark:bg-black/70 glass-modal transition-opacity duration-200 px-4 overflow-y-auto py-10">
+    <div class="bg-white dark:bg-gray-900 p-6 rounded-2xl w-full max-w-md shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto flex flex-col">
+      <button onclick="closeCreateModal()" aria-label="Закрыть" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+
+      <h2 class="text-xl font-semibold tracking-tight mb-5 text-gray-900 dark:text-white pr-10">Новый проект</h2>
+
       <div class="space-y-5">
         <div>
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Название доски</label>
-          <input type="text" id="newBoardTitle" placeholder="Например: Секретный запуск..." class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+          <label for="newBoardTitle" class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Название</label>
+          <input type="text" id="newBoardTitle" placeholder="Например: Запуск сайта" maxlength="120" onkeydown="if(event.key==='Enter') confirmCreateBoard()" class="w-full h-11 px-3.5 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl outline-none text-sm dark:text-white focus:border-blue-500" />
         </div>
 
-        <div>
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block flex justify-between">
-            Компания / Бренд <span class="text-[10px] text-gray-400 font-black uppercase">Опционально</span>
-          </label>
-          <div class="relative">
-            <i data-lucide="building-2" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="newBoardCompany" placeholder="Название вашей компании" class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+        <fieldset>
+          <legend class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Где хранить</legend>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="relative flex flex-col gap-1 p-3 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60 dark:has-[:checked]:bg-blue-500/10 transition-colors">
+              <input type="radio" name="boardType" value="online" checked class="sr-only">
+              <span class="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white"><i data-lucide="cloud" class="w-4 h-4 text-blue-600"></i> В облаке</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 leading-snug">Для команды, с любого устройства</span>
+            </label>
+            <label class="relative flex flex-col gap-1 p-3 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50/60 dark:has-[:checked]:bg-blue-500/10 transition-colors">
+              <input type="radio" name="boardType" value="local" class="sr-only">
+              <span class="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white"><i data-lucide="hard-drive" class="w-4 h-4 text-gray-500"></i> На устройстве</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400 leading-snug">Только для вас, работает без интернета</span>
+            </label>
           </div>
-        </div>
+        </fieldset>
 
-        <div>
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block flex justify-between">
-            Пароль доступа <span class="text-[10px] text-blue-500 font-black uppercase">Опционально</span>
-          </label>
-          <div class="relative">
-            <i data-lucide="lock" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-            <input type="password" id="newBoardPassword" placeholder="Оставьте пустым для свободного входа" class="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-all">
+        <details class="group rounded-xl border border-gray-200 dark:border-gray-800">
+          <summary class="list-none cursor-pointer select-none flex items-center justify-between px-3.5 h-11 text-sm font-medium text-gray-700 dark:text-gray-300">
+            Дополнительно: компания и пароль
+            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180"></i>
+          </summary>
+          <div class="px-3.5 pb-3.5 space-y-3">
+            <div>
+              <label for="newBoardCompany" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Компания или бренд</label>
+              <input type="text" id="newBoardCompany" placeholder="Необязательно" maxlength="80" class="w-full h-10 px-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg outline-none text-sm dark:text-white focus:border-blue-500" />
+            </div>
+            <div>
+              <label for="newBoardPassword" class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">Пароль на вход</label>
+              <input type="password" id="newBoardPassword" placeholder="Оставьте пустым — вход по ссылке без пароля" autocomplete="new-password" class="w-full h-10 px-3 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-lg outline-none text-sm dark:text-white focus:border-blue-500" />
+            </div>
           </div>
-        </div>
-        
-        <div>
-          <label class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 block">Режим хранения</label>
-          <div class="space-y-3">
-            <label class="flex items-start gap-3 p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-xl cursor-pointer hover:shadow-sm transition-all group">
-              <input type="radio" name="boardType" value="online" checked class="mt-1 w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 accent-blue-500">
-              <div>
-                <span class="font-bold text-sm block text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Cloud (Командная)</span>
-                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Пароль защитит вход для всех участников.</span>
-              </div>
-            </label>
-            
-            <label class="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-700 bg-gray-50 dark:bg-gray-800 rounded-xl cursor-pointer hover:shadow-sm transition-all group">
-              <input type="radio" name="boardType" value="local" class="mt-1 w-4 h-4 text-emerald-600 border-gray-300 focus:ring-emerald-500 accent-emerald-500">
-              <div>
-                <span class="font-bold text-sm block text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Device (Только моя)</span>
-                <span class="text-xs text-gray-500 mt-1 block leading-relaxed">Пароль сохранится только в этом браузере.</span>
-              </div>
-            </label>
-          </div>
-        </div>
-        
-        <button onclick="confirmCreateBoard()" class="w-full mt-4 bg-blue-600 hover:bg-blue-500 text-white py-3.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-          <i data-lucide="check" class="w-4 h-4"></i> Создать и открыть
+        </details>
+
+        <button onclick="confirmCreateBoard()" class="w-full h-11 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors">
+          Создать проект
         </button>
       </div>
     </div>
@@ -466,117 +459,24 @@
     </div>
   </div>
   
-<footer class="mt-auto border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 pt-16 pb-8 px-8 transition-colors duration-300">
-  <div class="max-w-7xl mx-auto">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-      
-      <!-- Колонка 1: Бренд и Донат -->
-      <div class="flex flex-col gap-6">
-        <div class="flex items-center gap-3 select-none">
-          <div class="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/20">
-            <i data-lucide="layers" class="w-5 h-5"></i>
-          </div>
-          <h1 class="text-xl font-bold tracking-tight">
-            Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span>
-          </h1>
-        </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-          Профессиональная экосистема для управления проектами, объединяющая AI и Real-time технологии для команд.
-        </p>
-        <div class="flex flex-col gap-4 mt-2">
-          <button id="installPwaBtn" class="hidden px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl shadow-lg hover:scale-105 active:scale-95 transition-all items-center gap-2 text-sm border border-gray-800 dark:border-gray-200 w-fit">
-            <i data-lucide="download-cloud" class="w-4 h-4"></i> Установить приложение
-          </button>
-          
-          <!-- Блок донатов с кликабельным QR-кодом -->
-          <div class="flex items-center gap-3 bg-gray-50 dark:bg-gray-800/80 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm w-fit group hover:border-rose-300 dark:hover:border-rose-700/50 transition-colors">
-             <img src="https://i.ibb.co/chVdT5RP/qr.png" alt="Donate QR" onclick="openDonateQrModal('https://i.ibb.co/chVdT5RP/qr.png')" class="w-12 h-12 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600 group-hover:scale-105 transition-transform cursor-pointer" title="Нажмите, чтобы увеличить" />
-             <div class="flex flex-col pr-2">
-                <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 flex items-center gap-1"><i data-lucide="heart" class="w-3 h-3 fill-current"></i> Поддержать нас</span>
-                <a href="https://www.paypal.com/ncp/payment/6WARL883XJQG6" target="_blank" class="text-xs font-bold text-gray-700 dark:text-gray-200 hover:text-rose-600 dark:hover:text-rose-400 transition-colors flex items-center gap-1.5">
-                  Задонатить PayPal <i data-lucide="external-link" class="w-3 h-3"></i>
-                </a>
-             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Колонка 2: Продукт -->
-      <div class="flex flex-col gap-6">
-        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Продукт</h4>
-        <nav class="flex flex-col gap-4">
-          <a href="javascript:void(0)" onclick="openPricingModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Тарифы
-          </a>
-          <a href="store.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Магазин
-          </a>
-          <a href="javascript:void(0)" onclick="openAffiliateModal()" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-             <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Реферальная сеть
-          </a>
-          <a href="affiliates-money.html" class="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 transition-colors flex items-center gap-3 group">
-             <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 opacity-0 group-hover:opacity-100 transition-all shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div> CPA Network
-          </a>
-          <a href="knowledge-base.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> База знаний
-          </a>
-          <a href="blog.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Блог
-          </a>
-          <a href="updates.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-all"></div> Обновления
-          </a>
-        </nav>
-      </div>
-
-      <!-- Колонка 3: Legal Center -->
-      <div class="flex flex-col gap-6">
-        <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Legal Center</h4>
-        <nav class="flex flex-col gap-4">
-          <a href="terms.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Условия сервиса
-          </a>
-          <a href="privacy.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Конфиденциальность
-          </a>
-          <a href="cookies.html" class="text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors flex items-center gap-3 group">
-            <div class="w-1.5 h-1.5 rounded-full bg-gray-400 opacity-0 group-hover:opacity-100 transition-all"></div> Cookie политика
-          </a>
-        </nav>
-      </div>
-
-      <!-- Колонка 4: Поделиться + Пригласить -->
-      <div class="flex flex-col gap-10">
-        
-        <div class="flex flex-col gap-5">
-          <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Поделиться в сети</h4>
-          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Расскажите о своем опыте:</p>
-          <div class="flex gap-3">
-            <button onclick="shareVia('twitter')" class="p-3 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white rounded-2xl hover:scale-110 transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-200" title="X (Twitter)">
-              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.005 4.25H5.078z"/></svg>
-            </button>
-            <button onclick="shareVia('facebook')" class="p-3 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-200 dark:border-blue-800 hover:bg-blue-200" title="Facebook">
-              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-            </button>
-            <button onclick="shareVia('linkedin')" class="p-3 bg-sky-50 dark:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-2xl hover:scale-110 transition-all shadow-sm border border-sky-100 dark:border-sky-800 hover:bg-sky-100" title="LinkedIn">
-              <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.847-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.353V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-5">
-          <h4 class="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Пригласить коллег</h4>
-          <p class="text-xs text-gray-500 dark:text-gray-500 font-medium">Быстрая ссылка для команды:</p>
-          <div class="flex gap-3">
-            <button onclick="shareVia('telegram')" class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-blue-100 dark:border-blue-800/50 hover:bg-blue-100" title="Telegram"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
-            <button onclick="shareVia('whatsapp')" class="p-3 bg-green-50 dark:bg-green-900/20 text-green-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-green-100 dark:border-green-800/50 hover:bg-green-100" title="WhatsApp"><i data-lucide="phone" class="w-5 h-5"></i></button>
-            <button onclick="shareVia('viber')" class="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-500 rounded-2xl hover:scale-110 transition-all shadow-sm border border-purple-100 dark:border-purple-800/50 hover:bg-purple-100" title="Viber"><i data-lucide="message-square" class="w-5 h-5"></i></button>
-          </div>
-        </div>
-
-      </div>
+<footer class="mt-auto border-t border-gray-200/80 dark:border-gray-800 px-4 sm:px-8 py-6">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500 dark:text-gray-400">
+    <div class="flex items-center gap-3">
+      <span>© <span id="footerYear"></span> Blocko Pro</span>
+      <button id="installPwaBtn" class="hidden h-8 px-3 items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900 text-xs font-medium transition-colors">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i> Установить приложение
+      </button>
     </div>
+    <nav class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+      <a href="javascript:void(0)" onclick="openPricingModal()" class="hover:text-gray-900 dark:hover:text-white">Тарифы</a>
+      <a href="knowledge-base.html" class="hover:text-gray-900 dark:hover:text-white">Помощь</a>
+      <a href="javascript:void(0)" onclick="openSupportModal()" class="hover:text-gray-900 dark:hover:text-white">Поддержка</a>
+      <a href="affiliates-money.html" class="hover:text-gray-900 dark:hover:text-white">Партнёрам</a>
+      <a href="terms.html" class="hover:text-gray-900 dark:hover:text-white">Условия</a>
+      <a href="privacy.html" class="hover:text-gray-900 dark:hover:text-white">Конфиденциальность</a>
+    </nav>
   </div>
+  <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
 </footer>
 </div>
 
@@ -815,134 +715,80 @@
   </div>
 
 <!-- Прайс модальное окно -->
-<div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-start justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-md opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-12 rounded-[3rem] w-full max-w-6xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95" id="pricingContent">    
-    <div class="absolute -top-32 -right-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-    <button onclick="closePricingModal()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20">
-      <i data-lucide="x" class="w-6 h-6"></i>
+<div id="pricingModal" class="hidden fixed inset-0 z-[150] flex items-start justify-center bg-gray-900/50 dark:bg-black/70 backdrop-blur-sm opacity-0 transition-opacity duration-200 px-4 overflow-y-auto py-8 sm:py-12">
+  <div id="pricingContent" class="bg-gray-50 dark:bg-gray-950 p-5 sm:p-10 rounded-2xl w-full max-w-5xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform transition-transform scale-95">
+    <button onclick="closePricingModal()" aria-label="Закрыть" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="x" class="w-5 h-5"></i>
     </button>
-    
-    <div class="text-center mb-8 relative z-10">
-      <div class="relative w-24 h-24 mx-auto mb-6">
-        <div class="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-[2rem]"></div>
-        <div class="relative w-full h-full bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-[2rem] flex items-center justify-center border border-blue-100 dark:border-blue-900 shadow-inner">
-          <i data-lucide="zap" class="w-12 h-12"></i>
-        </div>
-      </div>
-      <span class="text-blue-500 font-bold text-xs uppercase tracking-[0.3em] mb-3 block">Масштабируйте свой поток</span>
-      <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Выберите тарифный план</h2>
-      <p class="text-gray-500 dark:text-gray-400 text-lg max-w-2xl mx-auto font-medium mb-4">
-        Достигнут лимит текущего плана? Перейдите на новый уровень продуктивности или изучите <a href="store.html" class="text-blue-500 hover:text-blue-400 underline decoration-blue-500/30 underline-offset-4 transition-colors">дополнительные услуги в Магазине</a>.
-      </p>
-      
-      <a href="store.html" class="inline-flex items-center gap-2 text-sm font-bold text-amber-500 hover:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-5 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800/50 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm">
-        <i data-lucide="ticket" class="w-4 h-4"></i> Есть промокод?
-      </a>
+
+    <div class="text-center max-w-xl mx-auto mb-8 sm:mb-10">
+      <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">Тарифы</h2>
+      <p class="mt-2 text-gray-500 dark:text-gray-400">Начните бесплатно. Переходите на платный тариф, когда понадобится больше проектов, участников или AI.</p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
       
-      <div id="planCard_free" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
-        <div id="planBadge_free" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
-        <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-            <div class="absolute inset-0 bg-emerald-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-            <i data-lucide="leaf" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Free</h3>
-          <p class="text-sm text-gray-500 mt-2">Для персонального старта.</p>
+      <div id="planCard_free" class="plan-card relative flex flex-col rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        
+        <span id="planBadge_free" class="hidden absolute -top-3 right-6 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900">Ваш тариф</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Free</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 min-h-[2.5rem]">Для личных задач</p>
+        <div class="mt-5 mb-1 flex items-baseline gap-1.5">
+          <span class="text-4xl font-semibold tracking-tight text-gray-900 dark:text-white">$0</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400"></span>
         </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-gray-900 dark:text-white transition-transform duration-500 group-hover:scale-95">
-          <span class="text-5xl font-black">0</span>
-          <span class="text-gray-400 font-bold uppercase text-xs mt-3">Монет</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> 1 облачный проект (Cloud)</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> <b>Безлимит</b> Device-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500 mt-0.5"></i> Ограниченный AI ассистент (5/день)</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button id="btnUpgrade_free" onclick="upgradeTo('free')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
-          <button onclick="openPlanDetails('free')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-emerald-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Бесплатно навсегда</p>
+        <button id="btnUpgrade_free" onclick="upgradeTo('free')" class="w-full h-11 rounded-xl text-sm font-medium transition-colors"></button>
+        <ul class="mt-6 space-y-3 flex-1"><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>1 облачный проект</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>Безлимит проектов на устройстве</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>До 3 участников в проекте</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>AI: 5 запросов в день</span></li><li class="flex items-start gap-2.5 text-sm text-gray-400 dark:text-gray-500"><i data-lucide="minus" class="w-4 h-4 text-gray-300 dark:text-gray-600 mt-0.5 shrink-0"></i><span>Вкладки внутри проекта</span></li></ul>
+        <button onclick="openPlanDetails('free')" class="mt-6 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white text-left">Подробнее о тарифе →</button>
       </div>
-
-      <div id="planCard_freelancer" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
-        <div id="planBadge_freelancer" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
-        <div class="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 mt-4 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 transition-transform duration-500 group-hover:scale-110">
-            <div class="absolute inset-0 bg-blue-500 blur-xl opacity-40 group-hover:opacity-60 transition-opacity"></div>
-            <i data-lucide="zap" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Freelancer</h3>
-          <p class="text-sm text-gray-500 mt-2">Для активной работы.</p>
+      
+      <div id="planCard_freelancer" class="plan-card relative flex flex-col rounded-2xl border border-blue-600 dark:border-blue-500 bg-white dark:bg-gray-900 p-6">
+        <span class="absolute -top-3 left-6 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-600 text-white">Популярный</span>
+        <span id="planBadge_freelancer" class="hidden absolute -top-3 right-6 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900">Ваш тариф</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Freelancer</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 min-h-[2.5rem]">Для фрилансеров и небольших команд</p>
+        <div class="mt-5 mb-1 flex items-baseline gap-1.5">
+          <span class="text-4xl font-semibold tracking-tight text-gray-900 dark:text-white">$6</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">/ месяц</span>
         </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-amber-500 transition-transform duration-500 group-hover:scale-95">
-          <i data-lucide="coins" class="w-8 h-8"></i>
-          <span class="text-5xl font-black">600</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 облачных проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> 10 участников на доску</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-blue-500 mt-0.5"></i> Увеличенный AI лимит (30/день)</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button id="btnUpgrade_freelancer" onclick="upgradeTo('freelancer')" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all">Активировать план</button>
-          <button onclick="openPlanDetails('freelancer')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Оплата монетами: 600 в месяц</p>
+        <button id="btnUpgrade_freelancer" onclick="upgradeTo('freelancer')" class="w-full h-11 rounded-xl text-sm font-medium transition-colors"></button>
+        <ul class="mt-6 space-y-3 flex-1"><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>10 облачных проектов</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>До 10 участников в проекте</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>AI: 30 запросов в день</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>Вкладки внутри проекта</span></li></ul>
+        <button onclick="openPlanDetails('freelancer')" class="mt-6 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white text-left">Подробнее о тарифе →</button>
       </div>
-
-      <div id="planCard_pro" class="group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-amber-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1">
-        <div id="planBadge_pro" class="hidden absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-6 py-2 rounded-full shadow-lg">Текущий план</div>
-        <div class="absolute inset-0 bg-gradient-to-b from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-        <div class="mb-8 flex flex-col items-center">
-          <div class="relative w-16 h-16 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-            <div class="absolute inset-0 bg-amber-500 blur-xl opacity-0 group-hover:opacity-20 transition-opacity"></div>
-            <i data-lucide="building-2" class="w-8 h-8 relative z-10"></i>
-          </div>
-          <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Company</h3>
-          <p class="text-sm text-gray-500 mt-2">Для мощных команд.</p>
+      
+      <div id="planCard_pro" class="plan-card relative flex flex-col rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6">
+        
+        <span id="planBadge_pro" class="hidden absolute -top-3 right-6 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900">Ваш тариф</span>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Company</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 min-h-[2.5rem]">Для команд и компаний</p>
+        <div class="mt-5 mb-1 flex items-baseline gap-1.5">
+          <span class="text-4xl font-semibold tracking-tight text-gray-900 dark:text-white">$19</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">/ месяц</span>
         </div>
-        <div class="mb-8 flex items-center justify-center gap-2 text-amber-500 transition-transform duration-500 group-hover:scale-95">
-          <i data-lucide="coins" class="w-8 h-8"></i>
-          <span class="text-5xl font-black">1900</span>
-        </div>
-        <ul class="space-y-5 mb-10 flex-1 relative z-10">
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> <b>Безлимит</b> Cloud-проектов</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Продвинутые роли (Editor/Viewer)</li>
-          <li class="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300"><i data-lucide="check-circle-2" class="w-5 h-5 text-amber-500 mt-0.5"></i> Сгорающие файлы в чате</li>
-        </ul>
-        <div class="space-y-3 mt-auto relative z-10 w-full">
-          <button id="btnUpgrade_pro" onclick="upgradeTo('pro')" class="w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl">Активировать план</button>
-          <button onclick="openPlanDetails('pro')" class="w-full pt-2 pb-1 text-[11px] font-bold text-gray-400 hover:text-amber-500 uppercase tracking-widest transition-colors bg-transparent outline-none">Подробнее о тарифе...</button>
-        </div>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">Оплата монетами: 1 900 в месяц</p>
+        <button id="btnUpgrade_pro" onclick="upgradeTo('pro')" class="w-full h-11 rounded-xl text-sm font-medium transition-colors"></button>
+        <ul class="mt-6 space-y-3 flex-1"><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>Безлимит облачных проектов</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>Безлимит участников и роли</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>AI без ограничений</span></li><li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300"><i data-lucide="check" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0"></i><span>Вкладки внутри проекта</span></li></ul>
+        <button onclick="openPlanDetails('pro')" class="mt-6 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white text-left">Подробнее о тарифе →</button>
       </div>
-
     </div>
 
-    <!-- ЭНТЕРПРАЙЗ: Горизонтальный Эпический Баннер (Только для Infinity) -->
-    <div id="infinityBannerWrapper" class="hidden mt-8 w-full relative overflow-hidden bg-gray-900 dark:bg-black border border-purple-500/30 rounded-[2.5rem] p-8 sm:p-10 shadow-2xl shadow-purple-500/20 items-center justify-between gap-6 flex-col lg:flex-row text-left group">
-        <div class="absolute inset-0 bg-gradient-to-r from-purple-600/20 via-fuchsia-600/20 to-indigo-600/20 opacity-50 blur-xl pointer-events-none group-hover:opacity-100 transition-opacity duration-700"></div>
-        <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start lg:items-center gap-6 w-full">
-            <div class="w-20 h-20 bg-purple-500/10 text-purple-400 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-inner flex-shrink-0">
-                <i data-lucide="crown" class="w-10 h-10 animate-pulse"></i>
-            </div>
-            <div class="text-center sm:text-left flex-1">
-                <h3 class="text-3xl font-black text-white tracking-tight mb-2 uppercase">GOD MODE <span class="text-purple-400">Активен</span></h3>
-                <p class="text-gray-400 text-sm font-medium leading-relaxed max-w-2xl mx-auto sm:mx-0">
-                    Ваш аккаунт имеет эксклюзивный статус <b class="text-gray-200">Infinity</b>. Вам доступны абсолютно все ресурсы экосистемы Blocko Pro без каких-либо лимитов и ограничений.
-                </p>
-            </div>
-        </div>
-        <div class="relative z-10 flex-shrink-0 w-full lg:w-auto mt-2 lg:mt-0">
-           <button onclick="openPlanDetails('infinity')" class="w-full lg:w-auto px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-2xl shadow-lg shadow-purple-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
-               <i data-lucide="sparkles" class="w-5 h-5"></i> Детали
-           </button>
-        </div>
+    <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+      <span class="inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i> Оплата через PayPal</span>
+      <span class="hidden sm:inline text-gray-300 dark:text-gray-700">·</span>
+      <a href="store.html" class="inline-flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600"><i data-lucide="ticket" class="w-4 h-4"></i> Есть промокод?</a>
+      <span class="hidden sm:inline text-gray-300 dark:text-gray-700">·</span>
+      <button onclick="closePricingModal(); setTimeout(openTopUpModal, 250)" class="inline-flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600"><i data-lucide="wallet" class="w-4 h-4"></i> Пополнить баланс</button>
+    </div>
+
+    <!-- Бессрочный тариф (выдаётся администратором) -->
+    <div id="infinityBannerWrapper" class="hidden mt-6 items-center justify-between gap-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+      <div class="flex items-center gap-3">
+        <i data-lucide="infinity" class="w-5 h-5 text-blue-600"></i>
+        <div><div class="font-medium text-gray-900 dark:text-white">У вас бессрочный тариф Infinity</div><div class="text-sm text-gray-500">Все возможности без ограничений.</div></div>
+      </div>
+      <button onclick="openPlanDetails('infinity')" class="h-10 px-4 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">Подробнее</button>
     </div>
   </div>
 </div>
@@ -1645,7 +1491,10 @@ grid.innerHTML = filtered.map(data => {
 }
 
 // Модальное окно
-function openCreateModal() { document.getElementById('createBoardModal').classList.remove('hidden'); }
+function openCreateModal() {
+  document.getElementById('createBoardModal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('newBoardTitle')?.focus(), 50);
+}
 function closeCreateModal() { document.getElementById('createBoardModal').classList.add('hidden'); }
 
 // --- ЛОГИКА ТАРИФОВ И ЛИМИТОВ ---
@@ -1853,31 +1702,27 @@ function openPricingModal() {
   // ЭНТЕРПРАЙЗ: Итерируем ТОЛЬКО по видимым тарифам
   const plans = ['free', 'freelancer', 'pro'];
   
+  const ORDER = { free: 0, freelancer: 1, pro: 2, infinity: 3 };
   plans.forEach(p => {
-    const card = document.getElementById('planCard_' + p);
     const btn = document.getElementById('btnUpgrade_' + p);
     const badge = document.getElementById('planBadge_' + p);
-    
-    if (card && btn && badge) {
-      if (p === userPlan) {
-        // Активный тариф: синяя рамка, scale-105, кнопка заблокирована
-        card.className = "group bg-white dark:bg-gray-900 border-2 border-blue-500 p-10 rounded-[2.5rem] flex flex-col shadow-2xl shadow-blue-500/10 scale-105 z-10 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/20";
-        badge.classList.remove('hidden');
-        
-        btn.innerText = "Ваш тариф";
-        btn.className = "w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-2xl cursor-default transition-colors";
-        btn.onclick = null;
-      } else {
-        // Неактивный тариф: обычная рамка, стандартный hover
-        card.className = "group bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-10 rounded-[2.5rem] flex flex-col hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative overflow-hidden hover:-translate-y-1";
-        badge.classList.add('hidden');
-        
-        btn.innerText = "Активировать план";
-        btn.className = p === 'freelancer' 
-          ? "w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-500/20 active:scale-95 transition-all"
-          : "w-full py-3.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl";
-        btn.onclick = () => upgradeTo(p);
-      }
+    if (!btn || !badge) return;
+    const isCurrent = p === userPlan;
+    badge.classList.toggle('hidden', !isCurrent);
+    if (isCurrent) {
+      btn.textContent = 'Текущий тариф';
+      btn.className = 'w-full h-11 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-default';
+      btn.onclick = null;
+    } else if ((ORDER[p] || 0) < (ORDER[userPlan] || 0)) {
+      btn.textContent = p === 'free' ? 'Перейти на Free' : 'Перейти на этот тариф';
+      btn.className = 'w-full h-11 rounded-xl text-sm font-medium border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors';
+      btn.onclick = () => upgradeTo(p);
+    } else {
+      btn.textContent = p === 'free' ? 'Начать бесплатно' : 'Выбрать ' + (p === 'pro' ? 'Company' : 'Freelancer');
+      btn.className = p === 'freelancer'
+        ? 'w-full h-11 rounded-xl text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors'
+        : 'w-full h-11 rounded-xl text-sm font-medium bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 transition-colors';
+      btn.onclick = () => upgradeTo(p);
     }
   });
 
@@ -1888,8 +1733,8 @@ function openPricingModal() {
       plans.forEach(p => {
           const btn = document.getElementById('btnUpgrade_' + p);
           if (btn) {
-              btn.innerText = "Заблокировано (GOD MODE)";
-              btn.className = "w-full py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-500 font-bold rounded-2xl cursor-not-allowed transition-colors";
+              btn.textContent = "Уже включено в Infinity";
+              btn.className = "w-full h-11 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-default";
               btn.onclick = null;
           }
       });
