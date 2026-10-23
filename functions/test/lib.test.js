@@ -45,3 +45,10 @@ test('PayPal: принимается только завершённый зах�
   assert.deepStrictEqual(completedCapture(order), { captureId: 'C1', amount: '10.00', currency: 'USD', customId: 'u1', referenceId: 'starter' });
   assert.strictEqual(completedCapture({ ...order, status: 'APPROVED' }), null);
 });
+
+test('passwords: принимает pbkdf2-хэши от сервера на Cloudflare', () => {
+  const { verifyPassword } = require('../lib/passwords');
+  const fromWorker = 'pbkdf2$100000$1aEX5qHz2LLQMoN2sMHaEw==$a97UwEzw5csGkI54qiXNQkPj79WaGyXHcp6yQC0GcQA=';
+  assert.equal(verifyPassword('blocko-test', fromWorker), true);
+  assert.equal(verifyPassword('blocko-Test', fromWorker), false);
+});

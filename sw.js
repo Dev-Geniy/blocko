@@ -4,7 +4,7 @@
 // а кэш нужен только для работы без интернета. Раньше ядро отдавалось из кэша
 // (stale-while-revalidate), и после обновления сайта люди неделями видели старые файлы
 // вперемешку с новыми.
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CORE_CACHE_NAME = `blocko-pro-core-${VERSION}`;
 const MEDIA_CACHE_NAME = 'blocko-media-cache-v2';
 
@@ -19,6 +19,7 @@ const CORE_ASSETS = [
   './config.js',
   './security.js',
   './api.js',
+  './chat.js',
   './ui.css',
   './manifest.json'
 ];
@@ -91,4 +92,24 @@ self.addEventListener('fetch', (e) => {
       return Response.error();
     })
   );
+});
+
+// Нажатие на уведомление (новое сообщение в чате, дедлайн задачи):
+// открываем уже открытую вкладку доски или новую, и сразу показываем чат
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const data = event.notification.data || {};
+  const target = new URL(data.url || './', self.registration.scope).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const sameBoard = data.boardId
+      ? windows.find((w) => { try { return new URL(w.url).searchParams.get('b') === data.boardId; } catch (e) { return false; } })
+      : windows[0];
+    if (sameBoard) {
+      await sameBoard.focus();
+      if (data.type === 'chat') sameBoard.postMessage({ type: 'blocko-open-chat', boardId: data.boardId });
+      return;
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(target);
+  })());
 });

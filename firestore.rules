@@ -70,6 +70,13 @@ service cloud.firestore {
     }
 
     // Доступ к содержимому доски (карточки, чат, журнал)
+    // Чат: старый лайк (likes: [uid]) — добавить или убрать можно только себя
+    function chatOnlyOwnLike() {
+      let before = resource.data.get('likes', []).toSet();
+      let after = request.resource.data.get('likes', []).toSet();
+      return after.difference(before).union(before.difference(after)).hasOnly([uid()]);
+    }
+
     function canReadContent(boardId) {
       let board = boardDoc(boardId);
       return isMemberOf(board) && (isOwnerOf(board) || !boardHasPassword(board) || unlocked(boardId));
@@ -142,12 +149,36 @@ service cloud.firestore {
         allow create: if canReadContent(boardId)
           && request.resource.data.user.id == uid()
           && request.resource.data.get('text', '') is string
-          && request.resource.data.get('text', '').size() <= 5000;
-        // Лайки ставит любой участник, остальное — только автор
+          && request.resource.data.get('text', '').size() <= 5000
+          && request.resource.data.get('reactions', {}).size() == 0
+          && request.resource.data.get('likes', []).size() == 0;
+        // Реакции: любой участник меняет только СВОЮ реакцию (reactions.{uid}) и свой старый лайк
         allow update: if canReadContent(boardId)
-          && (changed().hasOnly(['likes']) || resource.data.user.id == uid());
+          && changed().hasOnly(['likes', 'reactions'])
+          && request.resource.data.get('reactions', {}).diff(resource.data.get('reactions', {})).affectedKeys().hasOnly([uid()])
+          && (!(uid() in request.resource.data.get('reactions', {})) || (request.resource.data.reactions[uid()] is string && request.resource.data.reactions[uid()].size() <= 16))
+          && chatOnlyOwnLike();
+        // Автор: правка текста (без подмены автора и времени)
+        allow update: if canReadContent(boardId)
+          && resource.data.user.id == uid()
+          && changed().hasOnly(['text', 'editedAt', 'mentions', 'likes', 'reactions'])
+          && request.resource.data.get('text', '') is string
+          && request.resource.data.get('text', '').size() <= 5000;
         allow delete: if canReadContent(boardId)
           && (resource.data.user.id == uid() || isOwnerOf(boardDoc(boardId)));
+
+      }
+
+      // «В сети», «печатает», «прочитал до» — каждый пишет только свой документ
+      match /presence/{userId} {
+        allow read: if canReadContent(boardId);
+        allow create, update: if canReadContent(boardId)
+          && userId == uid()
+          && request.resource.data.keys().hasOnly(['lastActive', 'typingUntil', 'lastReadAt'])
+          && request.resource.data.get('lastActive', 0) is number
+          && request.resource.data.get('typingUntil', 0) is number
+          && request.resource.data.get('lastReadAt', 0) is number;
+        allow delete: if signedIn() && (userId == uid() || isOwnerOf(boardDoc(boardId)));
       }
 
       match /activity/{logId} {

@@ -1211,7 +1211,8 @@ async function loginWithGoogle() {
         rewardsClaimed: []
       });
       
-      // Бонус пригласившему начисляет сервер (onUserCreated)
+      // Бонус пригласившему начисляет сервер (один раз, проверяет сам)
+      if (savedRefId) BlockoAPI.call('registerReferral').catch((e) => console.warn('registerReferral', e));
     }
   } catch (error) {
     console.error("Ошибка авторизации:", error);

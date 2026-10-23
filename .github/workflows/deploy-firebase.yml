@@ -1,10 +1,15 @@
-# Автоматический деплой серверной части (Cloud Functions + правила базы) в Firebase.
+# Деплой правил базы (Firestore Rules) и, по желанию, Cloud Functions в Firebase.
 # Запускается сам при изменениях в functions/ или firestore.rules в main,
 # а также вручную: Actions → «Деплой сервера (Firebase)» → Run workflow.
 #
+# Правила публикуются на бесплатном тарифе (Spark) — Blaze для них не нужен.
+# Cloud Functions требуют Blaze, поэтому включаются только переменной репозитория
+# DEPLOY_FUNCTIONS = true (Settings → Secrets and variables → Actions → Variables).
+# Без Blaze сервер оплаты работает на Cloudflare — см. deploy-api-cloudflare.yml.
+#
 # Нужны секреты репозитория (Settings → Secrets and variables → Actions):
 #   FIREBASE_SERVICE_ACCOUNT — JSON-ключ сервисного аккаунта Firebase (обязательно)
-#   PAYPAL_CLIENT_ID, PAYPAL_SECRET — ключи PayPal (для приёма оплаты)
+#   PAYPAL_CLIENT_ID, PAYPAL_SECRET — ключи PayPal (только для Cloud Functions)
 name: Деплой сервера (Firebase)
 
 on:
@@ -49,19 +54,30 @@ jobs:
           printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
           echo "ready=true" >> "$GITHUB_OUTPUT"
+          # Строгие правила включаем, только когда сервер уже работает (Cloudflare или Cloud Functions),
+          # иначе вход в доски по ссылке перестанет работать
+          API_URL=$(node -e 'try{process.stdout.write(JSON.parse(require("fs").readFileSync("api-endpoint.json","utf8")).url||"")}catch(e){}')
+          if [ "${{ vars.DEPLOY_FUNCTIONS }}" = "true" ]; then
+            echo "functions=true" >> "$GITHUB_OUTPUT"; echo "rules=true" >> "$GITHUB_OUTPUT"
+          elif [ -n "$API_URL" ]; then
+            echo "functions=false" >> "$GITHUB_OUTPUT"; echo "rules=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Сервер оплаты ещё не запущен (api-endpoint.json пуст) — правила не опубликованы. Сначала запустите «Деплой API (Cloudflare)»."
+            echo "functions=false" >> "$GITHUB_OUTPUT"; echo "rules=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Установка зависимостей
-        if: steps.key.outputs.ready == 'true'
+        if: steps.key.outputs.functions == 'true'
         working-directory: functions
         run: npm install --no-audit --no-fund
 
       - name: Тесты
-        if: steps.key.outputs.ready == 'true'
+        if: steps.key.outputs.functions == 'true'
         working-directory: functions
         run: npm test
 
       - name: Секреты PayPal
-        if: steps.key.outputs.ready == 'true'
+        if: steps.key.outputs.functions == 'true'
         env:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
@@ -79,9 +95,17 @@ jobs:
             done
           fi
 
-      - name: Деплой функций и правил
-        if: steps.key.outputs.ready == 'true'
-        run: npx --yes firebase-tools@13 deploy --only functions,firestore:rules --project "$FIREBASE_PROJECT" --force --non-interactive
+      - name: Деплой функций (нужен Blaze)
+        if: steps.key.outputs.functions == 'true'
+        run: npx --yes firebase-tools@13 deploy --only functions --project "$FIREBASE_PROJECT" --force --non-interactive
+
+      - name: Публикация правил базы
+        if: steps.key.outputs.rules == 'true'
+        run: |
+          if ! npx --yes firebase-tools@13 deploy --only firestore:rules --project "$FIREBASE_PROJECT" --force --non-interactive; then
+            echo "::error::Правила не опубликованы автоматически. Опубликуйте вручную: Firebase Console → Firestore Database → Rules → вставьте содержимое firestore.rules → Publish (DEPLOY.md, шаг 6)."
+            exit 1
+          fi
 
       - name: Удалить ключ
         if: always()

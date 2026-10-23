@@ -1,0 +1,155 @@
+# Деплой серверной части оплаты на Cloudflare Workers (бесплатно, без тарифа Firebase Blaze).
+# Запускается сам при изменениях в worker/ в main, а также вручную:
+# Actions → «Деплой API (Cloudflare)» → Run workflow.
+#
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions):
+#   CLOUDFLARE_API_TOKEN     — токен Cloudflare (шаблон «Edit Cloudflare Workers»)
+#   CLOUDFLARE_ACCOUNT_ID    — ID аккаунта Cloudflare
+#   FIREBASE_SERVICE_ACCOUNT — JSON-ключ сервисного аккаунта Firebase
+#   PAYPAL_CLIENT_ID, PAYPAL_SECRET — ключи PayPal (Live)
+# После деплоя адрес сервера автоматически записывается в api-endpoint.json — сайт начинает им пользоваться.
+name: Деплой API (Cloudflare)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'functions/lib/catalog.js'
+      - '.github/workflows/deploy-api-cloudflare.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cloudflare-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Тесты сервера
+        working-directory: worker
+        run: npm test
+
+      - name: Проверка ключей
+        id: keys
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PP_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PP_SECRET: ${{ secrets.PAYPAL_SECRET }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::warning::Не заданы CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID — сервер оплаты не обновлён. Инструкция: DEPLOY.md, «Вариант без Blaze»."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$SA" ]; then
+            echo "::error::Не задан секрет FIREBASE_SERVICE_ACCOUNT (JSON-ключ Firebase). Инструкция: DEPLOY.md, шаг 3."
+            exit 1
+          fi
+          if ! printf '%s' "$SA" | node -e 'const j=JSON.parse(require("fs").readFileSync(0,"utf8")); if(!j.private_key||!j.client_email) process.exit(1)'; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT не похож на JSON-ключ: скопируйте файл целиком, от { до }."
+            exit 1
+          fi
+          if [ -z "$PP_ID" ] || [ -z "$PP_SECRET" ]; then
+            echo "::warning::Не заданы PAYPAL_CLIENT_ID / PAYPAL_SECRET — покупка монет через PayPal не заработает (остальное заработает)."
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Адрес workers.dev
+        id: sub
+        if: steps.keys.outputs.ready == 'true'
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/workers/subdomain"
+          SUB=$(curl -sS -H "Authorization: Bearer $CF_TOKEN" "$API" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write((j.result&&j.result.subdomain)||"")}catch(e){}})')
+          if [ -z "$SUB" ]; then
+            # У нового аккаунта Cloudflare ещё нет поддомена — создаём
+            NEW="blocko-$(node -e 'process.stdout.write(require("crypto").randomBytes(3).toString("hex"))')"
+            curl -sS -X PUT -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" --data "{\"subdomain\":\"$NEW\"}" "$API" > /dev/null
+            SUB=$(curl -sS -H "Authorization: Bearer $CF_TOKEN" "$API" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const j=JSON.parse(s);process.stdout.write((j.result&&j.result.subdomain)||"")}catch(e){}})')
+          fi
+          if [ -z "$SUB" ]; then
+            echo "::error::Не удалось получить адрес workers.dev. Откройте dash.cloudflare.com → Workers & Pages один раз (Cloudflare попросит выбрать имя) и запустите снова."
+            exit 1
+          fi
+          echo "url=https://blocko-api.$SUB.workers.dev" >> "$GITHUB_OUTPUT"
+
+      - name: Деплой сервера
+        if: steps.keys.outputs.ready == 'true'
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4 deploy
+
+      - name: Ключи сервера
+        if: steps.keys.outputs.ready == 'true'
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
+        run: |
+          node -e '
+            const out = {};
+            for (const k of ["FIREBASE_SERVICE_ACCOUNT", "PAYPAL_CLIENT_ID", "PAYPAL_SECRET"]) {
+              const v = (process.env[k] || "").trim();
+              if (v) out[k] = v;
+            }
+            require("fs").writeFileSync(process.env.RUNNER_TEMP + "/secrets.json", JSON.stringify(out));
+          '
+          npx --yes wrangler@4 secret bulk "$RUNNER_TEMP/secrets.json"
+          rm -f "$RUNNER_TEMP/secrets.json"
+
+      - name: Проверка сервера
+        if: steps.keys.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.sub.outputs.url }}
+        run: |
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if curl -fsS "$URL/health" | grep -q '"ok":true'; then echo "Сервер отвечает: $URL"; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::Сервер пока не отвечает по адресу $URL (новый адрес workers.dev иногда включается до 5–10 минут). Адрес всё равно сохранён."
+
+      - name: Записать адрес сервера на сайт
+        if: steps.keys.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.sub.outputs.url }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const file = "api-endpoint.json";
+            let cur = {};
+            try { cur = JSON.parse(fs.readFileSync(file, "utf8")); } catch (e) {}
+            if (cur.url === process.env.URL) { console.log("Адрес не изменился"); process.exit(0); }
+            fs.writeFileSync(file, JSON.stringify({ url: process.env.URL }, null, 2) + "\n");
+          '
+          if git diff --quiet -- api-endpoint.json; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add api-endpoint.json
+          git commit -m "Адрес сервера оплаты: ${URL}"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep 5
+          done
+          echo "::error::Не удалось сохранить адрес сервера в api-endpoint.json"
+          exit 1
