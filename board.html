@@ -86,12 +86,15 @@
       box-shadow: inset 80px 0px 50px -50px rgba(59, 130, 246, 0.3), inset -80px 0px 50px -50px rgba(59, 130, 246, 0.3);
     }
     
-    /* ENTERPRISE: Эффект Focus Mode (блюр и затемнение) для неактивных колонок */
-    body.is-dragging-column #board > div:not(.sortable-drag):not(.sortable-ghost) {
-      opacity: 0.5;
-      filter: blur(1.5px) grayscale(30%);
-      transition: opacity 0.3s ease, filter 0.3s ease;
-    }
+    /* Перетаскивание колонок: место вставки — пунктирная рамка, сама колонка «поднята» и следует за курсором */
+    .column-ghost { opacity: 1 !important; background: rgba(59,130,246,.06) !important; outline: 2px dashed rgba(59,130,246,.55); outline-offset: -2px; }
+    .column-ghost > * { visibility: hidden; }
+    .dark .column-ghost { background: rgba(59,130,246,.10) !important; }
+    .spaces-rail .spaces-rail-hide { display: none; }
+    .spaces-scroll { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent); padding-right: 16px; }
+    .column-fallback { opacity: 1 !important; transform: rotate(1.5deg); box-shadow: 0 24px 48px -12px rgba(0,0,0,.28) !important; cursor: grabbing !important; pointer-events: none; }
+    body.is-dragging-column, body.is-dragging-column * { cursor: grabbing !important; user-select: none; }
+    .col-handle.cursor-grab:active { cursor: grabbing; }
 
     /* ENTERPRISE: Компактный режим доски (High-Density View) */
     body.compact-mode .card-item { padding: 0.5rem !important; }
@@ -271,14 +274,12 @@
 
   <!-- ЭНТЕРПРАЙЗ: Интеллектуальная панель вкладок (Hover-режим) -->
   <div id="spacesSubHeaderWrapper" class="relative z-10 w-full overflow-hidden transition-all duration-300 ease-in-out max-h-[60px] opacity-100 group-[.is-collapsed]/header:max-h-0 group-[.is-collapsed]/header:opacity-0 md:group-[.is-collapsed]/header:group-hover/header:max-h-[60px] md:group-[.is-collapsed]/header:group-hover/header:opacity-100">
-    <div id="spacesSubHeader" class="hidden px-3 sm:px-5 py-1.5 border-b border-gray-200/80 dark:border-gray-800 bg-white/70 dark:bg-gray-950/70 backdrop-blur-md flex items-center gap-1 overflow-x-auto hide-scroll" title="Нажмите на пустое место, чтобы скрыть панель">
-      <div id="boardSpacesContainer" class="flex items-center gap-1.5 cursor-default" onclick="event.stopPropagation()">
-         <!-- JS Injects Tabs Here -->
-      </div>
-      <div class="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1 flex-shrink-0 cursor-default" onclick="event.stopPropagation()"></div>
-      <button onclick="event.stopPropagation(); addSpace()" class="flex-shrink-0 flex items-center gap-1 h-8 px-2.5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium" title="Добавить вкладку внутри проекта">
-         <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Вкладка
+    <div id="spacesSubHeader" class="hidden h-10 px-2 sm:px-4 border-b border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-950 flex items-center gap-1">
+      <div id="boardSpacesContainer" class="flex items-center gap-0.5 overflow-x-auto hide-scroll min-w-0" role="tablist" aria-label="Вкладки проекта"></div>
+      <button id="addSpaceBtn" onclick="addSpace()" class="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Новая вкладка" aria-label="Новая вкладка">
+        <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i>
       </button>
+      <div class="flex-1 self-stretch" onclick="toggleSpacesCollapse(event)"></div>
     </div>
   </div>
 
@@ -330,19 +331,14 @@
 </div>
 
 <div class="flex flex-1 overflow-hidden relative w-full">
-  <!-- ЭНТЕРПРАЙЗ: Вертикальная панель Пространств (Linear Style) -->
-  <aside id="spacesVerticalSidebar" class="hidden w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/30 flex-col transition-all duration-300 overflow-y-auto hide-scroll z-10 flex-shrink-0">
-     <div class="px-4 pt-5 pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-        <i data-lucide="folders" class="w-3.5 h-3.5"></i> Доски проекта
+  <!-- Вкладки проекта сбоку: компактный список, сворачивается в узкую полоску -->
+  <aside id="spacesVerticalSidebar" class="hidden w-52 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex-col overflow-y-auto hide-scroll z-10 flex-shrink-0 transition-[width] duration-200">
+     <div class="h-10 px-2 flex items-center gap-1 flex-shrink-0">
+        <span class="spaces-rail-hide flex-1 pl-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">Вкладки</span>
+        <button onclick="addSpace()" class="spaces-rail-hide w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800" title="Новая вкладка" aria-label="Новая вкладка"><i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i></button>
+        <button onclick="toggleSpacesRail()" id="spacesRailBtn" class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800" title="Свернуть панель" aria-label="Свернуть панель"><i data-lucide="panel-left-close" class="w-4 h-4 pointer-events-none"></i></button>
      </div>
-     <div class="px-3 pb-4 flex flex-col gap-1.5" id="boardSpacesContainerVertical">
-       <!-- JS Injects Tabs Here -->
-     </div>
-     <div class="px-4 pb-6 mt-auto">
-       <button onclick="addSpace()" class="w-full flex items-center justify-center gap-1.5 px-4 py-3 bg-white dark:bg-gray-800 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-gray-200 dark:border-gray-700 font-bold text-xs shadow-sm active:scale-95 group">
-          <i data-lucide="plus" class="w-4 h-4 group-hover:rotate-90 transition-transform pointer-events-none"></i> Новая доска
-       </button>
-     </div>
+     <div class="px-2 pb-3 flex flex-col gap-0.5" id="boardSpacesContainerVertical" role="tablist" aria-label="Вкладки проекта"></div>
   </aside>
 
   <main id="mainScroll" class="flex-1 overflow-x-auto overflow-y-hidden p-6 h-full cursor-grab active:cursor-grabbing w-full transition-all duration-300">
@@ -1449,105 +1445,216 @@ let boardData = {};
 let chatListenersStarted = false; // защита от двойной подписки до первого снапшота чата
 // Base64 раздувает файл на ~33%, а документ Firestore ограничен 1 МиБ — оставляем запас
 const MAX_CHAT_FILE_BYTES = 700 * 1024;
-let currentSpaceId = 'default'; // ЭНТЕРПРАЙЗ: Активное пространство (Вкладка доски)
+// Активная вкладка проекта (запоминаем на время сессии, чтобы после обновления страницы остаться на ней)
+let currentSpaceId = (() => { try { return sessionStorage.getItem(`blocko_space_${BOARD_ID}`) || 'default'; } catch (e) { return 'default'; } })();
 let spacesLayoutMode = localStorage.getItem('blocko_spaces_layout') || 'horizontal';
 
 function toggleSpacesLayout() {
     spacesLayoutMode = spacesLayoutMode === 'horizontal' ? 'vertical' : 'horizontal';
     localStorage.setItem('blocko_spaces_layout', spacesLayoutMode);
     renderSpacesUI();
+    showSystemToast(spacesLayoutMode === 'vertical' ? 'Вкладки сбоку' : 'Вкладки сверху', 'Вид можно переключить этой же кнопкой.', spacesLayoutMode === 'vertical' ? 'panel-left' : 'panel-top', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
 }
 
-// ЭНТЕРПРАЙЗ: Управление Пространствами (Sub-boards) с поддержкой 2х режимов отображения
+let spacesRail = localStorage.getItem('blocko_spaces_rail') === '1';
+function toggleSpacesRail() {
+    spacesRail = !spacesRail;
+    localStorage.setItem('blocko_spaces_rail', spacesRail ? '1' : '0');
+    renderSpacesUI();
+}
+
+// Сколько активных задач во вкладке
+function spaceTaskCount(spaceId) {
+    return columns.filter(c => (c.spaceId || 'default') === spaceId).reduce((n, c) => n + ((c.cards || []).length), 0);
+}
+
+const canManageSpaces = () => {
+    const role = boardData.users && currentUser && boardData.users[currentUser.id] ? boardData.users[currentUser.id].role : 'editor';
+    return isLocalBoard || role !== 'viewer';
+};
+
+// Вкладки проекта: сверху (по умолчанию) или сбоку. Компактно, с числом задач,
+// переименование двойным кликом, «⋯» — меню вкладки, порядок меняется перетаскиванием.
 function renderSpacesUI() {
+   if (typeof boardDragActive !== 'undefined' && boardDragActive) { renderPendingAfterDrag = true; return; }
    const containerHorizontal = document.getElementById('boardSpacesContainer');
    const containerVertical = document.getElementById('boardSpacesContainerVertical');
    const subHeaderWrapper = document.getElementById('spacesSubHeaderWrapper');
    const subHeader = document.getElementById('spacesSubHeader');
    const verticalSidebar = document.getElementById('spacesVerticalSidebar');
-   
-   if (!boardData.spaces || boardData.spaces.length === 0) {
-       boardData.spaces = [{ id: 'default', name: 'Главная' }];
-   }
-   
-   // Логика переключения контейнеров (на мобильных принудительно горизонт)
+
+   if (!boardData.spaces || boardData.spaces.length === 0) boardData.spaces = [{ id: 'default', name: 'Главная' }];
+   if (!boardData.spaces.some(sp => sp.id === currentSpaceId)) currentSpaceId = boardData.spaces[0].id;
+
    const isDesktop = window.innerWidth >= 768;
-   
-   if (spacesLayoutMode === 'vertical' && isDesktop) {
-       subHeaderWrapper.classList.add('hidden');
-       verticalSidebar.classList.remove('hidden');
-       verticalSidebar.classList.add('flex');
-   } else {
-       subHeaderWrapper.classList.remove('hidden');
-       subHeader.classList.remove('hidden'); // Принудительный показ внутренней панели
-       if(verticalSidebar) {
-           verticalSidebar.classList.add('hidden');
-           verticalSidebar.classList.remove('flex');
-       }
+   const vertical = spacesLayoutMode === 'vertical' && isDesktop;
+   const manage = canManageSpaces();
+
+   subHeaderWrapper.classList.toggle('hidden', vertical);
+   subHeader.classList.remove('hidden');
+   verticalSidebar.classList.toggle('hidden', !vertical);
+   verticalSidebar.classList.toggle('flex', vertical);
+   verticalSidebar.classList.toggle('w-52', vertical && !spacesRail);
+   verticalSidebar.classList.toggle('w-12', vertical && spacesRail);
+   verticalSidebar.classList.toggle('spaces-rail', vertical && spacesRail);
+   document.getElementById('addSpaceBtn')?.classList.toggle('hidden', !manage);
+   const railBtn = document.getElementById('spacesRailBtn');
+   if (railBtn) {
+       railBtn.title = spacesRail ? 'Развернуть панель' : 'Свернуть панель';
+       railBtn.innerHTML = `<i data-lucide="${spacesRail ? 'panel-left-open' : 'panel-left-close'}" class="w-4 h-4 pointer-events-none"></i>`;
    }
 
-   const generateTabs = (isVertical) => boardData.spaces.map(space => {
-       const isActive = space.id === currentSpaceId;
-       
-       let activeClasses = '';
-       if (isVertical) {
-           activeClasses = isActive 
-              ? 'bg-white dark:bg-gray-800 text-blue-700 dark:text-blue-400 shadow-sm border-blue-200/50 dark:border-blue-700/50 z-10' 
-              : 'bg-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-gray-800/60 border-transparent';
-       } else {
-           activeClasses = isActive 
-              ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm border-gray-200 dark:border-gray-700' 
-              : 'bg-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/70 border-transparent';
+   const tab = (space) => {
+       const active = space.id === currentSpaceId;
+       const count = spaceTaskCount(space.id);
+       const name = esc(space.name || 'Без названия');
+       const menuBtn = manage ? `<button type="button" onclick="event.stopPropagation(); openSpaceMenu(${jsArg(space.id)}, this)" class="space-menu-btn w-5 h-5 -mr-1 flex items-center justify-center rounded text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700 ${active ? '' : 'opacity-0 group-hover/space:opacity-100'}" title="Действия с вкладкой" aria-label="Действия с вкладкой"><i data-lucide="more-horizontal" class="w-3.5 h-3.5 pointer-events-none"></i></button>` : '';
+       if (vertical && spacesRail) {
+           return `<button type="button" role="tab" aria-selected="${active}" data-id="${esc(space.id)}" onclick="switchSpace(${jsArg(space.id)})" class="space-tab-item w-8 h-8 mx-auto flex items-center justify-center rounded-lg text-xs font-semibold transition-colors ${active ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm ring-1 ring-gray-200 dark:ring-gray-700' : 'text-gray-500 hover:bg-gray-200/70 dark:hover:bg-gray-800'}" title="${name} · задач: ${count}">${esc(String(space.name || '?').trim().charAt(0).toUpperCase() || '?')}</button>`;
        }
-       
-       const layoutClasses = isVertical ? 'w-full py-2 px-3 justify-start' : 'h-8 px-3';
-       
-       return `
-          <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${esc(space.id)}">
-              <button onclick="switchSpace(${jsArg(space.id)})" class="rounded-lg text-sm font-medium transition-colors border ${activeClasses} flex items-center gap-2 select-none ${layoutClasses}">
-                 <span class="truncate">${esc(space.name)}</span>
-              </button>
-              ${isActive && boardData.spaces.length > 1 ? `
-              <button onclick="event.stopPropagation(); deleteSpace(${jsArg(space.id)})" class="absolute ${isVertical ? 'right-2 top-1/2 -translate-y-1/2' : '-top-1.5 -right-1.5'} opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
-                 <i data-lucide="x" class="w-3 h-3 pointer-events-none"></i>
-              </button>
-              ` : ''}
-          </div>
-       `;
-   }).join('');
+       if (vertical) {
+           return `<div role="tab" aria-selected="${active}" data-id="${esc(space.id)}" onclick="switchSpace(${jsArg(space.id)})" ondblclick="${manage ? `startRenameSpace(${jsArg(space.id)})` : ''}" class="space-tab-item group/space h-8 pl-2.5 pr-2 flex items-center gap-2 rounded-lg cursor-pointer select-none text-[13px] transition-colors ${active ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-medium shadow-sm ring-1 ring-gray-200 dark:ring-gray-700' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/60 dark:hover:bg-gray-800/70 hover:text-gray-900 dark:hover:text-white'}">
+               <i data-lucide="hash" class="w-3.5 h-3.5 flex-shrink-0 ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400'}"></i>
+               <span class="space-name flex-1 min-w-0 truncate">${name}</span>
+               <span class="text-[11px] tabular-nums text-gray-400 ${count ? '' : 'hidden'} group-hover/space:hidden">${count}</span>
+               <span class="${active ? '' : 'hidden group-hover/space:inline-flex'}">${menuBtn}</span>
+           </div>`;
+       }
+       return `<div role="tab" aria-selected="${active}" data-id="${esc(space.id)}" onclick="switchSpace(${jsArg(space.id)})" ondblclick="${manage ? `startRenameSpace(${jsArg(space.id)})` : ''}" class="space-tab-item group/space relative flex-shrink-0 h-7 pl-2.5 ${manage && active ? 'pr-1.5' : 'pr-2.5'} flex items-center gap-1.5 rounded-md cursor-pointer select-none text-[13px] transition-colors ${active ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-900'}" title="${manage ? 'Двойной клик — переименовать' : ''}">
+           <span class="space-name max-w-[180px] truncate">${name}</span>
+           ${count ? `<span class="text-[11px] tabular-nums ${active ? 'text-gray-500 dark:text-gray-400' : 'text-gray-400 dark:text-gray-500'}">${count}</span>` : ''}
+           ${active ? menuBtn : ''}
+       </div>`;
+   };
 
-   if (spacesLayoutMode === 'vertical' && isDesktop) {
-       if(containerVertical) {
-           containerVertical.innerHTML = generateTabs(true);
-           lucide.createIcons({ root: containerVertical });
-           initSpacesSortable(containerVertical);
-       }
-   } else {
-       if(containerHorizontal) {
-           containerHorizontal.innerHTML = generateTabs(false);
-           lucide.createIcons({ root: containerHorizontal });
-           initSpacesSortable(containerHorizontal);
+   const target = vertical ? containerVertical : containerHorizontal;
+   const other = vertical ? containerHorizontal : containerVertical;
+   if (other) other.innerHTML = '';
+   if (target) {
+       target.innerHTML = boardData.spaces.map(tab).join('');
+       lucide.createIcons({ root: target.parentElement || target });
+       if (manage) initSpacesSortable(target); else if (window.spacesSortable) { window.spacesSortable.destroy(); window.spacesSortable = null; }
+       // Активная вкладка всегда видна в горизонтальном списке
+       if (!vertical) {
+           target.classList.toggle('spaces-scroll', target.scrollWidth > target.clientWidth + 2);
+           const activeEl = target.querySelector('[aria-selected="true"]');
+           if (activeEl) {
+               const left = activeEl.offsetLeft, right = left + activeEl.offsetWidth;
+               if (left < target.scrollLeft) target.scrollLeft = left - 8;
+               else if (right > target.scrollLeft + target.clientWidth) target.scrollLeft = right - target.clientWidth + 8;
+           }
        }
    }
+   if (railBtn) lucide.createIcons({ root: railBtn });
 }
 
 function initSpacesSortable(container) {
    if (window.spacesSortable) window.spacesSortable.destroy();
    window.spacesSortable = new Sortable(container, {
-       animation: 250,
+       animation: 180,
+       draggable: '.space-tab-item',
+       filter: '.space-menu-btn, input',
+       preventOnFilter: false,
        ghostClass: 'opacity-40',
-       dragClass: 'scale-105',
+       direction: spacesLayoutMode === 'vertical' && window.innerWidth >= 768 ? 'vertical' : 'horizontal',
+       delay: 200,
+       delayOnTouchOnly: true,
+       onStart: () => { boardDragActive = true; },
        onEnd: function (evt) {
-           const movedSpace = boardData.spaces.splice(evt.oldIndex, 1)[0];
-           boardData.spaces.splice(evt.newIndex, 0, movedSpace);
+           setBoardDragActive(false);
+           if (evt.oldIndex === evt.newIndex) return;
+           const ids = Array.from(container.querySelectorAll('.space-tab-item')).map(el => el.dataset.id);
+           const byId = new Map(boardData.spaces.map(sp => [sp.id, sp]));
+           boardData.spaces = ids.map(id => byId.get(id)).filter(Boolean);
            updateBoardData({ spaces: boardData.spaces });
-           if (!isLocalBoard) logActivity(`Изменил(а) порядок вкладок доски`, 'move');
+           if (!isLocalBoard) logActivity('Изменил(а) порядок вкладок', 'move');
        }
    });
 }
 
+// Меню вкладки: переименовать / удалить
+function closeSpaceMenu() { document.getElementById('spaceMenuPopover')?.remove(); }
+function openSpaceMenu(spaceId, anchor) {
+    const existing = document.getElementById('spaceMenuPopover');
+    if (existing && existing.dataset.id === spaceId) { closeSpaceMenu(); return; }
+    closeSpaceMenu();
+    const space = (boardData.spaces || []).find(sp => sp.id === spaceId);
+    if (!space) return;
+    const canDelete = boardData.spaces.length > 1;
+    const menu = document.createElement('div');
+    menu.id = 'spaceMenuPopover';
+    menu.dataset.id = spaceId;
+    menu.className = 'fixed z-[120] w-48 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl text-sm';
+    menu.innerHTML = `
+      <button type="button" data-act="rename" class="w-full flex items-center gap-2.5 px-2.5 h-8 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="pencil" class="w-4 h-4 text-gray-400"></i>Переименовать</button>
+      <button type="button" data-act="new" class="w-full flex items-center gap-2.5 px-2.5 h-8 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>Новая вкладка</button>
+      <div class="my-1 h-px bg-gray-100 dark:bg-gray-800"></div>
+      <button type="button" data-act="delete" ${canDelete ? '' : 'disabled'} class="w-full flex items-center gap-2.5 px-2.5 h-8 rounded-lg ${canDelete ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20' : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'}" title="${canDelete ? '' : 'Последнюю вкладку удалить нельзя'}"><i data-lucide="trash-2" class="w-4 h-4"></i>Удалить вкладку</button>`;
+    document.body.appendChild(menu);
+    lucide.createIcons({ root: menu });
+    const r = anchor.getBoundingClientRect();
+    const left = Math.min(Math.max(8, r.left), window.innerWidth - menu.offsetWidth - 8);
+    menu.style.left = `${left}px`;
+    menu.style.top = `${Math.min(r.bottom + 6, window.innerHeight - menu.offsetHeight - 8)}px`;
+    menu.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-act]');
+        if (!btn || btn.disabled) return;
+        closeSpaceMenu();
+        if (btn.dataset.act === 'rename') startRenameSpace(spaceId);
+        if (btn.dataset.act === 'new') addSpace();
+        if (btn.dataset.act === 'delete') deleteSpace(spaceId);
+    });
+    setTimeout(() => document.addEventListener('pointerdown', function onDoc(e) {
+        if (!e.target.closest('#spaceMenuPopover')) { closeSpaceMenu(); document.removeEventListener('pointerdown', onDoc, true); }
+    }, true), 0);
+}
+
+// Переименование прямо в списке вкладок
+function startRenameSpace(spaceId) {
+    if (!canManageSpaces()) return;
+    const space = (boardData.spaces || []).find(sp => sp.id === spaceId);
+    const el = document.querySelector(`.space-tab-item[data-id="${CSS.escape(spaceId)}"] .space-name`);
+    if (!space) return;
+    if (!el) { // свёрнутая панель — через окно
+        return openCustomPrompt('Переименовать вкладку', 'Новое название вкладки', space.name, 'Сохранить', (name) => saveSpaceName(spaceId, name));
+    }
+    const input = document.createElement('input');
+    input.value = space.name || '';
+    input.maxLength = 60;
+    input.className = 'w-[140px] min-w-0 bg-white dark:bg-gray-900 border border-blue-500 rounded px-1 -mx-1 h-6 text-[13px] text-gray-900 dark:text-white outline-none';
+    input.setAttribute('aria-label', 'Название вкладки');
+    el.replaceWith(input);
+    input.focus();
+    input.select();
+    let done = false;
+    const finish = (save) => {
+        if (done) return;
+        done = true;
+        if (save) saveSpaceName(spaceId, input.value); else renderSpacesUI();
+    };
+    input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('dblclick', (e) => e.stopPropagation());
+}
+function saveSpaceName(spaceId, name) {
+    const clean = String(name || '').trim().slice(0, 60);
+    const space = (boardData.spaces || []).find(sp => sp.id === spaceId);
+    if (!space || !clean || clean === space.name) { renderSpacesUI(); return; }
+    space.name = clean;
+    updateBoardData({ spaces: boardData.spaces });
+    renderSpacesUI();
+    if (!isLocalBoard) logActivity(`Переименовал(а) вкладку: «${clean}»`, 'pencil');
+}
+
 function switchSpace(spaceId) {
+    if (spaceId === currentSpaceId) return;
     currentSpaceId = spaceId;
+    try { sessionStorage.setItem(`blocko_space_${BOARD_ID}`, spaceId); } catch (e) {}
     renderSpacesUI();
     render(); // Мгновенный перерендеринг колонок без перезагрузки
 }
@@ -1555,17 +1662,17 @@ function switchSpace(spaceId) {
 function addSpace() {
     // ЭНТЕРПРАЙЗ: Проверка тарифа для вкладки "Spaces"
     if (userPlan === 'free') {
-        return showSystemToast('Лимит тарифа Free', 'Множественные доски внутри проекта доступны на тарифах Freelancer и Company. Масштабируйте процессы без ограничений!', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+        return showSystemToast('Тариф Free', 'Несколько вкладок в проекте доступны на тарифах Freelancer и Company.', 'lock', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
     }
     
-    openCustomPrompt('Новая доска', 'Введите название для нового пространства (например: Маркетинг, Back-end, CRM)', 'Название пространства...', 'Создать', (name) => {
+    openCustomPrompt('Новая вкладка', 'Вкладка — отдельный набор колонок внутри проекта. Например: Маркетинг, Разработка, CRM.', 'Название вкладки', 'Создать', (name) => {
         if (name && name.trim()) {
             const newId = 'space_' + Date.now();
             boardData.spaces.push({ id: newId, name: name.trim() });
             updateBoardData({ spaces: boardData.spaces });
             switchSpace(newId);
             if (!isLocalBoard) logActivity(`Создал(а) новую вкладку: "${name}"`, 'plus-square');
-            showSystemToast('Пространство создано', `Доска "${name}" готова к работе.`, 'folder-plus', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+            showSystemToast('Вкладка создана', `«${name.trim()}» готова. Двойной клик по названию — переименовать.`, 'plus-square', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
         }
     });
 }
@@ -3701,7 +3808,20 @@ if (!window.blockoDelegationInited) {
 
 let renderRAF = null;
 
+// Пока пользователь тащит карточку или колонку, перерисовку откладываем:
+// иначе обновление из облака (чужая правка, журнал) пересоздаёт доску и колонка «прыгает» обратно
+let boardDragActive = false;
+let renderPendingAfterDrag = false;
+function setBoardDragActive(active) {
+  boardDragActive = active;
+  if (!active && renderPendingAfterDrag) {
+    renderPendingAfterDrag = false;
+    setTimeout(() => { renderSpacesUI(); render(); }, 60);
+  }
+}
+
 function render() {
+  if (boardDragActive) { renderPendingAfterDrag = true; return; }
   // Защита от «битых» данных (старые версии, импорт, ручные правки): одна кривая карточка не должна ронять всю доску
   columns.forEach(col => {
     if (!Array.isArray(col.cards)) col.cards = [];
@@ -4149,10 +4269,12 @@ function render() {
         
         // Интерактивная подсветка скролл-зон
         onStart: function (evt) {
+          boardDragActive = true;
           document.body.classList.add('is-dragging-card');
         },
         onEnd: async function (evt) {
           document.body.classList.remove('is-dragging-card');
+          setBoardDragActive(false);
           const cardId = evt.item.dataset.id;
           // id из DOM — строка, а в данных колонки могут иметь числовой id: берём исходный тип
           const colIdOf = (raw) => { const col = columns.find(c => String(c.id) === raw); return col ? col.id : raw; };
@@ -4253,42 +4375,54 @@ function render() {
     }
     // ----------------------------------------------------
 
-    // Инициализация SortableJS для Колонок (Enterprise Horizontal DnD + Edge Snapping)
-    sortableInstances.push(new Sortable(board, { 
-      animation: 300, 
-      easing: "cubic-bezier(0.25, 1, 0.5, 1)", 
-      handle: '.col-handle', 
-      ghostClass: 'sortable-ghost', 
-      dragClass: 'sortable-drag', 
-      forceFallback: /Mobi|Android/i.test(navigator.userAgent), 
-      fallbackClass: 'sortable-fallback',
+    // Перетаскивание колонок: тянуть за шапку колонки, как в Trello.
+    // Порядок берём из DOM (data-id), а не из индексов: на доске видны колонки только текущей вкладки,
+    // а в массиве columns лежат колонки всех вкладок — индексы не совпадали, и колонка вставала не туда.
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    sortableInstances.push(new Sortable(board, {
+      animation: 200,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
+      handle: '.col-handle',
+      draggable: '.board-column',
+      filter: 'button, input, a, [contenteditable]',
+      preventOnFilter: false,
+      direction: 'horizontal',
+      swapThreshold: 0.65,
+      ghostClass: 'column-ghost',
+      chosenClass: 'column-chosen',
+      dragClass: 'column-drag',
+      forceFallback: true,          // одинаковое поведение мышью и пальцем: колонка «поднимается» и едет за курсором
+      fallbackClass: 'column-fallback',
       fallbackOnBody: true,
-      fallbackTolerance: 5,
-      invertSwap: true, 
-      swapThreshold: 0.8,
+      fallbackTolerance: 4,
+      delay: isTouchDevice ? 180 : 0,
+      delayOnTouchOnly: true,
       disabled: isViewer,
-      delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
-      
-      // ЭНТЕРПРАЙЗ: Огромная зона горизонтального листания
-      scroll: true,
-      scrollSensitivity: 180, 
-      scrollSpeed: 30,
-      
-      onStart: function (evt) {
-        // Активируем Focus Mode и неоновые зоны в CSS
+      scroll: document.getElementById('mainScroll') || true,
+      scrollSensitivity: 120,
+      scrollSpeed: 18,
+      onStart: function () {
+        boardDragActive = true;
         document.body.classList.add('is-dragging-column');
-        if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback на смартфонах
+        if (navigator.vibrate && isTouchDevice) navigator.vibrate(30);
       },
-      onEnd: function (evt) { 
+      onEnd: function (evt) {
         document.body.classList.remove('is-dragging-column');
         if (evt.oldIndex !== evt.newIndex) {
-            const movedCol = columns.splice(evt.oldIndex, 1)[0];
-            columns.splice(evt.newIndex, 0, movedCol); 
-            persist(); 
-            // Даем DOM время на плавную установку колонки, затем мягко рендерим данные
-            setTimeout(() => render(), 50);
+          const orderedIds = Array.from(board.querySelectorAll(':scope > .board-column')).map(el => String(el.dataset.id));
+          const byId = new Map(columns.map(c => [String(c.id), c]));
+          const visible = orderedIds.map(id => byId.get(id)).filter(Boolean);
+          let k = 0;
+          // Колонки других вкладок остаются на своих местах, переставляем только видимые
+          columns = columns.map(c => ((c.spaceId || 'default') === currentSpaceId && k < visible.length ? visible[k++] : c));
+          if (!isLocalBoard) boardData.columns = getColumnsMeta(); // чтобы перерисовка до ответа облака уже видела новый порядок
+          persist();
+          if (!isLocalBoard && typeof logActivity === 'function') logActivity('Изменил(а) порядок колонок', 'move');
         }
-      } 
+        setBoardDragActive(false);
+        renderPendingAfterDrag = false;
+        setTimeout(() => render(), 0);
+      }
     }));
 
     lucide.createIcons();

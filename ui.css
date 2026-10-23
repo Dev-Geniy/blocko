@@ -101,6 +101,11 @@ body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-
 /* Поля ввода: единая высота фокуса и мягкая рамка */
 input:not([type=checkbox]):not([type=radio]):not([type=range]):focus-visible,
 textarea:focus-visible, select:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(37 99 235 / 0.18); }
+/* Поле внутри «обёртки» (поиск с иконкой, чат и т. п.): рамку рисует обёртка — второе поле внутри не показываем */
+input.bg-transparent:focus, input.bg-transparent:focus-visible,
+textarea.bg-transparent:focus, textarea.bg-transparent:focus-visible,
+:where(label, div)[class*="focus-within:"] :is(input, textarea, select):focus,
+:where(label, div)[class*="focus-within:"] :is(input, textarea, select):focus-visible { outline: none !important; box-shadow: none !important; }
 
 /* Полосы прокрутки — тонкие и нейтральные */
 * { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / .45) transparent; }
