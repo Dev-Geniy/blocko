@@ -19,18 +19,14 @@
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-    }
+    /* Обычная прокрутка страницы: шапка липкая (sticky), контент листается целиком.
+       Раньше body был фиксированной высоты с overflow:hidden — низ страницы был недоступен. */
+    html, body { width: 100%; min-height: 100dvh; }
   </style>
 
   <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col transition-colors duration-300">
 
 <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>
 <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none -z-10"></div>

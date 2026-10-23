@@ -3808,6 +3808,21 @@ if (!window.blockoDelegationInited) {
 
 let renderRAF = null;
 
+// Колёсико мыши над доской листает колонки по горизонтали (как в Trello).
+// Над списком карточек, который сам может прокрутиться вертикально, колёсико работает как обычно.
+(function initBoardWheel() {
+  const main = document.getElementById('mainScroll');
+  if (!main) return;
+  main.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY) || main.scrollWidth <= main.clientWidth) return;
+    for (let el = e.target; el && el !== main; el = el.parentElement) {
+      if (el.scrollHeight > el.clientHeight + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) return; // пусть листается список
+    }
+    main.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+})();
+
 // Пока пользователь тащит карточку или колонку, перерисовку откладываем:
 // иначе обновление из облака (чужая правка, журнал) пересоздаёт доску и колонка «прыгает» обратно
 let boardDragActive = false;

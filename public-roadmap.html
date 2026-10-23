@@ -28,17 +28,13 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-    }
+    /* Обычная прокрутка страницы: шапка липкая (sticky), контент листается целиком.
+       Раньше body был фиксированной высоты с overflow:hidden — низ страницы был недоступен. */
+    html, body { width: 100%; min-height: 100dvh; }
   </style>
 
   </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col transition-colors duration-300">
   
 <!-- Фоновые неоновые блики (Фуксия и Индиго) -->
 <div class="absolute top-0 left-1/4 w-96 h-96 bg-fuchsia-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>

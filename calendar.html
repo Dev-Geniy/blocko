@@ -2,230 +2,131 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Глобальный Календарь — Blocko Pro</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Календарь — Blocko Pro</title>
+  <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-  
+  <script src="security.js"></script>
+
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
 
-  
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    html, body { width: 100%; min-height: 100dvh; }
     .hide-scroll::-webkit-scrollbar { display: none; }
     .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Анимации загрузки */
-    @keyframes block-stretch {
-      0%, 100% { transform: scaleX(1); opacity: 0.5; }
-      50% { transform: scaleX(2.5); opacity: 1; }
-    }
-    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
-    .delay-200 { animation-delay: 0.2s; }
-    .delay-400 { animation-delay: 0.4s; }
-
-    /* Drag & Drop Стили */
-    .sortable-ghost { opacity: 0.4; transform: scale(0.95); border: 2px dashed #8b5cf6; background: rgba(139, 92, 246, 0.1); }
-    .sortable-drag { cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3); transform: rotate(2deg) scale(1.05); z-index: 100; }
-    
-    /* Анимация обновления сетки */
-    @keyframes fadeInScale {
-      from { opacity: 0.5; transform: scale(0.99); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .grid-animate { animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-    /* ENTERPRISE: Архитектура PWA-вьюпорта */
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      overflow: hidden; 
-      overscroll-behavior: none;
-      -webkit-overflow-scrolling: touch;
-    }
-    
-    .mini-month-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 3px;
-    }
-    .mini-day {
-      aspect-ratio: 1/1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: 800;
-      border-radius: 8px;
+    .cal-chip.sortable-ghost { opacity: .35; }
+    .cal-chip.sortable-drag { box-shadow: 0 12px 24px -8px rgb(0 0 0 / .25); transform: rotate(1deg); }
+    .cal-day.drop-hover { outline: 2px dashed rgba(59,130,246,.6); outline-offset: -3px; }
+    @keyframes calIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .cal-in { animation: calIn .22s ease; }
+    @media (prefers-reduced-motion: reduce) { .cal-in { animation: none; } }
+    /* На ПК календарь занимает экран целиком, ячейки делят высоту поровну */
+    @media (min-width: 1024px) {
+      .cal-shell { height: calc(100dvh - 4rem); }
     }
   </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col">
 
-  </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
-
-<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
-  <div class="flex flex-col items-center scale-110">
-    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-3xl text-white shadow-2xl shadow-indigo-500/40 mb-6">
-      <i data-lucide="calendar-days" class="w-12 h-12"></i>
-    </div>
-    <h2 class="text-3xl font-black tracking-tighter mb-10">CALENDAR <span class="text-indigo-500">PRO</span></h2>
-    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
-       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-indigo-500 rounded-full"></div>
-       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-purple-500 rounded-full"></div>
-       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-indigo-400 rounded-full"></div>
-    </div>
+<div id="globalLoader" class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
+  <div class="flex flex-col items-center gap-4 text-gray-400">
+    <span class="bg-blue-600 p-3 rounded-2xl text-white"><i data-lucide="calendar-days" class="w-7 h-7"></i></span>
+    <span class="text-sm">Собираем сроки со всех проектов…</span>
   </div>
 </div>
 
-<div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-<div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-
-<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
-      <i data-lucide="arrow-left" class="w-5 h-5"></i>
-    </a>
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">Глобальный Календарь</h1>
-      <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-        <i data-lucide="calendar" class="w-3.5 h-3.5"></i> Дедлайны со всех досок
-      </p>
-    </div>
+<!-- Шапка — как на главной -->
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-30">
+  <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="На главную" aria-label="На главную"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+  <div class="min-w-0">
+    <h1 class="text-base sm:text-lg font-semibold tracking-tight leading-tight">Календарь</h1>
+    <p class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 leading-tight">Сроки задач из всех проектов</p>
   </div>
-
-  <div class="flex items-center gap-3">
-    <button onclick="fetchCalendarTasks()" class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-bold text-xs rounded-xl transition-all shadow-sm active:scale-95">
-      <i data-lucide="refresh-cw" class="w-4 h-4"></i> Синхронизация
-    </button>
-    <button onclick="toggleSettings()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-500 hover:text-indigo-600 transition-all shadow-sm active:scale-95">
-      <i data-lucide="settings" class="w-5 h-5"></i>
-    </button>
-    <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
+  <div class="ml-auto flex items-center gap-1.5">
+    <button onclick="fetchCalendarTasks(true)" id="syncBtn" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Обновить" aria-label="Обновить"><i data-lucide="refresh-cw" class="w-[18px] h-[18px]"></i></button>
+    <button onclick="exportToICal()" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Скачать в Google / Apple Календарь (.ics)" aria-label="Экспорт в календарь"><i data-lucide="calendar-plus" class="w-[18px] h-[18px]"></i></button>
+    <button onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
       <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
     </button>
   </div>
 </header>
 
-<aside id="calendarSettingsSidebar" class="fixed right-0 top-0 bottom-0 w-80 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-[100] shadow-2xl">
-  <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-indigo-50/30 dark:bg-indigo-900/10">
-    <h3 class="font-black text-lg flex items-center gap-2 text-gray-900 dark:text-white"><i data-lucide="sliders" class="w-5 h-5 text-indigo-500"></i> Вид календаря</h3>
-    <button onclick="toggleSettings()" class="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 rounded-lg transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-  </div>
-  <div class="p-6 space-y-8 flex-1 overflow-y-auto hide-scroll">
-     <div>
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Режим отображения</label>
-        <div class="space-y-3">
-           <button onclick="setViewMode('standard')" id="modeBtn_standard" class="w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800 shadow-sm">
-              <div class="p-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm text-indigo-500"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
-              <div><div class="text-sm font-bold text-gray-900 dark:text-white">Стандартный</div><div class="text-[10px] text-gray-500">Сетка на один месяц</div></div>
-           </button>
-           <button onclick="setViewMode('minimalist')" id="modeBtn_minimalist" class="w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50">
-              <div class="p-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-400"><i data-lucide="columns-3" class="w-5 h-5"></i></div>
-              <div><div class="text-sm font-bold text-gray-900 dark:text-white">Квартальный</div><div class="text-[10px] text-gray-500">3 месяца в ряд (Мини)</div></div>
-           </button>
+<div class="cal-shell w-full max-w-[1500px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col lg:flex-row gap-4 lg:gap-6 lg:min-h-0">
+
+  <!-- Календарь -->
+  <section class="flex-1 min-w-0 flex flex-col lg:min-h-0">
+    <!-- Панель управления -->
+    <div class="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+      <div class="flex items-center gap-1">
+        <button onclick="shiftPeriod(-1)" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors" title="Назад" aria-label="Назад"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+        <button onclick="shiftPeriod(1)" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-white dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-colors" title="Вперёд" aria-label="Вперёд"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+      </div>
+      <h2 id="periodTitle" class="text-lg sm:text-xl font-semibold tracking-tight min-w-[150px] first-letter:uppercase">&nbsp;</h2>
+      <button onclick="goToToday()" class="h-8 px-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Сегодня</button>
+
+      <div class="w-full sm:w-auto sm:ml-auto flex items-center gap-2 order-last sm:order-none">
+        <div class="flex p-0.5 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800" role="tablist" aria-label="Вид">
+          <button data-view="month" onclick="setView('month')" class="view-btn h-8 px-3 rounded-md text-xs font-medium transition-colors">Месяц</button>
+          <button data-view="week" onclick="setView('week')" class="view-btn h-8 px-3 rounded-md text-xs font-medium transition-colors">Неделя</button>
+          <button data-view="list" onclick="setView('list')" class="view-btn h-8 px-3 rounded-md text-xs font-medium transition-colors">Список</button>
         </div>
-     </div>
-     
-     <div class="sm:hidden">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block">Фильтр проектов</label>
-        <div id="mobileProjectFilters" class="space-y-2"></div>
-     </div>
-
-     <div class="pt-2 border-t border-gray-200 dark:border-gray-800">
-        <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block pt-6">Интеграции</label>
-        <button onclick="exportToICal()" class="w-full flex items-center justify-between p-4 rounded-2xl border border-gray-200 dark:border-gray-800 transition-all text-left hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 group shadow-sm active:scale-95">
-            <div class="flex items-center gap-4">
-                <div class="p-2 bg-gray-100 dark:bg-gray-800 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/40 rounded-xl text-gray-400 group-hover:text-emerald-500 transition-colors shadow-sm"><i data-lucide="calendar-plus" class="w-5 h-5"></i></div>
-                <div><div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Экспорт в iCal</div><div class="text-[10px] text-gray-500">Google / Apple Calendar</div></div>
-            </div>
-            <i data-lucide="download" class="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors"></i>
-        </button>
-     </div>
-  </div>
-</aside>
-  
-<main class="p-2 sm:p-4 max-w-[1600px] mx-auto w-full flex-1 flex flex-col overflow-hidden h-full bg-gray-50/50 dark:bg-black/20">
-  
-  <div id="desktopProjectTabs" class="flex items-center gap-2 bg-white/50 dark:bg-gray-900/50 p-2 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-x-auto hide-scroll w-full mb-4 flex-shrink-0">
-     </div>
-
-  <div id="calendarViewport" class="flex-1 overflow-y-auto hide-scroll relative z-10">
-      </div>
-</main>
-
-<div id="dayViewModal" class="hidden fixed inset-0 z-[300] flex items-end sm:items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 sm:px-4">
-  <div class="bg-white dark:bg-gray-900 w-full sm:max-w-lg h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col transform translate-y-full sm:translate-y-0 sm:scale-95 transition-transform duration-300" id="dayViewContent">
-    <div class="w-12 h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mt-3 mb-2 sm:hidden"></div>
-    <div class="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-      <div>
-        <h3 id="modalDayTitle" class="text-xl font-black text-gray-900 dark:text-white"></h3>
-        <p id="modalDaySubtitle" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5">Расписание</p>
-      </div>
-      <button onclick="closeDayModal()" class="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 rounded-full transition-colors active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
-    </div>
-    <div id="modalDayTasks" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 hide-scroll bg-gray-50/50 dark:bg-gray-950/50">
-      </div>
-  </div>
-</div>
-  
-<div id="quickAddModal" class="hidden fixed inset-0 z-[400] flex items-end sm:items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 sm:px-4">
-  <div class="bg-white dark:bg-gray-900 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col transform translate-y-full sm:translate-y-0 sm:scale-95 transition-transform duration-300 p-6 sm:p-8" id="quickAddContent">
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h3 class="text-xl font-black text-gray-900 dark:text-white">Новая задача</h3>
-        <p id="quickAddDateText" class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-0.5"></p>
-      </div>
-      <button onclick="closeQuickAddModal()" class="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 rounded-full transition-colors active:scale-95"><i data-lucide="x" class="w-5 h-5"></i></button>
-    </div>
-    
-    <div class="space-y-4">
-      <div>
-        <input id="quickAddTitle" type="text" placeholder="Что нужно сделать?" onkeypress="if(event.key==='Enter') confirmQuickAddTask()" class="w-full px-0 py-2 bg-transparent text-lg font-bold outline-none border-b-2 border-gray-100 dark:border-gray-800 focus:border-indigo-500 dark:text-white transition-all placeholder-gray-400" />
-      </div>
-      
-      <div>
-        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Куда сохранить?</label>
-        <div class="grid grid-cols-2 gap-3">
-          <select id="quickAddBoard" onchange="updateQuickAddColumns()" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500 transition-all appearance-none truncate text-center">
-            <option value="">Проект...</option>
+        <label class="relative flex-1 sm:flex-none">
+          <span class="sr-only">Проект</span>
+          <select id="projectFilter" onchange="setBoardFilter(this.value)" class="w-full sm:w-48 h-9 pl-3 pr-8 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-200 outline-none appearance-none cursor-pointer truncate">
+            <option value="all">Все проекты</option>
           </select>
-          <select id="quickAddColumn" class="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold text-gray-700 dark:text-gray-300 outline-none cursor-pointer focus:ring-2 focus:ring-indigo-500 transition-all appearance-none truncate text-center disabled:opacity-50">
-            <option value="">Колонка...</option>
-          </select>
+          <i data-lucide="chevrons-up-down" class="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </label>
+      </div>
+    </div>
+
+    <div id="calendarViewport" class="flex-1 lg:min-h-0 flex flex-col"></div>
+    <p id="dragHint" class="hidden lg:block mt-2 text-[11px] text-gray-400">Перетащите задачу на другой день, чтобы перенести срок · двойной клик по дню — новая задача</p>
+  </section>
+
+  <!-- Панель дня -->
+  <aside id="dayPanel" class="w-full lg:w-[340px] flex-shrink-0 flex flex-col lg:min-h-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden" aria-live="polite">
+    <div class="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <div id="dayPanelTitle" class="text-base font-semibold first-letter:uppercase">&nbsp;</div>
+          <div id="dayPanelSub" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">&nbsp;</div>
         </div>
+        <span id="dayPanelBadge" class="hidden text-[11px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300">Сегодня</span>
       </div>
-      
-      <div>
-        <textarea id="quickAddDesc" placeholder="Пара слов о задаче (опционально)..." rows="2" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm outline-none dark:text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"></textarea>
-      </div>
+      <!-- Быстрое добавление -->
+      <form id="quickAddForm" class="mt-3 space-y-2" onsubmit="event.preventDefault(); confirmQuickAddTask();">
+        <div class="flex items-center h-10 px-3 rounded-xl bg-gray-100 dark:bg-gray-800 border border-transparent focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-gray-900 transition-colors">
+          <i data-lucide="plus" class="w-4 h-4 text-gray-400 mr-2 flex-shrink-0"></i>
+          <input id="quickAddTitle" type="text" maxlength="200" placeholder="Новая задача на этот день" autocomplete="off" class="bg-transparent outline-none text-sm w-full text-gray-900 dark:text-white placeholder-gray-400" />
+        </div>
+        <div id="quickAddMore" class="hidden grid grid-cols-2 gap-2">
+          <select id="quickAddBoard" onchange="updateQuickAddColumns()" class="h-9 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-200 outline-none truncate"><option value="">Проект</option></select>
+          <select id="quickAddColumn" class="h-9 px-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs text-gray-700 dark:text-gray-200 outline-none truncate disabled:opacity-50"><option value="">Колонка</option></select>
+          <button type="submit" id="btnQuickSave" class="col-span-2 h-9 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors">Добавить</button>
+        </div>
+      </form>
     </div>
-    
-    <div class="mt-8 flex gap-3">
-      <button onclick="closeQuickAddModal()" class="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-2xl transition-colors">Отмена</button>
-      <button id="btnQuickSave" onclick="confirmQuickAddTask()" class="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/30 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Создать</button>
-    </div>
-  </div>
+    <div id="dayPanelList" class="flex-1 lg:min-h-0 overflow-y-auto p-2"></div>
+  </aside>
 </div>
-  
-<div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
-  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
-  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+
+<div id="globalToast" class="fixed bottom-5 right-5 left-5 sm:left-auto z-[800] translate-y-24 opacity-0 transition-all duration-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-3.5 rounded-xl shadow-xl flex items-start gap-3 sm:max-w-sm pointer-events-none">
+  <div id="toastIconBg" class="p-2 rounded-lg flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-4 h-4 text-blue-500"></i></div>
+  <div class="min-w-0"><h4 id="toastTitle" class="text-sm font-semibold text-gray-900 dark:text-white">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed"></p></div>
 </div>
 
 <script>
-  // Инициализация темы
   if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
   function toggleTheme() {
     document.documentElement.classList.toggle('dark');
@@ -233,790 +134,403 @@
   }
   lucide.createIcons();
 
+  // ---------------- состояние ----------------
   let currentUser = null;
-  let allTasks = [];
-  let allBoardsData = {}; // Кеш для фильтров
-  let currentViewDate = new Date();
-  let sortableZones = [];
-  let filterBoardId = 'all';
-  let currentViewMode = localStorage.getItem('blocko_calendar_mode') || 'standard';
+  let allTasks = [];               // задачи со сроком
+  let boardsMeta = {};             // id → { id, title, isLocal, columns, color }
+  let viewDate = new Date();       // опорная дата периода
+  let selectedDate = ymd(new Date());
+  let filterBoardId = localStorage.getItem('blocko_calendar_filter') || 'all';
+  let currentView = localStorage.getItem('blocko_calendar_view') || (window.innerWidth < 640 ? 'list' : 'month');
+  if (!['month', 'week', 'list'].includes(currentView)) currentView = 'month';
+  let sortables = [];
 
-  // ЭНТЕРПРАЙЗ: Защита от XSS (внедрение скриптов через названия)
-  const escapeHTML = (str) => {
-      if (!str) return '';
-      return String(str).replace(/[&<>'"]/g, tag => ({
-          '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-      }[tag] || tag));
-  };
+  const MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+  const DOW = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const PALETTE = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899', '#64748b'];
+  const DONE_COL = /готов|done|выполн|закрыт|complete/i;
 
-  // ЭНТЕРПРАЙЗ: Оптимизация рендера (Debouncing), чтобы браузер не вис при перерисовке
-  let renderRAF = null;
-  function triggerRender() {
-      if (renderRAF) cancelAnimationFrame(renderRAF);
-      renderRAF = requestAnimationFrame(() => {
-          renderCalendar();
-      });
-  }
-
-  auth.onAuthStateChanged(async (user) => {
-      const loader = document.getElementById('globalLoader');
-      if (user) {
-          currentUser = user;
-          await fetchCalendarTasks();
-          
-          loader.style.opacity = '0';
-          setTimeout(() => loader.classList.add('hidden'), 700);
-      } else {
-          window.location.href = 'index.html';
-      }
-  });
-
-  function toggleSettings() {
-     const sidebar = document.getElementById('calendarSettingsSidebar');
-     sidebar.classList.toggle('translate-x-full');
-  }
-
-  // ЭНТЕРПРАЙЗ: Стабильный переключатель режимов вида с защитой от NULL (Фикс лоадера)
-  function setViewMode(mode) {
-     currentViewMode = mode;
-     localStorage.setItem('blocko_calendar_mode', mode);
-     
-     const btnStandard = document.getElementById('modeBtn_standard');
-     const btnMinimalist = document.getElementById('modeBtn_minimalist');
-
-     if (btnStandard && btnMinimalist) {
-         const activeClasses = "w-full flex items-center gap-4 p-4 rounded-2xl border transition-all text-left bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800 shadow-sm";
-         const inactiveClasses = "w-full flex items-center gap-4 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all text-left hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-900/50";
-         
-         btnStandard.className = mode === 'standard' ? activeClasses : inactiveClasses;
-         btnMinimalist.className = mode === 'minimalist' ? activeClasses : inactiveClasses;
-     }
-     
-     triggerRender();
-  }
-
-  function setBoardFilter(boardId) {
-      filterBoardId = boardId;
-      
-      const headerSelect = document.getElementById('projectSelectFilter');
-      if (headerSelect) headerSelect.value = boardId;
-
-      document.querySelectorAll('.board-filter-btn').forEach(btn => {
-          if (btn.dataset.board === boardId) {
-              btn.classList.remove('bg-transparent', 'text-gray-500', 'opacity-60', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
-              btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
-          } else {
-              btn.classList.add('bg-transparent', 'text-gray-500', 'opacity-60', 'hover:bg-gray-100', 'dark:hover:bg-gray-800');
-              btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
-          }
-      });
-
-      document.querySelectorAll('#mobileProjectFilters button').forEach(btn => {
-          const isSelected = btn.dataset.board === boardId;
-          btn.className = `w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`;
-          const iconContainer = btn.querySelector('.check-icon-container');
-          if (iconContainer) iconContainer.innerHTML = isSelected ? '<i data-lucide="check" class="w-4 h-4"></i>' : '';
-      });
-      lucide.createIcons();
-
-      const grid = document.getElementById('calendarGrid');
-      if (grid) {
-         grid.classList.remove('grid-animate');
-         void grid.offsetWidth; 
-         grid.classList.add('grid-animate');
-      }
-      
-      triggerRender();
-  }
-
-  function populateProjectFilters() {
-      const select = document.getElementById('projectSelectFilter');
-      const tabsContainer = document.getElementById('desktopProjectTabs');
-      const mobileContainer = document.getElementById('mobileProjectFilters');
-      
-      let optionsHtml = '<option value="all">Все проекты</option>';
-      let tabsHtml = `<button onclick="setBoardFilter('all')" class="board-filter-btn px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filterBoardId === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'bg-transparent text-gray-500 opacity-60 hover:bg-gray-100 dark:hover:bg-gray-800'}" data-board="all">Все проекты</button>`;
-      let mobileHtml = `
-         <button data-board="all" onclick="setBoardFilter('all')" class="w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${filterBoardId === 'all' ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}">
-            <span class="text-xs font-bold">Все проекты</span>
-            <div class="check-icon-container">${filterBoardId === 'all' ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>
-         </button>
-      `;
-
-      Object.values(allBoardsData).forEach(b => {
-         const isSelected = filterBoardId === b.id;
-         optionsHtml += `<option value="${b.id}" ${isSelected ? 'selected' : ''}>${escapeHTML(b.title)}</option>`;
-         tabsHtml += `<button onclick="setBoardFilter('${b.id}')" class="board-filter-btn px-5 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${isSelected ? 'bg-indigo-600 text-white shadow-md' : 'bg-transparent text-gray-500 opacity-60 hover:bg-gray-100 dark:hover:bg-gray-800'}" data-board="${b.id}">${escapeHTML(b.title)}</button>`;
-         mobileHtml += `
-            <button data-board="${b.id}" onclick="setBoardFilter('${b.id}')" class="w-full flex items-center justify-between p-3 rounded-xl border transition-colors ${isSelected ? 'bg-indigo-50 border-indigo-200 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-indigo-400' : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}">
-               <span class="text-xs font-bold truncate pr-4">${escapeHTML(b.title)}</span>
-               <div class="check-icon-container">${isSelected ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}</div>
-            </button>
-         `;
-      });
-      
-      if(select) select.innerHTML = optionsHtml;
-      if(tabsContainer) tabsContainer.innerHTML = tabsHtml;
-      if(mobileContainer) mobileContainer.innerHTML = mobileHtml;
-      lucide.createIcons();
-  }
-  
-  // Оптимизированный Fetch (Устранена проблема N+1)
-  async function fetchCalendarTasks() {
-      if (!currentUser) return;
-      allTasks = [];
-      const loader = document.getElementById('globalLoader');
-      if (loader.classList.contains('hidden')) {
-          showSystemToast('Синхронизация...', 'Собираем задачи со всех проектов.', 'loader-2', 'text-indigo-500 animate-spin', 'bg-indigo-50 dark:bg-indigo-900/30');
-      }
-
-      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-      Object.values(localBoards).forEach(board => {
-          if (board.columns) {
-              board.columns.forEach(col => {
-                  if (col.cards) {
-                      col.cards.forEach(card => {
-                          if (card.dueDate && !card.archived) {
-                              allTasks.push({
-                                  ...card,
-                                  boardId: board.id,
-                                  boardTitle: board.title,
-                                  colId: col.id,
-                                  isLocal: true,
-                                  priority: card.priority || 'normal'
-                              });
-                          }
-                      });
-                  }
-              });
-          }
-      });
-
-      if (navigator.onLine) {
-          try {
-              const boardsSnap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
-              
-              const fetchPromises = boardsSnap.docs.map(async (bDoc) => {
-                  const boardId = bDoc.id;
-                  const boardData = bDoc.data();
-                  
-                  // Запоминаем для фильтров
-                  allBoardsData[boardId] = { id: boardId, title: boardData.title, isLocal: false };
-
-                  // Доска с паролем без недавнего ввода пароля закрыта правилами — просто пропускаем её
-                  let cardsSnap;
-                  try {
-                      cardsSnap = await db.collection("boards").doc(boardId).collection("cards").where("archived", "==", false).get();
-                  } catch (e) {
-                      console.warn('skip locked board', boardId, e.code);
-                      return;
-                  }
-                  
-                  cardsSnap.forEach(cDoc => {
-                      const card = cDoc.data();
-                      if (card.dueDate) {
-                          allTasks.push({
-                              ...card,
-                              id: cDoc.id,
-                              boardId: boardId,
-                              boardTitle: boardData.title,
-                              colId: card.columnId,
-                              isLocal: false,
-                              priority: card.priority || 'normal'
-                          });
-                      }
-                  });
-              });
-
-              await Promise.all(fetchPromises);
-              if (loader.classList.contains('hidden')) {
-                 showSystemToast('Успех', 'Синхронизация завершена.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-              }
-          } catch (e) {
-              console.error("Calendar fetch error:", e);
-              showSystemToast('Внимание', 'Не удалось загрузить часть облачных задач.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-          }
-      }
-
-      // Локальные доски тоже добавляем в фильтры
-      Object.values(localBoards).forEach(b => {
-          allBoardsData[b.id] = { id: b.id, title: b.title, isLocal: true };
-      });
-
-      populateProjectFilters();
-      // Инициализация правильного режима в UI шторке
-      setViewMode(currentViewMode);
-  }
-
-  function goToToday() {
-      currentViewDate = new Date();
-      triggerRender();
-  }
-
-  // ЭНТЕРПРАЙЗ: Пуленепробиваемый переключатель месяцев (Поддержка Квартального вида)
-  function changeMonth(offset) {
-      currentViewDate.setMonth(currentViewDate.getMonth() + offset);
-      
-      const grid = document.getElementById('calendarGrid');
-      const viewport = document.getElementById('calendarViewport');
-      
-      // Добавляем эффект плавного перехода
-      if (viewport) {
-          viewport.classList.remove('grid-animate');
-          void viewport.offsetWidth; 
-          viewport.classList.add('grid-animate');
-      }
-      
-      triggerRender();
-  }
-
-  function renderCalendar() {
-      const viewport = document.getElementById('calendarViewport');
-      if (!viewport) return;
-      
-      if (currentViewMode === 'minimalist') {
-          renderQuarterView(viewport);
-      } else {
-          renderStandardView(viewport);
-      }
-  }
-
-  function renderStandardView(container) {
-      sortableZones.forEach(z => z.destroy());
-      sortableZones = [];
-
-      const year = currentViewDate.getFullYear();
-      const month = currentViewDate.getMonth();
-      const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-      
-      const firstDay = new Date(year, month, 1);
-      let startDay = firstDay.getDay() - 1;
-      if (startDay === -1) startDay = 6;
-
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const daysInPrevMonth = new Date(year, month, 0).getDate();
-      const today = new Date();
-      const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-
-      let html = '';
-      let cellCount = 0;
-
-      for (let i = startDay - 1; i >= 0; i--) { html += createDayCell(null, daysInPrevMonth - i, true, false, cellCount); cellCount++; }
-      for (let d = 1; d <= daysInMonth; d++) {
-          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-          html += createDayCell(dateStr, d, false, (isCurrentMonth && d === today.getDate()), cellCount);
-          cellCount++;
-      }
-      while (cellCount < (cellCount <= 35 ? 35 : 42)) { html += createDayCell(null, (cellCount % 7) + 1, true, false, cellCount); cellCount++; }
-
-      container.innerHTML = `
-        <div class="flex items-center justify-between mb-4 bg-white/50 dark:bg-gray-900/50 p-3 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md flex-shrink-0">
-          <button onclick="changeMonth(-1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
-          <h2 id="currentMonthYear" class="text-lg font-black text-gray-900 dark:text-white w-48 text-center tracking-tight">${monthNames[month]} ${year}</h2>
-          <button onclick="changeMonth(1)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
-        </div>
-        <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden flex flex-col relative shadow-xl">
-          <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md z-20 flex-shrink-0">
-            ${['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => `<div class="py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-400">${d}</div>`).join('')}
-          </div>
-          <div class="flex-1 overflow-y-auto bg-gray-200 dark:bg-gray-800 hide-scroll">
-            <div id="calendarGrid" class="min-h-full grid grid-cols-7 gap-px grid-animate" style="grid-template-rows: repeat(auto-fill, minmax(100px, 1fr));">
-              ${html}
-            </div>
-          </div>
-        </div>`;
-
-      document.querySelectorAll('.calendar-day-dropzone').forEach(zone => {
-          sortableZones.push(new Sortable(zone, {
-              group: 'calendar-tasks', animation: 150, ghostClass: 'opacity-50', dragClass: 'sortable-drag',
-              delay: /Mobi|Android/i.test(navigator.userAgent) ? 150 : 0,
-              onAdd: (evt) => updateTaskDate(evt.item.dataset.boardId, evt.item.dataset.taskId, evt.to.dataset.date, evt.item.dataset.isLocal === 'true')
-          }));
-      });
-      lucide.createIcons({ root: container });
-  }
-
-  function createDayCell(dateStr, dayNum, isFiller, isToday = false, cellIndex = 0) {
-      const dayOfWeekIndex = cellIndex % 7;
-      const isWeekend = dayOfWeekIndex === 5 || dayOfWeekIndex === 6;
-      const weekendBg = isWeekend && !isFiller ? "bg-rose-50/20 dark:bg-rose-900/10" : "";
-
-      if (isFiller) {
-          return `
-            <div class="bg-gray-50/50 dark:bg-gray-900/30 p-1 sm:p-2 opacity-40 border-r border-b border-gray-200 dark:border-gray-800 flex flex-col items-center sm:items-start">
-              <span class="text-[10px] sm:text-xs font-bold text-gray-400">${dayNum}</span>
-            </div>`;
-      }
-
-      let tasksForDay = allTasks.filter(t => t.dueDate === dateStr);
-      if (filterBoardId !== 'all') {
-          tasksForDay = tasksForDay.filter(t => t.boardId === filterBoardId);
-      }
-      
-      const badgeClass = isToday 
-          ? "bg-indigo-600 text-white shadow-[0_0_10px_rgba(79,70,229,0.5)] w-5 h-5 sm:w-8 sm:h-8 flex items-center justify-center rounded-md sm:rounded-xl ring-2 ring-indigo-300 dark:ring-indigo-700" 
-          : `text-gray-700 dark:text-gray-300 w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-md sm:rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors ${isWeekend ? 'text-rose-500' : ''}`;
-
-      const bgClass = isToday 
-          ? "bg-indigo-50/10 dark:bg-indigo-900/20 ring-inset ring-2 ring-indigo-500/50 shadow-inner z-10" 
-          : `bg-white dark:bg-gray-900 ${weekendBg}`;
-
-      let tasksHtml = tasksForDay.map(t => {
-          // ЭНТЕРПРАЙЗ: Генерация цвета по проекту для визуального отличия
-          const charCode = t.boardId ? t.boardId.charCodeAt(t.boardId.length - 1) : 0;
-          const colorList = ['blue', 'emerald', 'amber', 'purple', 'rose', 'cyan'];
-          const cTheme = colorList[charCode % colorList.length];
-          const colorClass = `bg-${cTheme}-500 sm:bg-${cTheme}-50 sm:text-${cTheme}-700 sm:border-${cTheme}-200 dark:sm:bg-${cTheme}-900/30 dark:sm:text-${cTheme}-400 dark:sm:border-${cTheme}-800/50 hover:sm:bg-${cTheme}-100`;
-
-          return `
-            <div data-task-id="${t.id}" data-board-id="${t.boardId}" data-is-local="${t.isLocal}" class="block mb-0.5 sm:mb-1.5 sm:p-2 sm:border rounded-full sm:rounded-xl text-[10px] font-bold cursor-grab active:cursor-grabbing hover:scale-[1.02] transition-all w-full h-1.5 sm:h-auto ${colorClass}" title="${escapeHTML(t.title)}">
-               <div class="hidden sm:flex items-center gap-1 mb-0.5 opacity-60 pointer-events-none">
-                 ${t.isLocal ? '<i data-lucide="hard-drive" class="w-3 h-3"></i>' : '<i data-lucide="cloud" class="w-3 h-3"></i>'}
-                 <span class="truncate max-w-[60px] lg:max-w-[80px]">${escapeHTML(t.boardTitle)}</span>
-               </div>
-               <span class="hidden sm:inline truncate w-full block pointer-events-none">${escapeHTML(t.title)}</span>
-            </div>`;
-      }).join('');
-
-      return `
-        <div class="flex flex-col ${bgClass} transition-colors group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 min-h-0 relative border-r border-b border-gray-200 dark:border-gray-800" onclick="openDayModal('${dateStr}')">
-          <div class="p-1 sm:p-2 flex justify-center sm:justify-between items-center transition-colors pointer-events-none flex-shrink-0">
-            <span class="text-[11px] sm:text-sm font-black ${badgeClass}">${dayNum}</span>
-            <div class="hidden sm:flex items-center gap-1 pointer-events-auto">
-               ${tasksForDay.length > 0 ? `<span class="text-[9px] font-black text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md pointer-events-none">${tasksForDay.length}</span>` : ''}
-               <button onclick="event.stopPropagation(); openQuickAddModal('${dateStr}')" class="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-all" title="Добавить задачу">
-                 <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-               </button>
-            </div>
-          </div>
-          <div class="flex-1 p-0.5 sm:p-1.5 flex flex-col overflow-y-auto hide-scroll calendar-day-dropzone min-h-[30px] sm:min-h-[50px] pointer-events-none sm:pointer-events-auto" data-date="${dateStr}">
-            ${tasksHtml}
-          </div>
-        </div>`;
-  }
-
-  function renderQuarterView(container) {
-     const today = new Date();
-     const months = [];
-     for(let i=0; i<3; i++) {
-        const year = currentViewDate.getFullYear();
-        const month = currentViewDate.getMonth() + i;
-        months.push(new Date(year, month, 1));
-     }
-     
-     const topNavHtml = `
-       <div class="w-full flex justify-between items-center mb-6 bg-white/50 dark:bg-gray-900/50 p-4 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm backdrop-blur-md">
-          <button onclick="changeMonth(-3)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevrons-left" class="w-5 h-5"></i></button>
-          <div class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-widest text-center">Квартальный вид</div>
-          <button onclick="changeMonth(3)" class="p-2 rounded-xl text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:text-indigo-500 transition-all shadow-sm"><i data-lucide="chevrons-right" class="w-5 h-5"></i></button>
-       </div>
-     `;
-     
-     let monthsHtml = '';
-     months.forEach(m => {
-        const monthName = m.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
-        
-        let daysHtml = '';
-        const year = m.getFullYear();
-        const month = m.getMonth();
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        let startDay = firstDay.getDay(); 
-        startDay = startDay === 0 ? 6 : startDay - 1;
-
-        for(let i=0; i<startDay; i++) {
-           daysHtml += '<div class="mini-day opacity-0 pointer-events-none"></div>';
-        }
-
-        for(let d=1; d<=lastDay.getDate(); d++) {
-           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-           
-           let dayTasks = allTasks.filter(t => t.dueDate === dateStr);
-           if (filterBoardId !== 'all') {
-               dayTasks = dayTasks.filter(t => t.boardId === filterBoardId);
-           }
-           
-           const hasTasks = dayTasks.length > 0;
-           const isToday = dateStr === new Date().toISOString().split('T')[0];
-           
-           // Heatmap логика: чем больше задач, тем интенсивнее цвет
-           let bgClass = 'bg-gray-100 dark:bg-gray-800 text-gray-400';
-           if (hasTasks) {
-               if (dayTasks.length === 1) bgClass = 'bg-indigo-300 dark:bg-indigo-900/60 text-white shadow-sm';
-               else if (dayTasks.length === 2) bgClass = 'bg-indigo-400 dark:bg-indigo-700 text-white shadow-sm';
-               else bgClass = 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-md font-black';
-           } else if (isToday) {
-               bgClass = 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 ring-2 ring-blue-400';
-           }
-           
-           const hoverClass = 'hover:scale-110 hover:shadow-md cursor-pointer transition-all active:scale-95 hover:z-10';
-
-           daysHtml += `<div onclick="${hasTasks ? `openDayModal('${dateStr}')` : `openQuickAddModal('${dateStr}')`}" class="mini-day ${bgClass} ${hoverClass}">${d}</div>`;
-        }
-
-        monthsHtml += `
-           <div class="w-full lg:w-1/3 flex flex-col animate-fade-in-up bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm border border-gray-200 dark:border-gray-800">
-              <h3 class="text-xs font-black uppercase tracking-[0.2em] text-indigo-500 mb-6 text-center">${monthName}</h3>
-              <div class="mini-month-grid mb-2">
-                 ${['П','В','С','Ч','П','С','В'].map(d => `<div class="text-[9px] font-black text-gray-400 text-center py-1">${d}</div>`).join('')}
-              </div>
-              <div class="mini-month-grid">${daysHtml}</div>
-           </div>
-        `;
-     });
-     
-     container.innerHTML = topNavHtml + `<div class="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 justify-center">${monthsHtml}</div>`;
-     lucide.createIcons({ root: container });
-  }
-
-  // --- ДВИЖОК ОБНОВЛЕНИЯ ДАТЫ ПРИ DRAG & DROP ---
-  async function updateTaskDate(boardId, taskId, newDateStr, isLocal) {
-      const taskIndex = allTasks.findIndex(t => t.id === taskId);
-      // ЭНТЕРПРАЙЗ: Запоминаем старую дату (защита от Race Condition)
-      const oldDateStr = taskIndex !== -1 ? allTasks[taskIndex].dueDate : null;
-      
-      if (taskIndex !== -1) {
-          allTasks[taskIndex].dueDate = newDateStr; // Optimistic UI
-      }
-
-      if (isLocal) {
-          const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-          const board = localBoards[boardId];
-          if (board) {
-              board.columns.forEach(col => {
-                  if (col.cards) {
-                      const cIdx = col.cards.findIndex(c => c.id === taskId);
-                      if (cIdx !== -1) col.cards[cIdx].dueDate = newDateStr;
-                  }
-              });
-              localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-              showSystemToast('Дедлайн изменен', `Офлайн задача перенесена на ${newDateStr}.`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-          }
-      } else {
-          try {
-              await db.collection("boards").doc(boardId).collection("cards").doc(taskId).update({
-                  dueDate: newDateStr,
-                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-              showSystemToast('Дедлайн изменен', `Задача перенесена на ${newDateStr}.`, 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
-          } catch (e) {
-              console.error(e);
-              if (taskIndex !== -1 && oldDateStr) {
-                  allTasks[taskIndex].dueDate = oldDateStr; // Откат UI при сбое
-                  triggerRender();
-              }
-              showSystemToast('Ошибка', 'Не удалось обновить дату в облаке.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-          }
-      }
-      
-      triggerRender();
-  }
+  function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function parseYmd(s) { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); }
+  const todayStr = () => ymd(new Date());
+  const dateKey = (due) => String(due || '').slice(0, 10);
 
   function showSystemToast(title, desc, iconName, iconColor, bgColor) {
-      const toast = document.getElementById('globalToast');
-      document.getElementById('toastTitle').innerText = title;
-      document.getElementById('toastDesc').innerText = desc;
-      const iconEl = document.getElementById('toastIcon');
-      iconEl.setAttribute('data-lucide', iconName);
-      iconEl.className = `w-5 h-5 ${iconColor}`;
-      document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bgColor}`;
-      lucide.createIcons({ root: toast });
-
-      toast.classList.remove('translate-y-24', 'opacity-0');
-      setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 4000);
+    const toast = document.getElementById('globalToast');
+    document.getElementById('toastTitle').innerText = title;
+    document.getElementById('toastDesc').innerText = desc;
+    const iconEl = document.getElementById('toastIcon');
+    iconEl.setAttribute('data-lucide', iconName);
+    iconEl.setAttribute('class', `w-4 h-4 ${iconColor}`);
+    document.getElementById('toastIconBg').className = `p-2 rounded-lg flex-shrink-0 ${bgColor}`;
+    lucide.createIcons({ root: toast });
+    toast.classList.remove('translate-y-24', 'opacity-0');
+    clearTimeout(showSystemToast.t);
+    showSystemToast.t = setTimeout(() => toast.classList.add('translate-y-24', 'opacity-0'), 3500);
   }
 
-  // --- ЛОГИКА ДЕТАЛЬНОГО ПРОСМОТРА ДНЯ ---
-  function openDayModal(dateStr) {
-      const modal = document.getElementById('dayViewModal');
-      const content = document.getElementById('dayViewContent');
-      const container = document.getElementById('modalDayTasks');
-      
-      const dateObj = new Date(dateStr);
-      const options = { day: 'numeric', month: 'long', year: 'numeric', weekday: 'long' };
-      document.getElementById('modalDayTitle').innerText = dateObj.toLocaleDateString('ru-RU', options);
+  // ---------------- загрузка ----------------
+  auth.onAuthStateChanged(async (user) => {
+    const loader = document.getElementById('globalLoader');
+    if (!user) { window.location.href = 'index.html'; return; }
+    currentUser = user;
+    await fetchCalendarTasks(false);
+    loader.style.opacity = '0';
+    setTimeout(() => loader.classList.add('hidden'), 500);
+  });
 
-      let dayTasks = allTasks.filter(t => t.dueDate === dateStr);
-      if (filterBoardId !== 'all') dayTasks = dayTasks.filter(t => t.boardId === filterBoardId);
-    
-      if (dayTasks.length === 0) {
-          container.innerHTML = `
-            <div class="flex flex-col items-center justify-center py-10 text-center text-gray-400">
-              <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4"><i data-lucide="coffee" class="w-8 h-8"></i></div>
-              <p class="font-bold text-sm text-gray-600 dark:text-gray-300">На этот день задач нет</p>
-              <p class="text-xs mt-1">Отдыхайте или запланируйте что-то новое.</p>
-            </div>`;
-      } else {
-          // ЭНТЕРПРАЙЗ: В модалке ссылки кликабельны и открывают нужную доску
-          container.innerHTML = dayTasks.map(t => {
-              let pColor = "text-blue-500 bg-blue-50 dark:bg-blue-900/30";
-              let pIcon = "arrow-right";
-              if (t.priority === 'high') { pColor = "text-amber-500 bg-amber-50 dark:bg-amber-900/30"; pIcon = "arrow-up-from-line"; }
-              if (t.priority === 'critical') { pColor = "text-rose-500 bg-rose-50 dark:bg-rose-900/30"; pIcon = "zap"; }
+  async function fetchCalendarTasks(manual) {
+    if (!currentUser) return;
+    const btn = document.getElementById('syncBtn');
+    btn.classList.add('animate-spin');
+    const tasks = [];
+    const meta = {};
+    let colorIdx = 0;
+    const addBoard = (id, title, isLocal, columns) => { meta[id] = { id, title: title || 'Без названия', isLocal, columns: columns || [], color: PALETTE[colorIdx++ % PALETTE.length] }; };
+    const pushTask = (card, boardId, colId) => {
+      if (!card || card.archived || !card.dueDate || !/^\d{4}-\d{2}-\d{2}/.test(String(card.dueDate))) return;
+      const b = meta[boardId];
+      const col = (b.columns || []).find((c) => String(c.id) === String(colId));
+      tasks.push({ ...card, id: String(card.id), boardId, colId, colName: col ? col.name : '', done: !!(col && DONE_COL.test(col.name || '')), isLocal: b.isLocal, date: dateKey(card.dueDate), priority: card.priority || 'normal' });
+    };
 
-              return `
-              <a href="board.html?b=${t.boardId}&c=${t.id}" target="_blank" class="flex flex-col bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all active:scale-[0.98] group">
-                <div class="flex justify-between items-start mb-2">
-                  <span class="text-[10px] font-bold text-gray-500 flex items-center gap-1.5"><i data-lucide="${t.isLocal ? 'hard-drive' : 'layout'}" class="w-3.5 h-3.5"></i> ${escapeHTML(t.boardTitle)}</span>
-                  <div class="px-2 py-1 rounded-md flex items-center gap-1 text-[9px] font-black uppercase tracking-widest ${pColor}"><i data-lucide="${pIcon}" class="w-3 h-3"></i> ${t.priority}</div>
-                </div>
-                <h4 class="font-bold text-gray-900 dark:text-white text-base leading-tight group-hover:text-indigo-500 transition-colors">${escapeHTML(t.title)}</h4>
-              </a>`;
-          }).join('');
-      }
+    const localBoards = (() => { try { return JSON.parse(localStorage.getItem('blocko_local_boards')) || {}; } catch (e) { return {}; } })();
+    Object.values(localBoards).forEach((b) => {
+      if (!b || !b.id) return;
+      addBoard(b.id, b.title, true, (b.columns || []).map((c) => ({ id: c.id, name: c.name })));
+      (b.columns || []).forEach((col) => (col.cards || []).forEach((card) => pushTask(card, b.id, col.id)));
+    });
 
-      lucide.createIcons({ root: container });
-
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          if (window.innerWidth < 640) content.classList.remove('translate-y-full');
-          else content.classList.remove('scale-95');
-      }, 10);
-  }
-
-  function closeDayModal() {
-      const modal = document.getElementById('dayViewModal');
-      const content = document.getElementById('dayViewContent');
-      
-      modal.classList.add('opacity-0');
-      if (window.innerWidth < 640) content.classList.add('translate-y-full');
-      else content.classList.add('scale-95');
-      
-      setTimeout(() => modal.classList.add('hidden'), 300);
-  }
-
-  // --- ЛОГИКА БЫСТРОГО ДОБАВЛЕНИЯ ЗАДАЧИ (Quick Add) ---
-  let quickAddTargetDate = null;
-  let availableBoardsData = {}; 
-  
-  async function fetchAvailableBoards() {
-      availableBoardsData = {};
-      const boardSelect = document.getElementById('quickAddBoard');
-      boardSelect.innerHTML = '<option value="">Загрузка...</option>';
-      boardSelect.disabled = true;
-      
-      const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-      Object.values(localBoards).forEach(b => {
-          availableBoardsData[b.id] = { id: b.id, title: b.title, isLocal: true, columns: b.columns || [] };
-      });
-      
-      if (navigator.onLine && currentUser) {
+    if (navigator.onLine) {
+      try {
+        const snap = await db.collection('boards').where('members', 'array-contains', currentUser.uid).get();
+        await Promise.all(snap.docs.map(async (bDoc) => {
+          const data = bDoc.data();
+          addBoard(bDoc.id, data.title, false, data.columns || []);
           try {
-              const snap = await db.collection("boards").where("members", "array-contains", currentUser.uid).get();
-              snap.forEach(doc => {
-                  const data = doc.data();
-                  availableBoardsData[doc.id] = { id: doc.id, title: data.title, isLocal: false, columns: data.columns || [] };
-              });
-          } catch(e) { console.error("Ошибка загрузки досок", e); }
+            const cards = await db.collection('boards').doc(bDoc.id).collection('cards').where('archived', '==', false).get();
+            cards.forEach((c) => { const card = { id: c.id, ...c.data() }; pushTask(card, bDoc.id, card.columnId); });
+          } catch (e) { /* доска с паролем без недавнего ввода — пропускаем */ }
+        }));
+      } catch (e) {
+        console.error('calendar fetch', e);
+        showSystemToast('Не всё загрузилось', 'Часть облачных задач не получена. Проверьте интернет.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
       }
-      
-      boardSelect.innerHTML = '<option value="">Выберите проект...</option>';
-      Object.values(availableBoardsData).forEach(b => {
-          boardSelect.innerHTML += `<option value="${b.id}">${b.isLocal ? '💽 ' : '☁️ '}${escapeHTML(b.title)}</option>`;
-      });
-      boardSelect.disabled = false;
+    }
+
+    allTasks = tasks;
+    boardsMeta = meta;
+    if (filterBoardId !== 'all' && !boardsMeta[filterBoardId]) filterBoardId = 'all';
+    populateFilters();
+    render();
+    btn.classList.remove('animate-spin');
+    if (manual) showSystemToast('Обновлено', `Задач со сроком: ${allTasks.length}.`, 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
   }
+
+  function populateFilters() {
+    const sel = document.getElementById('projectFilter');
+    const boards = Object.values(boardsMeta).sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+    sel.innerHTML = '<option value="all">Все проекты</option>' + boards.map((b) => `<option value="${esc(b.id)}" ${b.id === filterBoardId ? 'selected' : ''}>${esc(b.title)}${b.isLocal ? ' (локальный)' : ''}</option>`).join('');
+    const qb = document.getElementById('quickAddBoard');
+    qb.innerHTML = '<option value="">Проект</option>' + boards.map((b) => `<option value="${esc(b.id)}">${esc(b.title)}</option>`).join('');
+    if (filterBoardId !== 'all') { qb.value = filterBoardId; updateQuickAddColumns(); }
+  }
+
+  function visibleTasks() { return filterBoardId === 'all' ? allTasks : allTasks.filter((t) => t.boardId === filterBoardId); }
+  function tasksOn(dateStr) {
+    const prio = { critical: 0, high: 1, normal: 2, low: 3 };
+    return visibleTasks().filter((t) => t.date === dateStr).sort((a, b) => (a.done - b.done) || ((prio[a.priority] ?? 2) - (prio[b.priority] ?? 2)) || String(a.title).localeCompare(String(b.title), 'ru'));
+  }
+  const isOverdue = (t) => !t.done && t.date < todayStr();
+
+  // ---------------- управление ----------------
+  function setView(v) {
+    currentView = v;
+    localStorage.setItem('blocko_calendar_view', v);
+    render();
+  }
+  function setBoardFilter(id) {
+    filterBoardId = id;
+    localStorage.setItem('blocko_calendar_filter', id);
+    if (id !== 'all') { document.getElementById('quickAddBoard').value = id; updateQuickAddColumns(); }
+    render();
+  }
+  function shiftPeriod(dir) {
+    if (currentView === 'month') viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + dir, 1);
+    else if (currentView === 'week') viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate() + dir * 7);
+    else viewDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate() + dir * 14);
+    render();
+  }
+  function goToToday() { viewDate = new Date(); selectDay(todayStr(), false); render(); }
+  function selectDay(dateStr, rerender = true) {
+    selectedDate = dateStr;
+    if (rerender) render();
+  }
+
+  // ---------------- отрисовка ----------------
+  function render() {
+    document.querySelectorAll('.view-btn').forEach((b) => {
+      const on = b.dataset.view === currentView;
+      b.className = `view-btn h-8 px-3 rounded-md text-xs font-medium transition-colors ${on ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`;
+      b.setAttribute('aria-selected', String(on));
+    });
+    sortables.forEach((s) => s.destroy());
+    sortables = [];
+    const vp = document.getElementById('calendarViewport');
+    if (currentView === 'month') renderMonth(vp);
+    else if (currentView === 'week') renderWeek(vp);
+    else renderList(vp);
+    document.getElementById('dragHint').classList.toggle('lg:block', currentView !== 'list');
+    renderDayPanel();
+    lucide.createIcons({ root: vp });
+    initDrag();
+  }
+
+  function chipHtml(t, compact) {
+    const b = boardsMeta[t.boardId] || {};
+    const prio = t.priority === 'critical' ? '<i data-lucide="flame" class="w-3 h-3 text-red-500 flex-shrink-0"></i>' : t.priority === 'high' ? '<i data-lucide="arrow-up" class="w-3 h-3 text-amber-500 flex-shrink-0"></i>' : '';
+    const tone = t.done ? 'text-gray-400 line-through' : isOverdue(t) ? 'text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-200';
+    return `<a href="board.html?b=${encodeURIComponent(t.boardId)}&c=${encodeURIComponent(t.id)}" data-task-id="${esc(t.id)}" data-board-id="${esc(t.boardId)}" data-local="${t.isLocal}" draggable="false" onclick="event.stopPropagation()"
+      class="cal-chip flex items-center gap-1.5 ${compact ? 'h-6 px-1.5 text-[11.5px]' : 'h-7 px-2 text-[12.5px]'} rounded-md bg-gray-50 dark:bg-gray-800/70 hover:bg-gray-100 dark:hover:bg-gray-800 ${tone} cursor-pointer select-none" title="${esc(t.title)} · ${esc(b.title || '')}${t.colName ? ' / ' + esc(t.colName) : ''}">
+      <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${b.color || '#94a3b8'}"></span>
+      <span class="truncate flex-1 min-w-0">${esc(t.title || 'Без названия')}</span>${prio}
+    </a>`;
+  }
+
+  function renderMonth(vp) {
+    const y = viewDate.getFullYear(), m = viewDate.getMonth();
+    document.getElementById('periodTitle').textContent = `${MONTHS[m]} ${y}`;
+    const first = new Date(y, m, 1);
+    const offset = (first.getDay() + 6) % 7;
+    const start = new Date(y, m, 1 - offset);
+    const weeks = Math.ceil((offset + new Date(y, m + 1, 0).getDate()) / 7);
+    const today = todayStr();
+    const mobile = window.innerWidth < 640;
+    let cells = '';
+    for (let i = 0; i < weeks * 7; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const ds = ymd(d);
+      const inMonth = d.getMonth() === m;
+      const list = tasksOn(ds);
+      const isToday = ds === today, isSel = ds === selectedDate, weekend = i % 7 >= 5;
+      const max = mobile ? 0 : 3;
+      const chips = list.slice(0, max).map((t) => chipHtml(t, true)).join('');
+      const more = list.length > max && max > 0 ? `<button type="button" class="text-[11px] text-gray-500 hover:text-gray-900 dark:hover:text-white px-1.5 text-left" onclick="event.stopPropagation(); selectDay('${ds}')">ещё ${list.length - max}</button>` : '';
+      const dots = mobile && list.length ? `<div class="flex justify-center gap-0.5 mt-1">${list.slice(0, 3).map((t) => `<span class="w-1 h-1 rounded-full" style="background:${isOverdue(t) ? '#ef4444' : (boardsMeta[t.boardId] || {}).color || '#94a3b8'}"></span>`).join('')}</div>` : '';
+      cells += `<div role="gridcell" tabindex="0" data-date="${ds}" onclick="selectDay('${ds}')" ondblclick="selectDay('${ds}'); focusQuickAdd()" onkeydown="if(event.key==='Enter') selectDay('${ds}')"
+        class="cal-day group relative flex flex-col min-h-0 ${mobile ? 'h-14 items-center pt-1.5' : 'p-1.5'} ${inMonth ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/70 dark:bg-gray-950/60'} ${isSel ? 'ring-2 ring-inset ring-blue-500 z-[1]' : ''} cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors outline-none">
+        <div class="flex items-center ${mobile ? 'justify-center' : 'justify-between'} mb-1 flex-shrink-0">
+          <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-medium ${isToday ? 'bg-blue-600 text-white' : inMonth ? (weekend ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200') : 'text-gray-300 dark:text-gray-600'}">${d.getDate()}</span>
+          ${!mobile && list.length > 0 ? `<span class="text-[10px] text-gray-400 tabular-nums pr-0.5">${list.length}</span>` : ''}
+        </div>
+        ${mobile ? dots : `<div class="cal-drop flex-1 min-h-[20px] flex flex-col gap-0.5 overflow-hidden" data-date="${ds}">${chips}${more}</div>`}
+      </div>`;
+    }
+    vp.innerHTML = `<div class="cal-in flex-1 lg:min-h-0 flex flex-col bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">
+      <div class="grid grid-cols-7 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">${DOW.map((d, i) => `<div class="py-2 text-center text-[11px] font-medium ${i >= 5 ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}">${d}</div>`).join('')}</div>
+      <div role="grid" class="flex-1 grid grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800" style="grid-template-rows: repeat(${weeks}, minmax(${mobile ? '56px' : '96px'}, 1fr));">${cells}</div>
+    </div>`;
+  }
+
+  function renderWeek(vp) {
+    const base = new Date(viewDate.getFullYear(), viewDate.getMonth(), viewDate.getDate());
+    const start = new Date(base.getFullYear(), base.getMonth(), base.getDate() - ((base.getDay() + 6) % 7));
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+    const fmt = (d) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    document.getElementById('periodTitle').textContent = `${fmt(start)} — ${fmt(end)}`;
+    const today = todayStr();
+    let cols = '';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      const ds = ymd(d);
+      const list = tasksOn(ds);
+      const isToday = ds === today, isSel = ds === selectedDate;
+      cols += `<div data-date="${ds}" onclick="selectDay('${ds}')" ondblclick="selectDay('${ds}'); focusQuickAdd()" class="cal-day flex flex-col min-h-[140px] lg:min-h-0 bg-white dark:bg-gray-900 ${isSel ? 'ring-2 ring-inset ring-blue-500' : ''} cursor-pointer">
+        <div class="px-2.5 py-2 flex items-center gap-2 border-b border-gray-100 dark:border-gray-800">
+          <span class="text-[11px] font-medium ${i >= 5 ? 'text-gray-400' : 'text-gray-500'}">${DOW[i]}</span>
+          <span class="w-6 h-6 flex items-center justify-center rounded-full text-xs font-semibold ${isToday ? 'bg-blue-600 text-white' : 'text-gray-800 dark:text-gray-100'}">${d.getDate()}</span>
+          ${list.length ? `<span class="ml-auto text-[10px] text-gray-400">${list.length}</span>` : ''}
+        </div>
+        <div class="cal-drop flex-1 p-1.5 flex flex-col gap-1 overflow-y-auto" data-date="${ds}">${list.map((t) => chipHtml(t, false)).join('') || '<span class="m-auto text-[11px] text-gray-300 dark:text-gray-600 pointer-events-none">—</span>'}</div>
+      </div>`;
+    }
+    vp.innerHTML = `<div class="cal-in flex-1 lg:min-h-0 grid grid-cols-1 sm:grid-cols-7 gap-px bg-gray-200 dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden">${cols}</div>`;
+  }
+
+  function renderList(vp) {
+    const startD = parseYmd(ymd(viewDate));
+    const to = ymd(new Date(startD.getFullYear(), startD.getMonth(), startD.getDate() + 13));
+    const fmt = (d) => d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    document.getElementById('periodTitle').textContent = `${fmt(startD)} — ${fmt(parseYmd(to))}`;
+    const overdue = ymd(viewDate) === todayStr() ? visibleTasks().filter(isOverdue).sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const inRange = visibleTasks().filter((t) => t.date >= ymd(viewDate) && t.date <= to);
+    const byDate = {};
+    inRange.forEach((t) => { (byDate[t.date] = byDate[t.date] || []).push(t); });
+    const row = (t) => `<a href="board.html?b=${encodeURIComponent(t.boardId)}&c=${encodeURIComponent(t.id)}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${(boardsMeta[t.boardId] || {}).color || '#94a3b8'}"></span>
+        <span class="flex-1 min-w-0"><span class="block truncate text-sm ${t.done ? 'line-through text-gray-400' : isOverdue(t) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}">${esc(t.title || 'Без названия')}</span>
+          <span class="block truncate text-xs text-gray-500 dark:text-gray-400">${esc((boardsMeta[t.boardId] || {}).title || '')}${t.colName ? ' · ' + esc(t.colName) : ''}</span></span>
+        ${t.priority === 'critical' ? '<i data-lucide="flame" class="w-4 h-4 text-red-500"></i>' : t.priority === 'high' ? '<i data-lucide="arrow-up" class="w-4 h-4 text-amber-500"></i>' : ''}
+      </a>`;
+    let html = '';
+    if (overdue.length) html += `<div class="mb-2"><div class="px-3 pt-1 pb-1.5 text-xs font-semibold text-red-600 dark:text-red-400">Просрочено · ${overdue.length}</div>${overdue.map(row).join('')}</div>`;
+    const dates = Object.keys(byDate).sort();
+    dates.forEach((ds) => {
+      const d = parseYmd(ds);
+      const label = ds === todayStr() ? 'Сегодня' : ds === ymd(new Date(Date.now() + 864e5)) ? 'Завтра' : d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+      html += `<div class="mb-2"><button type="button" onclick="selectDay('${ds}')" class="w-full text-left px-3 pt-2 pb-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 first-letter:uppercase hover:text-gray-900 dark:hover:text-white">${label} · ${byDate[ds].length}</button>${byDate[ds].sort((a, b) => a.done - b.done).map(row).join('')}</div>`;
+    });
+    if (!html) html = `<div class="py-16 text-center text-gray-400"><div class="w-12 h-12 mx-auto mb-3 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center"><i data-lucide="calendar-check" class="w-6 h-6"></i></div><p class="text-sm font-medium text-gray-600 dark:text-gray-300">На ближайшие 2 недели сроков нет</p><p class="text-xs mt-1">Добавьте задачу справа или в проекте.</p></div>`;
+    vp.innerHTML = `<div class="cal-in flex-1 lg:min-h-0 overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-2">${html}</div>`;
+  }
+
+  function renderDayPanel() {
+    const d = parseYmd(selectedDate);
+    const list = tasksOn(selectedDate);
+    document.getElementById('dayPanelTitle').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    const open = list.filter((t) => !t.done).length;
+    document.getElementById('dayPanelSub').textContent = list.length ? `Задач: ${list.length}${open !== list.length ? ` · открытых ${open}` : ''}` : 'Задач нет';
+    document.getElementById('dayPanelBadge').classList.toggle('hidden', selectedDate !== todayStr());
+    const box = document.getElementById('dayPanelList');
+    if (!list.length) {
+      box.innerHTML = `<div class="py-10 text-center text-gray-400 text-xs px-6">На этот день ничего не запланировано.<br>Впишите задачу в поле выше.</div>`;
+      return;
+    }
+    box.innerHTML = list.map((t) => {
+      const b = boardsMeta[t.boardId] || {};
+      const prio = { critical: ['Критично', 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400'], high: ['Высокий', 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400'] }[t.priority];
+      return `<a href="board.html?b=${encodeURIComponent(t.boardId)}&c=${encodeURIComponent(t.id)}" class="flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors">
+        <span class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style="background:${b.color || '#94a3b8'}"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block text-sm leading-snug ${t.done ? 'line-through text-gray-400' : isOverdue(t) ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}">${esc(t.title || 'Без названия')}</span>
+          <span class="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500 dark:text-gray-400 min-w-0"><span class="truncate">${esc(b.title || '')}${t.colName ? ' · ' + esc(t.colName) : ''}</span>${prio ? `<span class="flex-shrink-0 text-[10px] font-medium px-1.5 py-px rounded ${prio[1]}">${prio[0]}</span>` : ''}</span>
+        </span>
+        <i data-lucide="arrow-up-right" class="w-4 h-4 text-gray-300 dark:text-gray-600 mt-0.5 flex-shrink-0"></i>
+      </a>`;
+    }).join('');
+    lucide.createIcons({ root: box });
+  }
+
+  // ---------------- перенос срока перетаскиванием ----------------
+  function initDrag() {
+    if (window.innerWidth < 640) return; // на телефоне перенос — через карточку задачи
+    document.querySelectorAll('.cal-drop').forEach((zone) => {
+      sortables.push(new Sortable(zone, {
+        group: 'calendar-tasks', draggable: '.cal-chip', animation: 150, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
+        forceFallback: true, fallbackOnBody: true, fallbackTolerance: 4,
+        onMove: (evt) => { document.querySelectorAll('.drop-hover').forEach((el) => el.classList.remove('drop-hover')); evt.to.closest('.cal-day')?.classList.add('drop-hover'); },
+        onEnd: (evt) => {
+          document.querySelectorAll('.drop-hover').forEach((el) => el.classList.remove('drop-hover'));
+          const to = evt.to.dataset.date, from = evt.from.dataset.date;
+          if (to && to !== from) updateTaskDate(evt.item.dataset.boardId, evt.item.dataset.taskId, to, evt.item.dataset.local === 'true');
+          else render();
+        },
+      }));
+    });
+  }
+
+  async function updateTaskDate(boardId, taskId, newDate, isLocal) {
+    const t = allTasks.find((x) => x.id === taskId && x.boardId === boardId);
+    const old = t ? t.date : null;
+    const oldDue = t ? t.dueDate : null;
+    if (t) { t.date = newDate; t.dueDate = newDate; }
+    selectedDate = newDate;
+    render();
+    const label = parseYmd(newDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+    try {
+      if (isLocal) {
+        const boards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+        (boards[boardId]?.columns || []).forEach((col) => (col.cards || []).forEach((c) => { if (String(c.id) === taskId) c.dueDate = newDate; }));
+        localStorage.setItem('blocko_local_boards', JSON.stringify(boards));
+      } else {
+        await db.collection('boards').doc(boardId).collection('cards').doc(taskId).update({ dueDate: newDate, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+      }
+      showSystemToast('Срок перенесён', `«${t ? t.title : 'Задача'}» — на ${label}.`, 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+    } catch (e) {
+      console.error(e);
+      if (t) { t.date = old; t.dueDate = oldDue; }
+      render();
+      showSystemToast('Не удалось перенести', e && e.code === 'permission-denied' ? 'У вас нет прав редактировать этот проект.' : 'Проверьте интернет и попробуйте ещё раз.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    }
+  }
+
+  // ---------------- быстрое добавление ----------------
+  function focusQuickAdd() { const i = document.getElementById('quickAddTitle'); i.focus({ preventScroll: window.innerWidth >= 1024 }); if (window.innerWidth < 1024) document.getElementById('dayPanel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  document.getElementById('quickAddTitle').addEventListener('input', (e) => document.getElementById('quickAddMore').classList.toggle('hidden', !e.target.value.trim()));
+  document.getElementById('quickAddTitle').addEventListener('focus', () => { if (document.getElementById('quickAddTitle').value.trim()) document.getElementById('quickAddMore').classList.remove('hidden'); });
 
   function updateQuickAddColumns() {
-      const boardId = document.getElementById('quickAddBoard').value;
-      const colSelect = document.getElementById('quickAddColumn');
-      
-      if (!boardId || !availableBoardsData[boardId]) {
-          colSelect.innerHTML = '<option value="">Колонка...</option>';
-          colSelect.disabled = true;
-          return;
-      }
-      
-      const cols = availableBoardsData[boardId].columns;
-      if (cols.length === 0) {
-          colSelect.innerHTML = '<option value="">Нет колонок</option>';
-          colSelect.disabled = true;
-      } else {
-          colSelect.innerHTML = cols.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
-          colSelect.disabled = false;
-      }
-  }
-  
-  function openQuickAddModal(dateStr) {
-      quickAddTargetDate = dateStr;
-      
-      const dateObj = new Date(dateStr);
-      document.getElementById('quickAddDateText').innerText = 'План на ' + dateObj.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-      
-      document.getElementById('quickAddTitle').value = '';
-      document.getElementById('quickAddDesc').value = '';
-      document.getElementById('quickAddColumn').innerHTML = '<option value="">Колонка...</option>';
-      document.getElementById('quickAddColumn').disabled = true;
-      
-      fetchAvailableBoards();
-      
-      const modal = document.getElementById('quickAddModal');
-      const content = document.getElementById('quickAddContent');
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          if (window.innerWidth < 640) content.classList.remove('translate-y-full');
-          else content.classList.remove('scale-95');
-          
-          document.getElementById('quickAddTitle').focus();
-      }, 10);
-  }
-  
-  function closeQuickAddModal() {
-      const modal = document.getElementById('quickAddModal');
-      const content = document.getElementById('quickAddContent');
-      
-      modal.classList.add('opacity-0');
-      if (window.innerWidth < 640) content.classList.add('translate-y-full');
-      else content.classList.add('scale-95');
-      
-      setTimeout(() => modal.classList.add('hidden'), 300);
+    const b = boardsMeta[document.getElementById('quickAddBoard').value];
+    const sel = document.getElementById('quickAddColumn');
+    if (!b) { sel.innerHTML = '<option value="">Колонка</option>'; sel.disabled = true; return; }
+    const cols = (b.columns || []).filter((c) => !DONE_COL.test(c.name || ''));
+    const all = cols.length ? cols : (b.columns || []);
+    sel.innerHTML = all.length ? all.map((c) => `<option value="${esc(String(c.id))}">${esc(c.name || 'Колонка')}</option>`).join('') : '<option value="">Нет колонок</option>';
+    sel.disabled = !all.length;
   }
 
   async function confirmQuickAddTask() {
-      const title = document.getElementById('quickAddTitle').value.trim();
-      const desc = document.getElementById('quickAddDesc').value.trim();
-      const boardId = document.getElementById('quickAddBoard').value;
-      const colId = document.getElementById('quickAddColumn').value;
-      
-      if (!title) return showSystemToast('Внимание', 'Введите что нужно сделать.', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-      if (!boardId || !colId) return showSystemToast('Внимание', 'Выберите проект и колонку для сохранения.', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-      
-      const btn = document.getElementById('btnQuickSave');
-      const ogHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Секунду...';
-      lucide.createIcons({ root: btn.parentElement });
-
-      const board = availableBoardsData[boardId];
-      const cardId = 'card_' + Date.now();
-      
-      const newCard = {
-          id: cardId,
-          title: title,
-          description: desc,
-          dueDate: quickAddTargetDate,
-          columnId: colId,
-          author: { id: currentUser.uid, name: currentUser.displayName },
-          archived: false,
-          type: 'task',
-          priority: 'normal',
-          tags: [],
-          comments: [],
-          checklist: [],
-          order: 99999,
-          createdAt: new Date().toISOString()
-      };
-      
-      try {
-          if (board.isLocal) {
-              const localBoards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
-              const localBoard = localBoards[boardId];
-              if (localBoard) {
-                  const col = localBoard.columns.find(c => c.id == colId);
-                  if (col) {
-                      if(!col.cards) col.cards = [];
-                      col.cards.push(newCard);
-                      localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
-                  }
-              }
-          } else {
-              await db.collection("boards").doc(boardId).collection("cards").doc(cardId).set({
-                  ...newCard,
-                  updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-          }
-          
-          allTasks.push({
-              ...newCard,
-              boardId: boardId,
-              boardTitle: board.title,
-              colId: colId,
-              isLocal: board.isLocal
-          });
-          
-          triggerRender();
-          closeQuickAddModal();
-          showSystemToast('Успех', 'Задача залетела на доску!', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-          
-      } catch(e) {
-          console.error(e);
-          showSystemToast('Ошибка', 'Не удалось сохранить задачу.', 'alert-triangle', 'text-red-500', 'bg-red-50');
-      } finally {
-          btn.disabled = false;
-          btn.innerHTML = ogHtml;
-          lucide.createIcons({ root: btn.parentElement });
+    const title = document.getElementById('quickAddTitle').value.trim();
+    const boardId = document.getElementById('quickAddBoard').value;
+    const colRaw = document.getElementById('quickAddColumn').value;
+    if (!title) return;
+    if (!boardId || !colRaw) { document.getElementById('quickAddMore').classList.remove('hidden'); return showSystemToast('Куда сохранить?', 'Выберите проект и колонку.', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30'); }
+    const b = boardsMeta[boardId];
+    const col = (b.columns || []).find((c) => String(c.id) === colRaw);
+    const colId = col ? col.id : colRaw;
+    const btn = document.getElementById('btnQuickSave');
+    btn.disabled = true; btn.textContent = 'Сохраняем…';
+    const cardId = 'card_' + Date.now();
+    const card = { id: cardId, title, description: '', dueDate: selectedDate, columnId: colId, author: { id: currentUser.uid, name: currentUser.displayName }, archived: false, type: 'task', priority: 'normal', tags: [], comments: [], checklist: [], order: 99999, createdAt: new Date().toISOString() };
+    try {
+      if (b.isLocal) {
+        const boards = JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
+        const c = (boards[boardId]?.columns || []).find((x) => String(x.id) === String(colId));
+        if (!c) throw new Error('no column');
+        (c.cards = c.cards || []).push(card);
+        localStorage.setItem('blocko_local_boards', JSON.stringify(boards));
+      } else {
+        await db.collection('boards').doc(boardId).collection('cards').doc(cardId).set({ ...card, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
       }
+      allTasks.push({ ...card, boardId, colId, colName: col ? col.name : '', done: false, isLocal: b.isLocal, date: selectedDate });
+      document.getElementById('quickAddTitle').value = '';
+      document.getElementById('quickAddMore').classList.add('hidden');
+      render();
+      showSystemToast('Задача добавлена', `${b.title} · ${parseYmd(selectedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}`, 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
+    } catch (e) {
+      console.error(e);
+      showSystemToast('Не удалось сохранить', e && e.code === 'permission-denied' ? 'Нет прав добавлять задачи в этот проект.' : 'Попробуйте ещё раз.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Добавить';
+    }
   }
 
-  // ЭНТЕРПРАЙЗ: Генерация .ics файла на стороне клиента (Zero-Latency)
+  // ---------------- экспорт .ics ----------------
   function exportToICal() {
-      if (!allTasks || allTasks.length === 0) {
-          return showSystemToast('Архив пуст', 'Сначала дождитесь синхронизации задач.', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-      }
-
-      const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      let icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Blocko Pro//Calendar//RU\nCALSCALE:GREGORIAN\nMETHOD:PUBLISH\nX-WR-CALNAME:Blocko Pro Задачи\n";
-
-      let exportedCount = 0;
-
-      allTasks.forEach(t => {
-          if (!t.dueDate) return;
-          // Экспортируем только те задачи, которые соответствуют текущему фильтру (чтобы юзер мог выгрузить конкретный проект)
-          if (filterBoardId !== 'all' && t.boardId !== filterBoardId) return;
-          
-          exportedCount++;
-
-          const dateOnly = t.dueDate.replace(/-/g, '');
-          
-          // Для iCal событий "весь день" нужно указать следующую дату как END
-          const endD = new Date(t.dueDate);
-          endD.setDate(endD.getDate() + 1);
-          const endStr = endD.toISOString().split('T')[0].replace(/-/g, '');
-
-          const escapeIcal = (str) => (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-
-          icsContent += "BEGIN:VEVENT\n";
-          icsContent += `UID:${t.id}@blocko.pro\n`;
-          icsContent += `DTSTAMP:${now}\n`;
-          icsContent += `DTSTART;VALUE=DATE:${dateOnly}\n`;
-          icsContent += `DTEND;VALUE=DATE:${endStr}\n`;
-          icsContent += `SUMMARY:${escapeIcal(t.title)} [${escapeIcal(t.boardTitle)}]\n`;
-          
-          let desc = escapeIcal(t.description) || "Запланировано в Blocko Pro";
-          if (t.priority) desc += `\\n\\nПриоритет: ${t.priority}`;
-          
-          icsContent += `DESCRIPTION:${desc}\n`;
-          icsContent += "END:VEVENT\n";
-      });
-
-      icsContent += "END:VCALENDAR";
-
-      if (exportedCount === 0) {
-          return showSystemToast('Нет дедлайнов', 'В выбранном проекте нет задач с установленной датой.', 'info', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-      }
-
-      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'Blocko_Pro_Calendar.ics';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      showSystemToast('Экспорт завершен', `Добавлено ${exportedCount} задач в системный календарь. Откройте скачанный файл!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-      if (window.innerWidth < 768) toggleSettings();
-      lucide.createIcons();
+    const list = visibleTasks();
+    if (!list.length) return showSystemToast('Нечего выгружать', 'В выбранных проектах нет задач со сроком.', 'info', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
+    const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const escI = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+    let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Blocko Pro//Calendar//RU\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:Blocko Pro\r\n';
+    list.forEach((t) => {
+      const d = parseYmd(t.date); const e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+      ics += `BEGIN:VEVENT\r\nUID:${t.id}@blocko.cloud\r\nDTSTAMP:${now}\r\nDTSTART;VALUE=DATE:${t.date.replace(/-/g, '')}\r\nDTEND;VALUE=DATE:${ymd(e).replace(/-/g, '')}\r\nSUMMARY:${escI(t.title)} [${escI((boardsMeta[t.boardId] || {}).title)}]\r\nDESCRIPTION:${escI(t.description || 'Blocko Pro')}\r\nEND:VEVENT\r\n`;
+    });
+    ics += 'END:VCALENDAR';
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = 'Blocko_Calendar.ics'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    showSystemToast('Файл скачан', `Задач: ${list.length}. Откройте файл — они появятся в вашем календаре.`, 'download', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
   }
 
-  // ЕДИНЫЙ, СТРОГИЙ ОБРАБОТЧИК КЛИКОВ (Никаких дубликатов)
-  window.addEventListener('click', (e) => {
-      if (e.target.id === 'dayViewModal') closeDayModal();
-      if (e.target.id === 'quickAddModal') closeQuickAddModal();
+  // Клавиатура: ← → листают период, T — сегодня
+  document.addEventListener('keydown', (e) => {
+    if (/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) return;
+    if (e.key === 'ArrowLeft') shiftPeriod(-1);
+    if (e.key === 'ArrowRight') shiftPeriod(1);
+    if (e.key === 't' || e.key === 'е') goToToday();
   });
+  let lastWidthClass = window.innerWidth < 640;
+  window.addEventListener('resize', () => { const now = window.innerWidth < 640; if (now !== lastWidthClass) { lastWidthClass = now; render(); } });
 </script>
 </body>
 </html>
