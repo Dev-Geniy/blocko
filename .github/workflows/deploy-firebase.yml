@@ -102,9 +102,11 @@ jobs:
       - name: Публикация правил базы
         if: steps.key.outputs.rules == 'true'
         run: |
+          # Ключу Firebase по умолчанию не хватает права на правила (403). Это не ошибка сайта:
+          # правила публикуются вручную (DEPLOY.md, шаг 7) или автоматически после выдачи роли
+          # «Firebase Rules Admin» сервисному аккаунту. Поэтому не «краснеем», а предупреждаем.
           if ! npx --yes firebase-tools@13 deploy --only firestore:rules --project "$FIREBASE_PROJECT" --force --non-interactive; then
-            echo "::error::Правила не опубликованы автоматически. Опубликуйте вручную: Firebase Console → Firestore Database → Rules → вставьте содержимое firestore.rules → Publish (DEPLOY.md, шаг 6)."
-            exit 1
+            echo "::warning::Правила базы не опубликованы автоматически (нет прав у ключа). Опубликуйте вручную: Firebase Console → Firestore Database → Rules → вставьте firestore.rules → Publish. Или выдайте ключу роль «Firebase Rules Admin» (DEPLOY.md, шаг 7)."
           fi
 
       - name: Удалить ключ
