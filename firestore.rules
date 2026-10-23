@@ -70,6 +70,9 @@ service cloud.firestore {
     }
 
     // Доступ к содержимому доски (карточки, чат, журнал)
+    // Личный диалог: id = uidA_uidB
+    function inDmPair(threadId) { return signedIn() && uid() in threadId.split('_'); }
+
     // Чат: старый лайк (likes: [uid]) — добавить или убрать можно только себя
     function chatOnlyOwnLike() {
       let before = resource.data.get('likes', []).toSet();
@@ -197,6 +200,32 @@ service cloud.firestore {
     }
 
     // ---------- users ----------
+    // ---------- личные сообщения (главная → «Сообщения») ----------
+    // id диалога = uidA_uidB (по алфавиту): читать и писать могут только эти двое
+    match /dms/{threadId} {
+      allow get: if inDmPair(threadId);
+      allow list: if signedIn() && uid() in resource.data.members;
+      allow create: if inDmPair(threadId)
+        && request.resource.data.members is list
+        && request.resource.data.members.size() == 2
+        && threadId == request.resource.data.members[0] + '_' + request.resource.data.members[1]
+        && request.resource.data.keys().hasOnly(['members', 'users', 'lastMessage', 'updatedAt', 'unread', 'readAt']);
+      allow update: if inDmPair(threadId)
+        && request.resource.data.members == resource.data.members
+        && changed().hasOnly(['users', 'lastMessage', 'updatedAt', 'unread', 'readAt']);
+
+      match /messages/{msgId} {
+        allow read: if inDmPair(threadId);
+        allow create: if inDmPair(threadId)
+          && request.resource.data.user.id == uid()
+          && request.resource.data.get('text', '') is string
+          && request.resource.data.get('text', '').size() <= 5000;
+        allow update: if inDmPair(threadId) && resource.data.user.id == uid()
+          && changed().hasOnly(['text', 'editedAt']);
+        allow delete: if inDmPair(threadId) && resource.data.user.id == uid();
+      }
+    }
+
     match /users/{userId} {
       allow read: if (signedIn() && userId == uid()) || isAdmin();
 

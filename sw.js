@@ -4,7 +4,7 @@
 // а кэш нужен только для работы без интернета. Раньше ядро отдавалось из кэша
 // (stale-while-revalidate), и после обновления сайта люди неделями видели старые файлы
 // вперемешку с новыми.
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CORE_CACHE_NAME = `blocko-pro-core-${VERSION}`;
 const MEDIA_CACHE_NAME = 'blocko-media-cache-v2';
 
@@ -20,6 +20,7 @@ const CORE_ASSETS = [
   './security.js',
   './api.js',
   './chat.js',
+  './home.js',
   './ui.css',
   './manifest.json'
 ];
@@ -102,6 +103,13 @@ self.addEventListener('notificationclick', (event) => {
   const target = new URL(data.url || './', self.registration.scope).href;
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (data.type === 'dm') {
+      // Личное сообщение: открываем диалог на главной (или в любой открытой вкладке сайта)
+      const home = windows.find((w) => { try { return /(^|\/)(index\.html)?$/.test(new URL(w.url).pathname); } catch (e) { return false; } });
+      if (home) { await home.focus(); home.postMessage({ type: 'blocko-open-dm', threadId: data.threadId }); return; }
+      if (self.clients.openWindow) await self.clients.openWindow(target);
+      return;
+    }
     const sameBoard = data.boardId
       ? windows.find((w) => { try { return new URL(w.url).searchParams.get('b') === data.boardId; } catch (e) { return false; } })
       : windows[0];
