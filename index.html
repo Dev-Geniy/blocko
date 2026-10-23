@@ -67,14 +67,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="security.js"></script>
     <!-- Client ID -->
   <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
+  <script src="api.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
@@ -714,6 +720,9 @@
           <button onclick="logout()" class="w-full py-2.5 border border-red-200 dark:border-red-900/50 text-red-500 font-bold rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm text-xs">
             <i data-lucide="log-out" class="w-4 h-4"></i> Выйти из системы
           </button>
+          <button onclick="closeProfileModal(); setTimeout(openSupportModal, 320)" class="w-full py-2.5 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm text-xs">
+            <i data-lucide="life-buoy" class="w-4 h-4"></i> Написать в поддержку
+          </button>
           <div id="badgeSettingsBlock" class="hidden">
             <div class="flex gap-2 justify-center bg-gray-50 dark:bg-gray-800/50 p-2 rounded-xl border border-gray-100 dark:border-gray-700" id="badgeSelector"></div>
           </div>
@@ -1233,7 +1242,15 @@ const debouncedRender = debounce(() => renderBoardsGrid());
 
 let currentUser = null;
 let onlineBoards = [];
-let savedBoardOrder = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
+// Порядок досок храним как массив id. Старые версии писали сюда целые объекты досок (вместе с паролями) — чистим.
+let savedBoardOrder = (() => {
+  try {
+    const raw = JSON.parse(localStorage.getItem('blocko_boards_order')) || [];
+    const ids = Array.isArray(raw) ? raw.map(x => (x && typeof x === 'object') ? x.id : x).filter(x => typeof x === 'string') : [];
+    localStorage.setItem('blocko_boards_order', JSON.stringify(ids));
+    return ids;
+  } catch (e) { return []; }
+})();
 let sortableInstance = null;
 
 auth.onAuthStateChanged(async (user) => {
@@ -1242,7 +1259,7 @@ auth.onAuthStateChanged(async (user) => {
   const loader = document.getElementById('globalLoader');
   
   if (user) {
-    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}` };
+    currentUser = { id: user.uid, name: user.displayName, avatar: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}` };
     
     try {
       const userRef = db.collection('users').doc(user.uid);
@@ -1261,6 +1278,7 @@ auth.onAuthStateChanged(async (user) => {
     authScreen.classList.add('hidden');
     dashScreen.classList.remove('hidden');
     dashScreen.classList.add('flex');
+    if (typeof OnboardingEngine !== 'undefined') OnboardingEngine.init();
     
     const dashAvatarEl = document.getElementById('dashAvatar');
     if(dashAvatarEl) {
@@ -1371,23 +1389,7 @@ async function loginWithGoogle() {
         rewardsClaimed: []
       });
       
-      if (savedRefId) {
-        // 1. Начисляем в базовую реферальную систему (Друзья)
-        const affiliateRef = db.collection('affiliates').doc(savedRefId);
-        await affiliateRef.set({
-          signups: firebase.firestore.FieldValue.increment(1),
-          earnedCredits: firebase.firestore.FieldValue.increment(10)
-        }, { merge: true });
-
-        // 2. Начисляем в CPA Network (Если у партнера активирован CPA-кабинет)
-        const cpaRef = db.collection('affiliates_cpa').doc(savedRefId);
-        const cpaDoc = await cpaRef.get();
-        if (cpaDoc.exists && cpaDoc.data().isActive) {
-           await cpaRef.set({
-               signups: firebase.firestore.FieldValue.increment(1)
-           }, { merge: true });
-        }
-      }
+      // Бонус пригласившему начисляет сервер (onUserCreated)
     }
   } catch (error) {
     console.error("Ошибка авторизации:", error);
@@ -1445,45 +1447,6 @@ function copyAffiliateLink() {
   showSystemToast('Ссылка скопирована!', 'Поделитесь ей в сети и получайте 20% от оплат ваших рефералов.', 'copy', 'text-indigo-500', 'bg-indigo-50');
 }
 
-async function loadAffiliateStats() {
-  if (!currentUser) return;
-  const affDoc = await db.collection('affiliates').doc(currentUser.id).get();
-  const userDoc = await db.collection('users').doc(currentUser.id).get();
-  
-  const affData = affDoc.exists ? affDoc.data() : { signups: 0, paidSignups: 0, earnedCredits: 0 };
-  const userData = userDoc.data();
-  
-  document.getElementById('statSignups').innerText = affData.signups || 0;
-  document.getElementById('statEarned').innerText = (affData.earnedCredits || 0) + ' кр.';
-
-  // Проверка условий и показ кнопок активации
-  const checkTier = (id, req, tierKey) => {
-    const isReached = affData.signups >= req;
-    const isClaimed = userData.rewardsClaimed?.includes(tierKey);
-    const badge = document.getElementById('badge' + id);
-    const btn = document.getElementById('btn_activate_' + tierKey);
-    const rewardText = document.getElementById('reward_text_' + tierKey);
-
-    if (isReached) {
-      badge.classList.remove('opacity-40', 'grayscale');
-      if (!isClaimed) {
-        btn.classList.remove('hidden');
-        rewardText.classList.remove('hidden');
-      } else {
-        rewardText.innerHTML = `<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-lg shadow-sm"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Активировано</span>`;
-        rewardText.classList.remove('hidden');
-        lucide.createIcons();
-      }
-    }
-  };
-  checkTier('Friend', REWARDS.FRIEND.required, 'friend');
-  checkTier('Partner', REWARDS.PARTNER.required, 'partner');
-  
-  if (affData.signups >= 50 && (affData.paidSignups || 0) >= 10) {
-     checkTier('Ambassador', 50, 'ambassador');
-  }
-}
-
 // ЭНТЕРПРАЙЗ: Прямая загрузка списка партнеров в открытое окно
 async function loadReferralsList() {
   if (!currentUser) return;
@@ -1491,19 +1454,18 @@ async function loadReferralsList() {
   listEl.innerHTML = '<div class="w-full text-center py-6 text-blue-500 font-bold text-xs animate-pulse">Синхронизация сети...</div>';
   
   try {
-    const snap = await db.collection('users').where('referredBy', '==', currentUser.id).limit(100).get();
-    document.getElementById('referralsCountBadge').innerText = snap.size;
+    const { referrals } = await BlockoAPI.call('listReferrals');
+    document.getElementById('referralsCountBadge').innerText = referrals.length;
     
-    if (snap.empty) {
+    if (referrals.length === 0) {
        listEl.innerHTML = '<div class="w-full text-center py-6 text-gray-500 text-xs font-medium">У вас пока нет партнеров. Поделитесь ссылкой!</div>';
     } else {
        let html = '';
-       snap.forEach(doc => {
-         const user = doc.data();
+       referrals.forEach(user => {
          html += `
            <div class="relative group cursor-pointer flex flex-col items-center">
              ${renderUserAvatar(user, 'w-12 h-12 hover:z-10 transition-transform hover:scale-110')}
-             <span class="absolute -bottom-6 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">${user.name || 'Секретный Агент'}</span>
+             <span class="absolute -bottom-6 bg-gray-900 text-white text-[10px] px-2 py-1 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">${esc(user.name || 'Секретный Агент')}</span>
            </div>
          `;
        });
@@ -1512,21 +1474,10 @@ async function loadReferralsList() {
     }
   } catch(e) {
     console.error(e);
-    listEl.innerHTML = '<div class="w-full text-center py-6 text-red-500 text-xs font-bold">Ошибка сети. Проверьте индексы Firebase.</div>';
+    listEl.innerHTML = '<div class="w-full text-center py-6 text-red-500 text-xs font-bold">Не удалось загрузить список. Попробуйте позже.</div>';
   }
 }
   
-async function logout() { 
-  // ЭНТЕРПРАЙЗ: Сначала закрываем UI, затем выходим из сессии
-  closeProfileModal();
-  sessionStorage.clear(); // ЭНТЕРПРАЙЗ БЕЗОПАСНОСТЬ: Полная очистка сессионных ключей
-  setTimeout(() => {
-    auth.signOut().then(() => {
-      window.location.reload(); // Полная перезагрузка для очистки стейта
-    });
-  }, 300);
-}
-
 // Получение локальных досок
 function getLocalBoards() {
   return JSON.parse(localStorage.getItem('blocko_local_boards')) || {};
@@ -1594,18 +1545,18 @@ grid.className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 
 grid.innerHTML = filtered.map(data => {
     const isLocal = data.id && data.id.startsWith('local_');
     const isOwner = data.owner === currentUser.id;
-    const hasPassword = !!data.password; 
+    const hasPassword = !!(data.hasPassword || data.password); 
     const ownerInfo = data.users && data.users[data.owner] ? data.users[data.owner] : { name: 'Владелец', avatar: generateAvatarById(data.owner || 'U') };
     
     // --- ДИНАМИЧЕСКИЕ КНОПКИ ДЕЙСТВИЙ ---
     let actionButtons = '';
     if (isLocal) {
       actionButtons = `
-        <button onclick="event.stopPropagation(); exportBoard('${data.id}', true)" class="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап"><i data-lucide="download" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Save</span></button>
+        <button onclick="event.stopPropagation(); exportBoard(${jsArg(data.id)}, true)" class="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап"><i data-lucide="download" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Save</span></button>
       `;
     } else {
       let downloadCloudBtn = isOwner ? `
-        <button onclick="event.stopPropagation(); exportBoard('${data.id}', false)" class="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап (Только для владельца)"><i data-lucide="download" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Save</span></button>
+        <button onclick="event.stopPropagation(); exportBoard(${jsArg(data.id)}, false)" class="flex items-center gap-2 p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-800 rounded-xl transition-all shadow-sm border border-emerald-100 dark:border-emerald-800/50" title="Скачать бэкап (Только для владельца)"><i data-lucide="download" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Save</span></button>
       ` : '';
       
       const myRole = data.users && data.users[currentUser.id] ? data.users[currentUser.id].role : 'editor';
@@ -1614,17 +1565,17 @@ grid.innerHTML = filtered.map(data => {
       if (!isViewer) {
         actionButtons = `
           ${downloadCloudBtn}
-          <button onclick="event.stopPropagation(); copyBoardId(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID"><i data-lucide="copy" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">ID</span></button>
-          <button onclick="event.stopPropagation(); copyBoardLink(this, '${data.id}')" class="flex items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение"><i data-lucide="link" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Link</span></button>
+          <button onclick="event.stopPropagation(); copyBoardId(this, ${jsArg(data.id)})" class="flex items-center gap-2 p-2.5 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700" title="Скопировать ID"><i data-lucide="copy" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">ID</span></button>
+          <button onclick="event.stopPropagation(); copyBoardLink(this, ${jsArg(data.id)})" class="flex items-center gap-2 p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-xl transition-all shadow-sm border border-indigo-100 dark:border-indigo-800/50" title="Ссылка-приглашение"><i data-lucide="link" class="w-4 h-4"></i> <span class="text-xs font-bold hidden sm:inline">Link</span></button>
         `;
       } else {
         actionButtons = ``;
       }
     }
 
-    let cardActions = `<button onclick="event.stopPropagation(); tryEnterBoard('${data.id}', ${hasPassword}, 'archive')" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
-    if (isLocal || isOwner) cardActions += `<button onclick="event.stopPropagation(); deleteBoard('${data.id}', ${isLocal})" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
-    else cardActions += `<button onclick="event.stopPropagation(); leaveBoard('${data.id}')" class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-colors" title="Покинуть проект"><i data-lucide="log-out" class="w-4 h-4"></i></button>`;
+    let cardActions = `<button onclick="event.stopPropagation(); tryEnterBoard(${jsArg(data.id)}, ${hasPassword}, 'archive')" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-colors" title="Архив проекта"><i data-lucide="archive" class="w-4 h-4"></i></button>`;
+    if (isLocal || isOwner) cardActions += `<button onclick="event.stopPropagation(); deleteBoard(${jsArg(data.id)}, ${isLocal})" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-colors" title="Удалить проект"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`;
+    else cardActions += `<button onclick="event.stopPropagation(); leaveBoard(${jsArg(data.id)})" class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-xl transition-colors" title="Покинуть проект"><i data-lucide="log-out" class="w-4 h-4"></i></button>`;
 
     // ЭНТЕРПРАЙЗ: Стилистика бейджей и оттенков карточек
     const boardBg = isLocal ? 'bg-gray-50/80 dark:bg-gray-800/80' : 'bg-white dark:bg-gray-900';
@@ -1641,13 +1592,13 @@ grid.innerHTML = filtered.map(data => {
          <div class="w-9 h-9 rounded-full border border-indigo-200 dark:border-indigo-700 flex items-center justify-center bg-white dark:bg-gray-800 text-indigo-500 shadow-sm"><i data-lucide="building-2" class="w-4 h-4"></i></div>
          <div class="flex flex-col">
            <span class="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1">Компания</span>
-           <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${data.company}</span>
+           <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight">${esc(data.company)}</span>
          </div>
       </div>
     ` : '';
 
     return `
-    <div data-id="${data.id}" onclick="tryEnterBoard('${data.id}', ${hasPassword})" class="group ${boardBg} border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative flex flex-col h-full cursor-pointer hover:-translate-y-1">
+    <div data-id="${esc(data.id)}" onclick="tryEnterBoard(${jsArg(data.id)}, ${hasPassword})" class="group ${boardBg} border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 relative flex flex-col h-full cursor-pointer hover:-translate-y-1">
       <div class="flex justify-between items-start mb-6">
         <div class="flex items-center gap-4">
           <div class="relative w-14 h-14 ${typeColor} rounded-[1.2rem] flex items-center justify-center border shadow-sm group-hover:scale-110 transition-transform duration-500">
@@ -1663,7 +1614,7 @@ grid.innerHTML = filtered.map(data => {
         </div>
       </div>
 
-      <h3 class="text-2xl font-extrabold mb-5 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight">${data.title || 'Без названия'}</h3>
+      <h3 class="text-2xl font-extrabold mb-5 text-gray-900 dark:text-white line-clamp-1 group-hover:text-blue-600 transition-colors tracking-tight">${esc(data.title || 'Без названия')}</h3>
       
       ${companyHtml}
 
@@ -1671,7 +1622,7 @@ grid.innerHTML = filtered.map(data => {
          ${renderUserAvatar(ownerInfo, 'w-9 h-9')}
          <div class="flex flex-col">
            <span class="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] leading-none mb-1">Владелец</span>
-           <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight line-clamp-1">${ownerInfo.name}</span>
+           <span class="text-sm font-bold text-gray-700 dark:text-gray-200 leading-tight line-clamp-1">${esc(ownerInfo.name)}</span>
          </div>
       </div>
       
@@ -1697,7 +1648,7 @@ grid.innerHTML = filtered.map(data => {
     onEnd: function () {
       const items = grid.querySelectorAll('[data-id]');
       savedBoardOrder = Array.from(items).map(el => el.getAttribute('data-id'));
-      localStorage.setItem('blocko_boards_order', JSON.stringify(sortedBoards));
+      localStorage.setItem('blocko_boards_order', JSON.stringify(savedBoardOrder));
     }
   });
 }
@@ -1717,54 +1668,47 @@ async function upgradeTo(planId) {
     return showSystemToast('Ошибка', 'Войдите в систему.', 'lock', 'text-red-500', 'bg-red-50');
   }
 
-  // Цены тарифов в реальных МОНЕТАХ (Coins)
-  const prices = {
-    'freelancer': 600, // $6
-    'pro': 1900        // $19
-  };
-  const requiredCoins = prices[planId];
-
-  try {
-    const userRef = db.collection('users').doc(currentUser.id);
-    const userDoc = await userRef.get();
-    const currentCoins = userDoc.exists ? (userDoc.data().coins || 0) : 0;
-
-    // Если монет не хватает — открываем модалку пополнения
-    if (currentCoins < requiredCoins) {
-      closePricingModal();
-      openTopUpModal();
-      return; 
-    }
-
-    // ЭНТЕРПРАЙЗ: Системная модалка вместо браузерного confirm
-    openConfirmModal('Подтверждение оплаты', `С вашего баланса будет списано ${requiredCoins} B-Coins. Вы уверены?`, 'Оплатить', false, async () => {
+  // Переход на Free — просто понижение тарифа
+  if (planId === 'free') {
+    openConfirmModal('Перейти на Free?', 'Платные возможности будут отключены.', 'Перейти', true, async () => {
       try {
-        // Оплата и смена тарифа
-        const batch = db.batch();
-        batch.update(userRef, { 
-          coins: firebase.firestore.FieldValue.increment(-requiredCoins),
-          plan: planId 
-        });
-        
-        await batch.commit();
-
-        userPlan = planId;
-        localStorage.setItem('blocko_user_plan', planId);
+        await db.collection('users').doc(currentUser.id).update({ plan: 'free', planExpiresAt: firebase.firestore.FieldValue.delete() });
+        userPlan = 'free';
+        localStorage.setItem('blocko_user_plan', 'free');
         closePricingModal();
-        
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-        showSystemToast('Поздравляем! 🎉', `Вы успешно активировали ${planId.toUpperCase()}`, 'shield-check', 'text-green-500', 'bg-green-50');
         renderBoardsGrid();
-      } catch (error) {
-        console.error("Ошибка активации:", error);
-        showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+      } catch (e) {
+        showSystemToast('Сбой', 'Не удалось сменить тариф.', 'alert-circle', 'text-red-500', 'bg-red-50');
       }
     });
-
-  } catch (error) {
-    console.error("Ошибка проверки баланса:", error);
-    showSystemToast('Сбой', 'Не удалось получить данные профиля.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    return;
   }
+
+  // Цены для подтверждения (списывает и проверяет сервер)
+  const prices = { 'freelancer': 600, 'pro': 1900 };
+  const requiredCoins = prices[planId];
+  if (!requiredCoins) return;
+
+  openConfirmModal('Подтверждение оплаты', `С вашего баланса будет списано ${requiredCoins} B-Coins. Вы уверены?`, 'Оплатить', false, async () => {
+    try {
+      const res = await BlockoAPI.call('purchasePlan', { planId });
+      userPlan = res.plan;
+      localStorage.setItem('blocko_user_plan', res.plan);
+      closePricingModal();
+      if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+      const until = res.planExpiresAt ? ` до ${new Date(res.planExpiresAt).toLocaleDateString('ru-RU')}` : '';
+      showSystemToast('Поздравляем! 🎉', `Тариф ${res.plan.toUpperCase()} активирован${until}`, 'shield-check', 'text-green-500', 'bg-green-50');
+      renderBoardsGrid();
+    } catch (error) {
+      if (BlockoAPI.errorMessage(error) === 'not_enough_coins') {
+        closePricingModal();
+        openTopUpModal();
+        return showSystemToast('Недостаточно монет', 'Пополните баланс, чтобы активировать тариф.', 'coins', 'text-amber-500', 'bg-amber-50');
+      }
+      console.error("Ошибка активации:", error);
+      showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+    }
+  });
 }
 
 // --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
@@ -1792,6 +1736,8 @@ async function upgradeTo(planId) {
   }
 
   function preparePayPalPayment(amountCoins, usdPrice, itemName) {
+     const packId = ({ 1000: 'starter', 5000: 'popular', 12000: 'max' })[amountCoins];
+     if (!packId) return showSystemToast('Ошибка', 'Неизвестный пакет монет.', 'x-circle', 'text-red-500', 'bg-red-50');
      document.getElementById('packsContainer').classList.add('hidden');
      document.getElementById('paypalPaymentContainer').classList.remove('hidden');
      document.getElementById('paypalPaymentContainer').classList.add('flex');
@@ -1819,38 +1765,25 @@ async function upgradeTo(planId) {
                 label:  'paypal',
                 height: 45
             },
-            createOrder: function(data, actions) {
-              return actions.order.create({
-                purchase_units: [{
-                  description: `Blocko Pro: ${itemName} (${amountCoins} Coins)`,
-                  amount: {
-                    currency_code: "USD",
-                    value: usdPrice.toString()
-                  }
-                }]
-              });
+            // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
+            createOrder: async function() {
+              const res = await BlockoAPI.call('createPaypalOrder', { packId });
+              return res.orderId;
             },
-            onApprove: function(data, actions) {
-              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Транзакция подтверждена. Начисляем монеты...</p></div>';
+            // Оплату захватывает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
+            onApprove: async function(data) {
+              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-300">Подтверждаем оплату...</p></div>';
               lucide.createIcons({ root: container });
-
-              return actions.order.capture().then(async function(details) {
-                try {
-                  const userRef = db.collection('users').doc(currentUser.uid);
-                  await userRef.set({ coins: firebase.firestore.FieldValue.increment(amountCoins) }, { merge: true });
-                  
-                  closeTopUpModal();
-                  
-                  if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
-                  showSystemToast('Оплата прошла успешно!', `Вам начислено ${amountCoins} B-Coins. Открываем окно тарифов...`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-                  
-                  // В index.html возвращаем пользователя к окну тарифов после пополнения
-                  setTimeout(() => openPricingModal(), 2000);
-
-                } catch(e) {
-                  showSystemToast('Сбой зачисления', 'Оплата прошла, но база данных не ответила. Напишите в поддержку.', 'alert-triangle', 'text-red-500', 'bg-red-50');
-                }
-              });
+              try {
+                const res = await BlockoAPI.call('capturePaypalOrder', { orderId: data.orderID });
+                closeTopUpModal();
+                if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+                showSystemToast('Оплата прошла успешно!', `Вам начислено ${res.coins} B-Coins. Открываем окно тарифов...`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+                setTimeout(() => openPricingModal(), 2000);
+              } catch (e) {
+                console.error('capturePaypalOrder', e);
+                showSystemToast('Сбой зачисления', 'Не удалось подтвердить оплату. Если деньги списались, напишите в поддержку и укажите номер заказа: ' + data.orderID, 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+              }
             },
             onCancel: function (data) {
               showSystemToast('Отменено', 'Вы закрыли окно оплаты.', 'info', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
@@ -1877,62 +1810,19 @@ async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePr
   lucide.createIcons({ root: btn.parentElement });
 
   try {
-     const promoRef = db.collection('promocodes').doc(code);
-     const promoDoc = await promoRef.get();
-     
-     if (!promoDoc.exists) throw new Error('not_found');
-     
-     const promo = promoDoc.data();
-     const now = Date.now();
-     
-     if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) throw new Error('expired');
-     if (promo.maxUses > 0 && (promo.uses || 0) >= promo.maxUses) throw new Error('limit');
-
-     // Проверка, активировал ли юзер уже этот код (ЭНТЕРПРАЙЗ ЗАЩИТА)
-     const userRef = db.collection('users').doc(currentUser.id);
-     const userDoc = await userRef.get();
-     const usedPromos = userDoc.data().usedPromos || [];
-     
-     if (usedPromos.includes(code)) throw new Error('already_used');
-
-     // Применяем бонусы (Транзакция)
-     const batch = db.batch();
-     const updates = { usedPromos: firebase.firestore.FieldValue.arrayUnion(code) };
-     
-     let successMsg = '';
-     
-     if (promo.type === 'plan' || promo.type === 'plan_pro_2m' || promo.type === 'plan_fl_1m') {
-         // Обратная совместимость + Новый формат
-         let planToSet = promo.rewardPlan || (promo.type === 'plan_pro_2m' ? 'pro' : 'freelancer');
-         let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
-         
-         updates.plan = planToSet;
-         if (durMonths === 999) {
-             updates.planExpiresAt = firebase.firestore.FieldValue.delete();
-         } else {
-             // К текущему времени прибавляем месяцы (30 дней)
-             const currentExpiry = userDoc.data().planExpiresAt || now;
-             updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
-         }
-         successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
-         userPlan = planToSet; // Обновляем локально
-         localStorage.setItem('blocko_user_plan', planToSet);
-     } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
-         let coinsToAdd = promo.rewardCoins || 1000;
-         updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
-         successMsg = `Начислено ${coinsToAdd} B-Coins!`;
-     } else if (promo.type === 'discount' || promo.type === 'discount_50') {
-         // Скидка применяется как флаг в профиле для следующей покупки
-         updates.activeDiscount = promo.rewardDiscount || 50;
-         successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
+     const reward = await BlockoAPI.call('redeemPromo', { code });
+     let successMsg = 'Промокод применён.';
+     if (reward.type === 'plan') {
+         userPlan = reward.plan;
+         localStorage.setItem('blocko_user_plan', reward.plan);
+         successMsg = `Активирован тариф ${reward.plan.toUpperCase()}`;
+     } else if (reward.type === 'coins') {
+         successMsg = `Начислено ${reward.coins} B-Coins!`;
+     } else if (reward.type === 'discount') {
+         successMsg = `Получена скидка ${reward.discount}% на следующую покупку!`;
      }
 
-     batch.update(userRef, updates);
-     batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
-     
-     await batch.commit();
-     
-     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+     if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
      showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
      input.value = '';
      
@@ -1944,7 +1834,7 @@ async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePr
      }, 1500);
 
   } catch (err) {
-     let errMsg = 'Произошла ошибка базы данных.';
+     let errMsg = 'Не удалось активировать промокод.';
      if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
      else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
      else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
@@ -2060,7 +1950,7 @@ async function confirmCreateBoard() {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
     
     // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Безопасный поиск тарифа
-    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || { boardsLimit: 1 }; 
+    const planLimits = getPlanLimits(userPlan); 
     
     // ЭНТЕРПРАЙЗ: Полный безлимит для Infinity и Pro (God Mode)
     const isUnlimited = userPlan === 'infinity' || userPlan === 'pro';
@@ -2081,7 +1971,6 @@ async function confirmCreateBoard() {
   const newBoard = {
     title, 
     company,  // ЭНТЕРПРАЙЗ: Сохраняем компанию
-    password, // СОХРАНЯЕМ ПАРОЛЬ
     owner: currentUser.id, 
     members: [currentUser.id],
     // ЭНТЕРПРАЙЗ: Сохраняем все премиальные настройки создателя для отображения на доске
@@ -2103,6 +1992,7 @@ async function confirmCreateBoard() {
 
   if (type === 'local') {
     newBoard.id = 'local_' + Date.now();
+    if (password) newBoard.password = password; // локально — только на этом устройстве
     const localBoards = getLocalBoards();
     localBoards[newBoard.id] = newBoard;
     localStorage.setItem('blocko_local_boards', JSON.stringify(localBoards));
@@ -2112,7 +2002,8 @@ async function confirmCreateBoard() {
   } else {
     try {
       const docRef = await db.collection("boards").add(newBoard);
-      if(password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
+      // Пароль облачной доски хранится на сервере в виде хэша
+      if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password });
       window.location.href = `board.html?b=${docRef.id}`;
     } catch (e) { 
       if (submitBtn) { 
@@ -2160,16 +2051,26 @@ async function executeBackup() {
     const localBoards = getLocalBoards();
     dataToExport = localBoards[pendingBackupId];
   } else {
-    // Берем данные из уже загруженных Cloud проектов
-    dataToExport = onlineBoards.find(b => b.id === pendingBackupId);
-    
-    // Подстраховка: если доска почему-то не нашлась в массиве, скачиваем напрямую
-    if (!dataToExport) {
-       try {
-          const doc = await db.collection("boards").doc(pendingBackupId).get();
-          if(doc.exists) dataToExport = { id: doc.id, ...doc.data() };
-       } catch(e) { console.error("Ошибка при получении бэкапа из облака:", e); }
-    }
+    // Облако: карточки живут в подколлекции — собираем их обратно в колонки
+    try {
+      const docRef = db.collection("boards").doc(pendingBackupId);
+      const [doc, cardsSnap] = await Promise.all([docRef.get(), docRef.collection("cards").get()]);
+      if (doc.exists) {
+        const board = { id: doc.id, ...doc.data() };
+        const cards = cardsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        board.columns = (board.columns || []).map(col => ({
+          ...col,
+          cards: cards.filter(c => String(c.columnId) === String(col.id)).sort((a, b) => (a.order || 0) - (b.order || 0))
+        }));
+        dataToExport = board;
+      }
+    } catch(e) { console.error("Ошибка при получении бэкапа из облака:", e); }
+  }
+  // В бэкап не кладём пароль и служебные поля доступа
+  if (dataToExport) {
+    dataToExport = JSON.parse(JSON.stringify(dataToExport));
+    delete dataToExport.password;
+    delete dataToExport.hasPassword;
   }
   
   if(!dataToExport) {
@@ -2177,13 +2078,17 @@ async function executeBackup() {
     return;
   }
   
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataToExport));
+  // Blob вместо data:-URL: большие доски не упираются в лимит длины ссылки
+  const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+  const blobUrl = URL.createObjectURL(blob);
+  const safeTitle = String(dataToExport.title || 'board').replace(/[\\/:*?"<>|]+/g, '_').slice(0, 60);
   const el = document.createElement('a');
-  el.setAttribute("href", dataStr);
-  el.setAttribute("download", `blocko_backup_${dataToExport.title}.json`);
+  el.setAttribute("href", blobUrl);
+  el.setAttribute("download", `blocko_backup_${safeTitle}.json`);
   document.body.appendChild(el);
   el.click();
   el.remove();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   
   closeBackupModal();
   showSystemToast('Загрузка начата', 'Резервная копия успешно сформирована.', 'check-circle', 'text-green-500', 'bg-green-50');
@@ -2230,7 +2135,7 @@ function handleImportFileSelect(event) {
   document.getElementById('importDropzone').innerHTML = `
     <div class="p-4 flex flex-col items-center w-full">
       <i data-lucide="check-circle" class="w-10 h-10 text-emerald-500 mb-3 shadow-sm rounded-full bg-white dark:bg-gray-800"></i>
-      <span class="text-sm font-bold text-gray-800 dark:text-white truncate w-full text-center px-4 mb-4">${file.name}</span>
+      <span class="text-sm font-bold text-gray-800 dark:text-white truncate w-full text-center px-4 mb-4">${esc(file.name)}</span>
       <button onclick="event.stopPropagation(); event.preventDefault(); processBoardImport()" class="w-full px-6 py-3.5 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/25 active:scale-95 hover:bg-emerald-400 transition-all flex items-center justify-center gap-2">
         <i data-lucide="upload-cloud" class="w-5 h-5"></i> Восстановить проект
       </button>
@@ -2264,9 +2169,9 @@ async function processBoardImport() {
     const ownedOnlineCount = onlineBoards.filter(b => b.owner === currentUser.id).length;
     
     // КРИТИЧЕСКИЙ ФИКС БИЛЛИНГА: Безопасный поиск тарифа
-    const planLimits = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE; 
+    const planLimits = getPlanLimits(userPlan); 
     
-    if (ownedOnlineCount >= planLimits.boardsLimit) {
+    if (planLimits.boardsLimit < 999 && ownedOnlineCount >= planLimits.boardsLimit) {
       if (dropzoneBtn) { 
         dropzoneBtn.disabled = false; 
         dropzoneBtn.innerHTML = originalBtnHTML; 
@@ -2296,7 +2201,9 @@ async function processBoardImport() {
       imported.id = newBoardId;
       imported.owner = currentUser.id;
       imported.members = [currentUser.id];
-      imported.password = password;
+      delete imported.password;
+      delete imported.hasPassword;
+      if (type === 'local' && password) imported.password = password;
       imported.createdAt = type === 'local' ? Date.now() : firebase.firestore.FieldValue.serverTimestamp();
       
       imported.users = { 
@@ -2339,9 +2246,9 @@ async function processBoardImport() {
 
          const docRef = db.collection("boards").doc(); 
          imported.id = docRef.id;
-         if (password) sessionStorage.setItem('blocko_auth_' + docRef.id, password);
 
          await docRef.set(imported);
+         if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password });
 
          // ЭНТЕРПРАЙЗ: Пакетная запись (Chunking) для обхода лимита Firestore в 500 операций
          if (cardsToImport.length > 0) {
@@ -2399,59 +2306,32 @@ function confirmJoinBoard() {
 }
 
 async function joinBoardById(id, requestedRole = 'editor') {
-      if (id.startsWith('local_')) return showSystemToast('Ошибка', 'Это локальный ID, его нельзя найти в сети.', 'x-circle', 'text-red-500', 'bg-red-50');
-      try {
-        const docRef = db.collection("boards").doc(id);
-        const doc = await docRef.get();
-        
-        if (doc.exists) {
-          const data = doc.data();
-          const isMember = data.members?.includes(currentUser.id);
-          
-          // Если пользователь еще не участник — прописываем его в базу
-          if (!isMember) {
-            // ЭНТЕРПРАЙЗ ЛОГИКА: Строгая проверка лимитов тарифа владельца
-            const ownerDoc = await db.collection('users').doc(data.owner).get();
-            const ownerPlan = ownerDoc.exists ? (ownerDoc.data().plan || 'free') : 'free';
-            
-            const currentMembersCount = data.members ? data.members.length : 0;
-            let maxMembers = 3; // Лимит Free тарифа
-            if (ownerPlan === 'freelancer') maxMembers = 10;
-            if (ownerPlan === 'pro') maxMembers = 9999;
-            
-            if (currentMembersCount >= maxMembers) {
-              return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
-            }
-
-            // ЭНТЕРПРАЙЗ: Сохраняем пользователя с ролью, переданной через инвайт-ссылку (Редактор или Читатель)
-            await docRef.update({
-              members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
-              [`users.${currentUser.id}`]: { 
-                name: currentUser.name, 
-                avatar: currentUser.avatar, 
-                role: requestedRole,
-                customAvatar: currentUser.customAvatar || null,
-                badgeStatus: currentUser.badgeStatus || null,
-                badgeConfig: currentUser.badgeConfig || null
-              }
-            });
-            showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
-          }
-
-          // ПРОВЕРКА ПАРОЛЯ ПРЯМО ИЗ ИНДЕКСА
-      if (data.password && sessionStorage.getItem('blocko_auth_' + id) !== data.password) {
-         // Проект защищен. Вызываем окно пароля (которое мы делали ранее)
-         tryEnterBoard(id, true);
-      } else {
-         // Пароль не нужен или уже введен — пускаем на доску
-         window.location.href = `board.html?b=${id}`;
-      }
-    } else { 
-      showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50'); 
+  id = String(id || '').trim();
+  if (id.startsWith('local_')) return showSystemToast('Ошибка', 'Это локальный ID, его нельзя найти в сети.', 'x-circle', 'text-red-500', 'bg-red-50');
+  if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) return showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  try {
+    // Сервер проверяет лимит участников тарифа владельца и пароль
+    const res = await BlockoAPI.call('enterBoard', { boardId: id, role: requestedRole === 'viewer' ? 'viewer' : 'editor' });
+    if (res.status === 'password_required') {
+      openBoardPasswordPrompt(id, 'board', res.preview, requestedRole);
+      return;
     }
-  } catch (e) { 
-    showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50'); 
+    if (res.status === 'joined') showSystemToast('Успех', 'Проект добавлен в ваше рабочее пространство!', 'check-circle', 'text-green-500', 'bg-green-50');
+    window.location.href = `board.html?b=${encodeURIComponent(id)}`;
+  } catch (e) {
+    handleEnterBoardError(e);
   }
+}
+
+function handleEnterBoardError(e) {
+  const code = BlockoAPI.errorCode(e);
+  const msg = BlockoAPI.errorMessage(e);
+  if (code === 'not-found') return showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50');
+  if (msg === 'member_limit') return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
+  if (msg === 'wrong_password') return showSystemToast('Ошибка доступа', 'Неверный пароль. Попробуйте еще раз.', 'shield-alert', 'text-red-500', 'bg-red-50');
+  if (code === 'resource-exhausted') return showSystemToast('Подождите', msg || 'Слишком много попыток.', 'clock', 'text-amber-500', 'bg-amber-50');
+  console.error('enterBoard', e);
+  showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50');
 }
 
 function copyBoardId(btn, id) { 
@@ -2676,48 +2556,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-async function buyStoreItem(itemId, price) {
-  if (!currentUser) return;
-  
-  const affRef = db.collection('affiliates').doc(currentUser.id);
-  const userRef = db.collection('users').doc(currentUser.id);
-  
-  try {
-    const affDoc = await affRef.get();
-    const balance = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
-
-    if (balance < price) {
-      return showSystemToast('Недостаточно баллов', `Нужно еще ${price - balance} кр.`, 'alert-circle', 'text-amber-500', 'bg-amber-50');
-    }
-
-    const batch = db.batch();
-
-    // Списываем баллы
-    batch.update(affRef, { 
-      earnedCredits: firebase.firestore.FieldValue.increment(-price) 
-    });
-
-    // ВЫДАЧА ТОВАРА
-    if (itemId === 'extra_ai') {
-      // Испольуем set с merge, чтобы поле создалось автоматически, если его нет
-      batch.set(userRef, { 
-        bonusAiLimit: firebase.firestore.FieldValue.increment(50) 
-      }, { merge: true });
-    }
-
-    await batch.commit();
-    
-    if (typeof confetti === 'function') {
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-    }
-
-    showSystemToast('Куплено! 🚀', `Товар "${itemId}" активирован.`, 'check-circle', 'text-green-500', 'bg-green-50');
-    loadAffiliateStats(); 
-  } catch (e) {
-    console.error("Ошибка активации:", e);
-    showSystemToast('Ошибка', 'Не удалось связаться с базой данных.', 'x-circle', 'text-red-500', 'bg-red-50');
-  }
-}
 
 // ==========================================
 // ЛОГИКА КАСТОМНЫХ ОКЕН ПОДТВЕРЖДЕНИЯ
@@ -2874,58 +2712,69 @@ function closePlanDetails() {
 // --- ОБНОВЛЕННАЯ ЛОГИКА ДОСТУПА ПО ПАРОЛЮ ---
 let pendingBoardId = null;
 let pendingTarget = 'board'; // ЭНТЕРПРАЙЗ: Маршрутизация после ввода пароля
+let pendingRole = 'editor'; // роль из инвайт-ссылки, если входим впервые
 
-function tryEnterBoard(id, hasPassword, target = 'board') {
-  const sessionKey = 'blocko_auth_' + id;
+function boardTargetUrl(id, target) {
+  const b = encodeURIComponent(id);
+  if (target === 'archive') return `archive.html?b=${b}`;
+  if (target && target.startsWith('card_')) return `board.html?b=${b}&c=${encodeURIComponent(target.replace('card_', ''))}`;
+  return `board.html?b=${b}`;
+}
+
+async function tryEnterBoard(id, hasPassword, target = 'board') {
   const isLocal = id.startsWith('local_');
-  
-  // ЭНТЕРПРАЙЗ: Находим объект доски для динамического рендера
-  let boardObj = null;
+  const targetUrl = boardTargetUrl(id, target);
+
   if (isLocal) {
-    boardObj = getLocalBoards()[id];
-  } else {
-    boardObj = onlineBoards.find(b => b.id === id);
-  }
-
-  // Защита от несуществующих досок
-  if (!boardObj && !hasPassword) return;
-
-  const isOwner = boardObj ? boardObj.owner === currentUser.id : false;
-  
-  // ЭНТЕРПРАЙЗ: Поддержка Deep Links после ввода пароля
-  let targetUrl = `board.html?b=${id}`;
-  if (target === 'archive') targetUrl = `archive.html?b=${id}`;
-  else if (target.startsWith('card_')) targetUrl = `board.html?b=${id}&c=${target.replace('card_', '')}`;
-
-  if (!isLocal && isOwner) {
-    window.location.href = targetUrl;
+    const boardObj = getLocalBoards()[id];
+    if (!boardObj) return;
+    if (!boardObj.password || sessionStorage.getItem('blocko_auth_' + id) === boardObj.password) {
+      window.location.href = targetUrl;
+      return;
+    }
+    const ownerInfo = boardObj.users && boardObj.users[boardObj.owner] ? boardObj.users[boardObj.owner] : { name: 'Владельцем', avatar: generateAvatarById(boardObj.owner || 'U') };
+    openBoardPasswordPrompt(id, target, { title: boardObj.title, owner: ownerInfo });
     return;
   }
 
-  if (!hasPassword) {
-    window.location.href = targetUrl;
-    return;
-  }
+  const boardObj = onlineBoards.find(b => b.id === id);
+  if (boardObj && boardObj.owner === currentUser.id) { window.location.href = targetUrl; return; }
+  if (boardObj && !hasPassword) { window.location.href = targetUrl; return; }
 
-  // Сбрасываем старую сессию
-  sessionStorage.removeItem(sessionKey);
+  // Пароль уже вводили недавно — сервер выдал отметку unlocks/{uid}
+  try {
+    const unlock = await db.collection('boards').doc(id).collection('unlocks').doc(currentUser.id).get();
+    if (unlock.exists && unlock.data().expiresAt && unlock.data().expiresAt.toMillis() > Date.now()) {
+      window.location.href = targetUrl;
+      return;
+    }
+  } catch (e) { /* нет доступа — спросим сервер */ }
+
+  try {
+    const res = await BlockoAPI.call('enterBoard', { boardId: id });
+    if (res.status === 'password_required') openBoardPasswordPrompt(id, target, res.preview);
+    else window.location.href = targetUrl;
+  } catch (e) {
+    handleEnterBoardError(e);
+  }
+}
+
+function openBoardPasswordPrompt(id, target, preview, role = 'editor') {
   pendingBoardId = id;
-  pendingTarget = target;
+  pendingTarget = target || 'board';
+  pendingRole = role === 'viewer' ? 'viewer' : 'editor';
+  preview = preview || {};
+  const ownerInfo = preview.owner || { name: 'Владельцем', avatar: generateAvatarById('U') };
 
-  // Динамически заполняем окно пароля
-  document.getElementById('peBoardTitle').innerText = boardObj.title || 'Без названия';
-  
-  const ownerInfo = boardObj.users && boardObj.users[boardObj.owner] 
-    ? boardObj.users[boardObj.owner] 
-    : { name: 'Владельцем', avatar: generateAvatarById(boardObj.owner || 'U') };
-    
-  document.getElementById('peOwnerName').innerText = ownerInfo.name;
+  // Динамически заполняем окно пароля (innerText — без HTML)
+  document.getElementById('peBoardTitle').innerText = preview.title || 'Без названия';
+  document.getElementById('peOwnerName').innerText = ownerInfo.name || 'Владелец';
   
   // Адаптируем UI для архива
   const clarificationEl = document.getElementById('peArchiveClarification');
   const btnTextEl = document.getElementById('peSubmitBtnText');
   if (clarificationEl && btnTextEl) {
-    if (target === 'archive') {
+    if (pendingTarget === 'archive') {
       clarificationEl.classList.remove('hidden');
       clarificationEl.classList.add('inline-flex');
       btnTextEl.innerText = 'Открыть архив';
@@ -2971,30 +2820,29 @@ function closePasswordPrompt() {
 async function submitBoardPassword() {
   const entered = document.getElementById('boardEntryPassword').value.trim();
   if (!entered || !pendingBoardId) return;
+  const boardId = pendingBoardId;
+  const targetUrl = boardTargetUrl(boardId, pendingTarget);
 
-  try {
-    let board;
-    if (pendingBoardId.startsWith('local_')) {
-      board = getLocalBoards()[pendingBoardId];
-    } else {
-      const doc = await db.collection('boards').doc(pendingBoardId).get();
-      board = doc.data();
-    }
-
+  // Локальные доски: пароль хранится только на этом устройстве
+  if (boardId.startsWith('local_')) {
+    const board = getLocalBoards()[boardId];
     if (board && board.password === entered) {
-      sessionStorage.setItem('blocko_auth_' + pendingBoardId, entered);
-      
-      let targetUrl = `board.html?b=${pendingBoardId}`;
-      if (pendingTarget === 'archive') targetUrl = `archive.html?b=${pendingBoardId}`;
-      else if (pendingTarget.startsWith('card_')) targetUrl = `board.html?b=${pendingBoardId}&c=${pendingTarget.replace('card_', '')}`;
-      
+      sessionStorage.setItem('blocko_auth_' + boardId, entered);
       window.location.href = targetUrl;
     } else {
       showSystemToast('Ошибка доступа', 'Неверный пароль. Попробуйте еще раз.', 'shield-alert', 'text-red-500', 'bg-red-50');
       document.getElementById('boardEntryPassword').value = '';
     }
+    return;
+  }
+
+  // Облачные доски: пароль проверяет сервер
+  try {
+    await BlockoAPI.call('enterBoard', { boardId, password: entered, role: pendingRole });
+    window.location.href = targetUrl;
   } catch (e) {
-    showSystemToast('Ошибка', 'Не удалось проверить пароль.', 'alert-triangle', 'text-red-500', 'bg-red-50');
+    document.getElementById('boardEntryPassword').value = '';
+    handleEnterBoardError(e);
   }
 }
 // ==========================================
@@ -3053,8 +2901,11 @@ window.addEventListener('appinstalled', () => {
 
 // ЭНТЕРПРАЙЗ: Усовершенствованный рендер аватара (с поддержкой ID и OnClick для шапки)
 function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', onclickAttr = '') {
-  const config = userConfig.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
-  const avatarUrl = userConfig.customAvatar || userConfig.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userConfig.name || 'User')}`;
+  userConfig = userConfig || {};
+  const rawConfig = userConfig.badgeConfig || {};
+  const config = { frameColor: safeColor(rawConfig.frameColor), glowColor: safeColor(rawConfig.glowColor), animation: rawConfig.animation || 'none' };
+  const avatarUrl = esc(safeUrl(userConfig.customAvatar) || safeUrl(userConfig.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(userConfig.name || 'User')}`);
+  const safeName = esc(userConfig.name || '');
   const badge = userConfig.badgeStatus || userConfig.badge || 'none'; 
   
   let animationClass = "";
@@ -3077,13 +2928,13 @@ function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', oncl
   const cleanSizeClass = sizeClass.replace('hover:z-10', '').replace('transition-transform', '').replace('hover:scale-110', '').trim();
   const wrapperEffects = hasHoverEffects ? 'hover:z-20 transition-transform hover:scale-110' : '';
 
-  const idString = idAttr ? `id="${idAttr}"` : '';
+  const idString = idAttr ? `id="${esc(idAttr)}"` : '';
   const clickString = onclickAttr 
     ? `onclick="${onclickAttr}" class="cursor-pointer relative inline-block flex-shrink-0 isolate ${wrapperEffects}"` 
     : `class="relative inline-block flex-shrink-0 isolate ${wrapperEffects}"`;
 
   if (config.frameColor === 'transparent' || !config.frameColor) {
-     return `<div ${idString} ${clickString}><img src="${avatarUrl}" class="${cleanSizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${userConfig.name}" />${badgeIconHtml}</div>`;
+     return `<div ${idString} ${clickString}><img src="${avatarUrl}" class="${cleanSizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${safeName}" alt="" referrerpolicy="no-referrer" />${badgeIconHtml}</div>`;
   }
 
   // Создаем контейнер с рамкой, свечением и иконкой статуса
@@ -3091,7 +2942,7 @@ function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', oncl
     <div ${idString} ${clickString}>
       <div class="relative ${cleanSizeClass} rounded-full transition-all duration-500" 
            style="padding: 3px; background: ${config.frameColor}; box-shadow: 0 0 15px ${config.glowColor};">
-        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-950 ${animationClass}" title="${userConfig.name}" />
+        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-950 ${animationClass}" title="${safeName}" alt="" referrerpolicy="no-referrer" />
         ${config.animation === 'rainbow' ? '<div class="absolute inset-0 rounded-full border-2 border-white/20 animate-spin"></div>' : ''}
       </div>
       ${badgeIconHtml}
@@ -3101,35 +2952,18 @@ function renderUserAvatar(userConfig, sizeClass = "w-11 h-11", idAttr = '', oncl
 
 async function claimReward(tier) {
   if (!currentUser) return;
-  const userRef = db.collection('users').doc(currentUser.id);
-  const userDoc = await userRef.get();
-  const userData = userDoc.data();
-  
-  if (userData.rewardsClaimed?.includes(tier)) {
-    return showSystemToast('Уже получено', 'Вы уже активировали этот бонус.', 'info', 'text-blue-500', 'bg-blue-50');
-  }
-
-  let planToSet = 'free';
-  let daysToAdd = 0;
-  
-  if (tier === 'friend') { planToSet = 'freelancer'; daysToAdd = 14; }
-  else if (tier === 'partner') { planToSet = 'pro'; daysToAdd = 14; }
-  else if (tier === 'ambassador') { planToSet = 'pro'; daysToAdd = 60; }
-
-  const expiry = Date.now() + (daysToAdd * 24 * 60 * 60 * 1000);
-
   try {
-    await userRef.update({
-      plan: planToSet,
-      planExpiresAt: expiry,
-      badgeStatus: tier, // ЭНТЕРПРАЙЗ: Автоматическая экипировка бейджа при достижении
-      rewardsClaimed: firebase.firestore.FieldValue.arrayUnion(tier)
-    });
-    
-    confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
-    showSystemToast('Бонус активирован!', `Начислено ${daysToAdd} дней тарифа ${planToSet.toUpperCase()} и разблокирован новый бейдж!`, 'zap', 'text-emerald-500', 'bg-emerald-50');
-    loadAffiliateStats(); // Обновить UI
-  } catch (e) { console.error(e); }
+    const res = await BlockoAPI.call('claimReferralReward', { tier });
+    userPlan = res.plan;
+    localStorage.setItem('blocko_user_plan', res.plan);
+    currentUser.badgeStatus = tier;
+    if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+    showSystemToast('Бонус активирован!', `Начислено ${res.days} дней тарифа ${res.plan.toUpperCase()} и разблокирован новый бейдж!`, 'zap', 'text-amber-500', 'bg-amber-50');
+    loadAffiliateStats();
+  } catch (e) {
+    console.error(e);
+    showSystemToast('Не получилось', BlockoAPI.errorMessage(e) || 'Попробуйте позже.', 'info', 'text-blue-500', 'bg-blue-50');
+  }
 }
 
 // Обновление функции статистики в модалке
@@ -3465,7 +3299,7 @@ function renderFrameColors(currentColor) {
 
   const container = document.getElementById('frameColorPicker');
   container.innerHTML = colors.map(c => `
-    <button onclick="applyFrameColor('${c.value}', '${c.glow}')" 
+    <button onclick="applyFrameColor(${jsArg(c.value)}, ${jsArg(c.glow)})" 
             class="flex-shrink-0 w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${currentColor === c.glow ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'}"
             style="background: ${c.value}; box-shadow: 0 0 10px ${c.glow};" title="${c.name}">
     </button>
@@ -3579,9 +3413,9 @@ async function applyFrameColor(frameColor, glowColor) {
                 <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-rose-300 dark:hover:border-rose-700 transition-colors group">
                     <div class="flex items-center gap-3 overflow-hidden">
                        <div class="p-2 bg-white dark:bg-gray-900 rounded-lg shadow-sm group-hover:text-rose-500 transition-colors border border-gray-100 dark:border-gray-800"><i data-lucide="user" class="w-4 h-4"></i></div>
-                       <span class="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">${email}</span>
+                       <span class="text-sm font-bold text-gray-700 dark:text-gray-200 truncate">${esc(email)}</span>
                     </div>
-                    <button onclick="removeAdmin('${email}')" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-all" title="Отозвать доступ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    <button onclick="removeAdmin(${jsArg(email)})" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-lg transition-all" title="Отозвать доступ"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                 </div>
             `).join('');
             lucide.createIcons();
@@ -3642,6 +3476,9 @@ async function applyFrameColor(frameColor, glowColor) {
         const canvas = document.getElementById('qrCanvas');
         
         // Генерация QR-кода на лету
+        if (typeof QRCode === 'undefined' || typeof QRCode.toCanvas !== 'function') {
+            return showSystemToast('QR недоступен', 'Не удалось загрузить генератор QR. Скопируйте ссылку вручную.', 'alert-triangle', 'text-amber-500', 'bg-amber-50');
+        }
         QRCode.toCanvas(canvas, currentQrUrl, {
             width: 200,
             margin: 1,
@@ -3731,7 +3568,14 @@ const OnboardingEngine = {
     currentIndex: 0,
     isProcessing: false,
 
+    started: false,
+    STORAGE_KEY: 'blocko_onboarding_done',
+
+    // Вызывается только после входа в аккаунт. Показываем подсказки один раз.
     init() {
+        if (this.started) return;
+        try { if (localStorage.getItem(this.STORAGE_KEY)) return; } catch (e) {}
+        this.started = true;
         // ЭНТЕРПРАЙЗ: Скрываем карточку апгрейда тарифа для премиум-пользователей
         const currentPlan = localStorage.getItem('blocko_user_plan') || 'free';
         if (currentPlan === 'pro' || currentPlan === 'infinity') {
@@ -3797,13 +3641,15 @@ const OnboardingEngine = {
                     this.showStep(this.currentIndex);
                     this.isProcessing = false;
                 }, 2500);
+            } else {
+                this.isProcessing = false;
+                try { localStorage.setItem(this.STORAGE_KEY, '1'); } catch (e) {}
             }
         }
     }
 };
 
-// Инициализация при загрузке документа
-document.addEventListener('DOMContentLoaded', () => OnboardingEngine.init());
+// Инициализация — из onAuthStateChanged, после входа (не поверх экрана авторизации)
 
 // --- ЛОГИКА ЖИВОГО ВРЕМЕНИ ДЛЯ ДАШБОРДА (ENTERPRISE PERFORMANCE) ---
 let lastTimeStr = '';

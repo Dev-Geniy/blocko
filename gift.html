@@ -9,13 +9,17 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f43f5e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 12 20 22 4 22 4 12'/><rect width='20' height='5' x='2' y='7'/><line x1='12' x2='12' y1='22' y2='7'/><path d='M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z'/><path d='M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'/></svg>" />
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="security.js"></script>
   
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
   
@@ -204,17 +208,13 @@
             }
 
             // Пытаемся подтянуть данные отправителя
-            if (promoData.createdBy && promoData.createdBy !== 'admin_system') {
-                try {
-                    const senderDoc = await db.collection('users').doc(promoData.createdBy).get();
-                    if (senderDoc.exists) {
-                        const sender = senderDoc.data();
-                        document.getElementById('senderName').innerText = sender.name || 'Секретный Санта';
-                        document.getElementById('senderAvatar').src = sender.customAvatar || sender.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender.name || 'S')}`;
-                        document.getElementById('senderBlock').classList.remove('hidden');
-                        document.getElementById('senderBlock').classList.add('flex');
-                    }
-                } catch(e){}
+            // Публичный профиль отправителя сервер кладёт прямо в подарок
+            if (promoData.sender && promoData.createdBy !== 'admin_system') {
+                const sender = promoData.sender;
+                document.getElementById('senderName').innerText = sender.name || 'Секретный Санта';
+                document.getElementById('senderAvatar').src = safeUrl(sender.customAvatar) || safeUrl(sender.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(sender.name || 'S')}`;
+                document.getElementById('senderBlock').classList.remove('hidden');
+                document.getElementById('senderBlock').classList.add('flex');
             }
 
             document.getElementById('giftValue').innerText = `${promoData.rewardCoins || 0} B-Coins`;
@@ -227,7 +227,7 @@
             }, 50);
 
         } catch (err) {
-            showMsg('alert-triangle', 'bg-red-500/20 text-red-500', 'Подарок недоступен', err.message);
+            showMsg('alert-triangle', 'bg-red-500/20 text-red-500', 'Подарок недоступен', esc(err.message));
         }
     }
 
@@ -250,27 +250,9 @@
         hintText.innerText = 'Распаковка...';
 
         try {
-            const userRef = db.collection('users').doc(currentUser.uid);
-            const userDoc = await userRef.get();
-            const usedPromos = userDoc.data().usedPromos || [];
-
-            if (usedPromos.includes(giftCode)) throw new Error('Вы уже распаковали этот подарок ранее.');
-
-            // Двойная проверка на израсходованность (защита от race condition)
-            const promoRef = db.collection('promocodes').doc(giftCode);
-            const promoSnap = await promoRef.get();
-            const currentPromo = promoSnap.data();
-            if (currentPromo.uses >= currentPromo.maxUses) throw new Error('Подарок только что был открыт кем-то другим.');
-
-            // Транзакция начисления
-            const batch = db.batch();
-            batch.update(userRef, {
-                usedPromos: firebase.firestore.FieldValue.arrayUnion(giftCode),
-                coins: firebase.firestore.FieldValue.increment(currentPromo.rewardCoins || 0)
-            });
-            batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
-
-            await batch.commit();
+            // Проверка и начисление — на сервере (защита от двойной распаковки)
+            const reward = await BlockoAPI.call('redeemPromo', { code: giftCode });
+            const currentPromo = { rewardCoins: reward.coins || 0 };
 
             // ЭНТЕРПРАЙЗ: Эпический эффект джекпота
             document.getElementById('giftCard').classList.add('hidden');
@@ -296,8 +278,18 @@
             hintText.innerText = ogHint;
             
             // ЭНТЕРПРАЙЗ: Выводим ошибку красиво в интерфейс, а не в системный alert
-            showMsg('alert-triangle', 'bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]', 'Доступ закрыт', `<p class="text-sm text-gray-400 leading-relaxed">${err.message}</p>`);
+            showMsg('alert-triangle', 'bg-red-500/10 text-red-500 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.1)]', 'Доступ закрыт', `<p class="text-sm text-gray-400 leading-relaxed">${esc(giftErrorText(err))}</p>`);
         }
+    }
+
+    // Понятный текст ошибки сервера при распаковке
+    function giftErrorText(err) {
+        const m = BlockoAPI.errorMessage(err);
+        if (m === 'already_used') return 'Вы уже распаковали этот подарок ранее.';
+        if (m === 'limit') return 'Подарок только что был открыт кем-то другим.';
+        if (m === 'expired') return 'Срок действия подарка истёк.';
+        if (m === 'not_found') return 'Такой подарок не найден.';
+        return 'Не удалось распаковать подарок. Попробуйте ещё раз.';
     }
 
     function showMsg(icon, colorClasses, title, descHtml) {

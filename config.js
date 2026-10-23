@@ -39,10 +39,17 @@ const AI_ENDPOINT = "https://text.pollinations.ai/";
 // 4. БИЗНЕС-ЛОГИКА И ТАРИФЫ (Курс: $1 = 100 credits)
 // ==========================================
 const PLANS = {
-  FREE: { id: 'free', boardsLimit: 1, aiLimit: 3, priceCredits: 0 },
-  FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 15, priceCredits: 600 },
-  COMPANY: { id: 'pro', boardsLimit: 999, aiLimit: 999, priceCredits: 1900 }
+  FREE: { id: 'free', boardsLimit: 1, aiLimit: 5, priceCredits: 0 },
+  FREELANCER: { id: 'freelancer', boardsLimit: 10, aiLimit: 30, priceCredits: 600 },
+  COMPANY: { id: 'pro', boardsLimit: 999, aiLimit: 999, priceCredits: 1900 },
+  // Выдаётся только администратором/подарком, не продаётся
+  INFINITY: { id: 'infinity', boardsLimit: 999, aiLimit: 999, priceCredits: 0 }
 };
+
+// 999 = безлимит. Неизвестный тариф → Free.
+function getPlanLimits(planId) {
+  return Object.values(PLANS).find(p => p.id === planId) || PLANS.FREE;
+}
 
 // Дополнительные платные услуги
 const ADDONS = {

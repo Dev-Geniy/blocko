@@ -14,6 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
+  <script src="security.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
@@ -239,6 +240,12 @@
   let currentUser = null;
   let folders = JSON.parse(localStorage.getItem('blocko_sch_folders')) || {};
   let currentFileId = localStorage.getItem('blocko_sch_current_id') || 'primary';
+  // «Мой первый план» есть у каждого пользователя с id 'primary'. В облаке он хранился в ОДНОМ
+  // общем документе schedules_v2/primary — пользователи видели и перезаписывали чужие планы.
+  // Теперь у каждого свой документ primary_<uid>.
+  function scheduleDocId(id) {
+      return id === 'primary' && currentUser ? 'primary_' + currentUser.uid : id;
+  }
   let activeScheduleData = { id: 'primary', title: 'Мой первый план', folder: 'Основной Проект', items: [], owner: '' };
   
   let unsubSharedStream = null; 
@@ -461,7 +468,7 @@
               const activeClass = isSelected ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 font-bold shadow-sm border border-rose-100 dark:border-rose-900/50' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/40 border border-transparent';
               const fileIcon = file.isShared ? 'cloud-lightning' : 'file-text';
               return `
-                <div onclick="selectScheduleFile('${file.id}')" class="flex items-center justify-between pl-8 pr-2 py-2 rounded-xl text-xs cursor-pointer transition-all group/file ${activeClass} mb-0.5">
+                <div onclick="selectScheduleFile(${jsArg(file.id)})" class="flex items-center justify-between pl-8 pr-2 py-2 rounded-xl text-xs cursor-pointer transition-all group/file ${activeClass} mb-0.5">
                    <div class="flex items-center gap-2 truncate pr-2">
                      <i data-lucide="${fileIcon}" class="w-3.5 h-3.5 flex-shrink-0 ${file.isShared ? 'text-indigo-500' : ''}"></i>
                      <span class="truncate">${escapeHTML(file.title)}</span>
@@ -469,13 +476,13 @@
                    
                    <div class="flex items-center gap-0.5 opacity-0 group-hover/file:opacity-100 transition-opacity">
                       ${!file.isShared ? `
-                          <button onclick="event.stopPropagation(); renameFile('${folderName}', '${file.id}', '${escapeHTML(file.title)}')" class="text-gray-400 hover:text-blue-500 p-1 focus:outline-none" title="Переименовать"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                          <button onclick="event.stopPropagation(); renameFile(${jsArg(folderName)}, ${jsArg(file.id)}, ${jsArg(file.title)})" class="text-gray-400 hover:text-blue-500 p-1 focus:outline-none" title="Переименовать"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
                       ` : ''}
                       ${!file.isShared && file.id !== 'primary' ? `
-                          <button onclick="event.stopPropagation(); copyFileShareKey('${file.id}')" class="text-gray-400 hover:text-indigo-500 p-1 focus:outline-none" title="Live-Ключ доступа"><i data-lucide="share-2" class="w-3 h-3"></i></button>
+                          <button onclick="event.stopPropagation(); copyFileShareKey(${jsArg(file.id)})" class="text-gray-400 hover:text-indigo-500 p-1 focus:outline-none" title="Live-Ключ доступа"><i data-lucide="share-2" class="w-3 h-3"></i></button>
                       ` : ''}
                       ${(folders[folderName].length > 1 && file.id !== 'primary') || file.isShared ? `
-                          <button onclick="event.stopPropagation(); deleteFile('${folderName}', '${file.id}')" class="text-gray-400 hover:text-red-500 p-1 focus:outline-none" title="Удалить"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                          <button onclick="event.stopPropagation(); deleteFile(${jsArg(folderName)}, ${jsArg(file.id)})" class="text-gray-400 hover:text-red-500 p-1 focus:outline-none" title="Удалить"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                       ` : ''}
                    </div>
                 </div>
@@ -487,7 +494,7 @@
           }
 
           const deleteFolderBtn = folderName !== 'Основной Проект' && folderName !== 'Подключенные графики' 
-              ? `<button onclick="deleteFolder('${folderName}')" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none" title="Удалить папку"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`
+              ? `<button onclick="deleteFolder(${jsArg(folderName)})" class="text-gray-400 hover:text-red-500 p-1 transition-colors opacity-0 group-hover/folder:opacity-100 focus:outline-none" title="Удалить папку"><i data-lucide="trash-2" class="w-3 h-3"></i></button>`
               : '';
 
           html += `
@@ -498,7 +505,7 @@
                     <span>${escapeHTML(folderName)}</span>
                  </div>
                  <div class="flex items-center gap-0.5">
-                    <button onclick="createNewFileInFolder('${folderName}')" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none" title="Создать план"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
+                    <button onclick="createNewFileInFolder(${jsArg(folderName)})" class="text-gray-400 hover:text-rose-500 p-1 transition-colors focus:outline-none" title="Создать план"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i></button>
                     ${deleteFolderBtn}
                  </div>
               </div>
@@ -526,7 +533,7 @@
                   activeScheduleData.title = newTitle;
                   localStorage.setItem('blocko_sch_data_' + fileId, JSON.stringify(activeScheduleData));
                   if (navigator.onLine && fileId !== 'primary') {
-                      try { await db.collection('schedules_v2').doc(fileId).set({ title: newTitle }, { merge: true }); } catch(e) {}
+                      try { await db.collection('schedules_v2').doc(scheduleDocId(fileId)).set({ title: newTitle }, { merge: true }); } catch(e) {}
                   }
               }
               showSystemToast("Успех", "План переименован.", "edit-2", "text-blue-500", "bg-blue-50");
@@ -554,7 +561,7 @@
       SysDialog.confirm("Удалить папку?", `Вы собираетесь удалить папку <b>${escapeHTML(folderName)}</b> и все планы внутри неё. Это действие необратимо.`, async () => {
           if(navigator.onLine && folders[folderName]) {
               for(let file of folders[folderName]) {
-                  if(!file.isShared) { try { await db.collection('schedules_v2').doc(file.id).delete(); } catch(e){} }
+                  if(!file.isShared) { try { await db.collection('schedules_v2').doc(scheduleDocId(file.id)).delete(); } catch(e){} }
                   localStorage.removeItem('blocko_sch_data_' + file.id);
               }
           }
@@ -580,7 +587,7 @@
   function deleteFile(folderName, fileId) {
       SysDialog.confirm("Удалить план?", "Этот файл будет удален навсегда.", async () => {
           folders[folderName] = folders[folderName].filter(f => f.id !== fileId);
-          if(navigator.onLine) { try { await db.collection('schedules_v2').doc(fileId).delete(); } catch(e){} }
+          if(navigator.onLine) { try { await db.collection('schedules_v2').doc(scheduleDocId(fileId)).delete(); } catch(e){} }
           localStorage.removeItem('blocko_sch_data_' + fileId);
           saveStructureToCloud();
           if(currentFileId === fileId) selectScheduleFile('primary');
@@ -621,7 +628,7 @@
           showSystemToast("Синхронизация", "Загрузка данных...", "refresh-cw", "text-blue-500 animate-spin", "bg-blue-50");
           
           if (navigator.onLine) {
-             unsubSharedStream = db.collection('schedules_v2').doc(fileId).onSnapshot((doc) => {
+             unsubSharedStream = db.collection('schedules_v2').doc(scheduleDocId(fileId)).onSnapshot((doc) => {
                  if (doc.exists) {
                      activeScheduleData = doc.data();
                      renderActiveSchedule();
@@ -650,12 +657,12 @@
 
       if (navigator.onLine) {
           try {
-              const doc = await db.collection('schedules_v2').doc(fileId).get();
+              const doc = await db.collection('schedules_v2').doc(scheduleDocId(fileId)).get();
               if (doc.exists) {
                   activeScheduleData = doc.data();
                   localStorage.setItem('blocko_sch_data_' + fileId, JSON.stringify(activeScheduleData));
               } else {
-                  await db.collection('schedules_v2').doc(fileId).set(activeScheduleData);
+                  await db.collection('schedules_v2').doc(scheduleDocId(fileId)).set(activeScheduleData);
               }
           } catch(e){}
       }
@@ -671,7 +678,7 @@
       if (!navigator.onLine) return SysDialog.alert("Нет сети", "Для подключения плана нужен интернет.");
 
       try {
-          const doc = await db.collection('schedules_v2').doc(key).get();
+          const doc = await db.collection('schedules_v2').doc(scheduleDocId(key)).get();
           if (!doc.exists) return SysDialog.alert("Неверный ключ", "Файл не найден. Проверьте правильность ключа доступа.");
           
           const remoteData = doc.data();
@@ -788,7 +795,7 @@
         const canEdit = activeScheduleData.owner === currentUser.uid || currentFileId === 'primary';
         
         return `
-        <div ${canEdit ? `onclick="openShiftModal('${i.id}')"` : ''} class="p-2.5 bg-white dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800/80 flex justify-between items-center group/item transition-all hover:border-gray-300 dark:hover:border-gray-600 ${canEdit ? 'cursor-pointer hover:shadow-md' : ''} shadow-sm">
+        <div ${canEdit ? `onclick="openShiftModal(${jsArg(i.id)})"` : ''} class="p-2.5 bg-white dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-800/80 flex justify-between items-center group/item transition-all hover:border-gray-300 dark:hover:border-gray-600 ${canEdit ? 'cursor-pointer hover:shadow-md' : ''} shadow-sm">
           <div class="flex items-center gap-2.5 truncate pr-2">
             <div class="w-1.5 h-7 rounded-full ${style.bg.split(' ')[0]} border ${style.border}"></div>
             <div class="truncate">
@@ -797,7 +804,7 @@
             </div>
           </div>
           ${canEdit ? `
-            <button onclick="event.stopPropagation(); deleteShiftItem('${i.id}')" class="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+            <button onclick="event.stopPropagation(); deleteShiftItem(${jsArg(i.id)})" class="text-gray-300 hover:text-red-500 p-1.5 opacity-0 group-hover/item:opacity-100 transition-opacity bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 focus:outline-none"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
           ` : ''}
         </div>
       `}).join('');
@@ -847,7 +854,7 @@
               : 'bg-white dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700 hover:border-rose-300 dark:hover:border-rose-700';
 
           html += `
-             <button onclick="setSpecificDate('${iterDateStr}')" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all active:scale-95 min-w-[38px] ${activeClass}">
+             <button onclick="setSpecificDate(${jsArg(iterDateStr)})" class="flex-1 flex flex-col items-center justify-center py-1.5 px-1 rounded-xl transition-all active:scale-95 min-w-[38px] ${activeClass}">
                 <span class="text-[8px] sm:text-[9px] uppercase font-bold opacity-80 mb-0.5">${dayNames[i]}</span>
                 <span class="text-xs sm:text-sm font-black leading-none">${iterDate.getDate()}</span>
              </button>
@@ -898,13 +905,13 @@
               const style = UI_COLORS[s.color || 'rose'];
               
               return `
-                <div ${canEditAll ? `onclick="event.stopPropagation(); openShiftModal('${s.id}')"` : ''} class="${style.bg} ${style.text} border-l-[3px] ${style.border} px-3 py-1.5 sm:py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm ${canEditAll ? 'cursor-pointer hover:opacity-90' : ''}">
+                <div ${canEditAll ? `onclick="event.stopPropagation(); openShiftModal(${jsArg(s.id)})"` : ''} class="${style.bg} ${style.text} border-l-[3px] ${style.border} px-3 py-1.5 sm:py-2 rounded-r-xl text-xs flex items-center justify-between shadow-sm animate-fade-in w-full backdrop-blur-sm ${canEditAll ? 'cursor-pointer hover:opacity-90' : ''}">
                   <div class="truncate">
                      <span class="font-extrabold block truncate text-xs sm:text-[13px]">${isStartHour ? escapeHTML(s.title) : '<span class="opacity-60 font-medium">... продолжение</span>'}</span>
-                     <span class="text-[9px] sm:text-[10px] opacity-80 font-bold">${s.timeStart} - ${s.timeEnd}</span>
+                     <span class="text-[9px] sm:text-[10px] opacity-80 font-bold">${escapeHTML(s.timeStart)} - ${escapeHTML(s.timeEnd)}</span>
                   </div>
                   ${canEditAll && isStartHour ? `
-                     <button onclick="event.stopPropagation(); deleteShiftItem('${s.id}')" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md focus:outline-none"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                     <button onclick="event.stopPropagation(); deleteShiftItem(${jsArg(s.id)})" class="p-1 hover:text-red-500 transition-colors bg-white/50 dark:bg-gray-900/50 rounded-md focus:outline-none"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
                   ` : ''}
                 </div>
               `;
@@ -1049,7 +1056,7 @@
       localStorage.setItem('blocko_sch_data_' + currentFileId, JSON.stringify(activeScheduleData));
       renderActiveSchedule();
       if (navigator.onLine && currentFileId !== 'primary') {
-          try { await db.collection('schedules_v2').doc(currentFileId).set(activeScheduleData, { merge: true }); } catch(e) {}
+          try { await db.collection('schedules_v2').doc(scheduleDocId(currentFileId)).set(activeScheduleData, { merge: true }); } catch(e) {}
       }
   }
 

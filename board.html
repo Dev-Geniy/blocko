@@ -14,11 +14,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <!-- ЭНТЕРПРАЙЗ: Жесткая фиксация версий библиотек (Dependency Pinning) для защиты от поломок API -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="security.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -1140,6 +1142,7 @@ if (typeof marked !== 'undefined') {
   
   // 1. Премиальные интерактивные ссылки с обрезкой (Truncation) и анимациями
   renderer.link = function(href, title, text) {
+    href = esc(safeUrl(href) || '#'); title = esc(title || '');
     return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || href}" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-0.5 mb-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold no-underline hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:scale-[1.03] active:scale-95 transition-all shadow-sm border border-blue-100/50 dark:border-blue-800/30 align-middle max-w-full"><svg class="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="truncate max-w-[150px] sm:max-w-[250px] inline-block align-bottom">${text}</span></a>`;
   };
 
@@ -1241,7 +1244,7 @@ function updateBoardStatusBadge() {
       ${ping ? `<span class="animate-ping absolute inline-flex h-full w-full rounded-full ${dotColor} opacity-75"></span>` : ''}
       <span class="relative inline-flex rounded-full h-2 w-2 ${dotColor}"></span>
     </span>
-    <span class="text-[9px] font-black uppercase tracking-widest ${textColor} flex items-center gap-1"><i data-lucide="${icon}" class="w-3 h-3"></i> <span class="hidden sm:inline">${text}</span></span>
+    <span class="text-[9px] font-black uppercase tracking-widest ${textColor} flex items-center gap-1"><i data-lucide="${esc(icon)}" class="w-3 h-3"></i> <span class="hidden sm:inline">${text}</span></span>
   `;
   lucide.createIcons({ root: badge });
 }
@@ -1288,9 +1291,10 @@ document.addEventListener('keydown', (e) => {
     if (!editModal.classList.contains('hidden')) saveCard();
   }
   // N -> Быстрая задача (если модалки закрыты и мы не печатаем текст)
-  if (e.key.toLowerCase() === 'n' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+  if (e.key && e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.altKey && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'SELECT' && !e.target.isContentEditable) {
     const activeModals = document.querySelectorAll('.glass-modal:not(.hidden)');
-    if (activeModals.length === 0 && columns.length > 0) quickAddCard(columns[0].id);
+    const spaceCols = getSpaceColumns();
+    if (activeModals.length === 0 && spaceCols.length > 0) quickAddCard(spaceCols[0].id);
   }
 });
 
@@ -1428,9 +1432,8 @@ const TAG_PALETTE = [
 let newTagSelectedColor = TAG_PALETTE[0];
 
 function highlightText(text, query) {
-  if (!query) return text;
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-500/50 dark:text-black rounded-sm">$1</mark>');
+  // Безопасно: текст экранируется, запрос не интерпретируется как RegExp
+  return BlockoSec.highlight(text || '', query || '');
 }
 
 let currentUser = null;
@@ -1443,6 +1446,9 @@ let activeTags = [], pendingImageFile = null, activeChecklist = [];
 let selectedColColor = 'default';
 let boardData = {};
 let isFirstChatLoad = true; // ОДНА переменная чата
+let chatListenersStarted = false; // защита от двойной подписки до первого снапшота чата
+// Base64 раздувает файл на ~33%, а документ Firestore ограничен 1 МиБ — оставляем запас
+const MAX_CHAT_FILE_BYTES = 700 * 1024;
 let currentSpaceId = 'default'; // ЭНТЕРПРАЙЗ: Активное пространство (Вкладка доски)
 let spacesLayoutMode = localStorage.getItem('blocko_spaces_layout') || 'horizontal';
 
@@ -1497,13 +1503,13 @@ function renderSpacesUI() {
        const layoutClasses = isVertical ? 'w-full py-2.5 px-3 justify-start' : 'px-4 py-2';
        
        return `
-          <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${space.id}">
-              <button onclick="switchSpace('${space.id}')" class="rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2.5 select-none ${layoutClasses}">
-                 <i data-lucide="${isActive ? 'layout' : 'folder'}" class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
-                 <span class="truncate">${space.name}</span>
+          <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${esc(space.id)}">
+              <button onclick="switchSpace(${jsArg(space.id)})" class="rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2.5 select-none ${layoutClasses}">
+                 <i data-lucide="${esc(isActive ? 'layout' : 'folder')}" class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
+                 <span class="truncate">${esc(space.name)}</span>
               </button>
               ${isActive && boardData.spaces.length > 1 ? `
-              <button onclick="event.stopPropagation(); deleteSpace('${space.id}')" class="absolute ${isVertical ? 'right-2 top-1/2 -translate-y-1/2' : '-top-1.5 -right-1.5'} opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
+              <button onclick="event.stopPropagation(); deleteSpace(${jsArg(space.id)})" class="absolute ${isVertical ? 'right-2 top-1/2 -translate-y-1/2' : '-top-1.5 -right-1.5'} opacity-0 group-hover/space:opacity-100 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 p-1.5 rounded-full text-gray-400 hover:text-white hover:bg-red-500 transition-all shadow-md active:scale-95 z-20" title="Удалить доску">
                  <i data-lucide="x" class="w-3 h-3 pointer-events-none"></i>
               </button>
               ` : ''}
@@ -1633,12 +1639,17 @@ function updateSpacesVisibility() {
 
 function deleteSpace(spaceId) {
     openConfirmModal('Удалить вкладку?', 'Внимание: Все колонки и задачи внутри этой вкладки будут безвозвратно удалены!', 'Удалить навсегда', true, () => {
+        if ((boardData.spaces || []).length <= 1) {
+            return showSystemToast('Нельзя удалить', 'В проекте должна остаться хотя бы одна вкладка.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+        }
         boardData.spaces = boardData.spaces.filter(s => s.id !== spaceId);
         updateBoardData({ spaces: boardData.spaces });
         
-        // Удаляем колонки, связанные с этим пространством
-        columns = columns.filter(c => c.spaceId !== spaceId);
+        // Удаляем колонки, связанные с этим пространством, и их карточки
+        const removedColIds = columns.filter(c => (c.spaceId || 'default') === spaceId).map(c => c.id);
+        columns = columns.filter(c => (c.spaceId || 'default') !== spaceId);
         persist();
+        purgeCloudCards(removedColIds);
         
         currentSpaceId = boardData.spaces[0].id;
         switchSpace(currentSpaceId);
@@ -1712,8 +1723,13 @@ auth.onAuthStateChanged(async (user) => {
   
 // Глобальная функция для отрисовки аватарки с рамкой, эффектами и бейджами статуса
 function getAvatarHTML(userObj, sizeClass, idAttr = '') {
+  userObj = userObj || {};
   const config = userObj.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
-  const avatarUrl = userObj.customAvatar || userObj.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || 'User')}`;
+  const frameColor = safeColor(config.frameColor);
+  const glowColor = safeColor(config.glowColor);
+  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || 'User')}`;
+  const avatarUrl = esc(safeUrl(userObj.customAvatar) || safeUrl(userObj.avatar) || fallbackAvatar);
+  const safeName = esc(userObj.name || 'User');
   const badge = userObj.badgeStatus || userObj.badge || 'none'; // Поддержка старого формата
   
   let animationClass = "";
@@ -1735,20 +1751,20 @@ function getAvatarHTML(userObj, sizeClass, idAttr = '') {
   const cleanSizeClass = sizeClass.replace('hover:z-10', '').replace('transition-transform', '').replace('hover:scale-110', '').trim();
   const wrapperEffects = hasHoverEffects ? 'hover:z-20 transition-transform hover:scale-110' : '';
 
-  const idString = idAttr ? `id="${idAttr}"` : '';
+  const idString = idAttr ? `id="${esc(idAttr)}"` : '';
   const clickString = `class="relative inline-block flex-shrink-0 isolate ${wrapperEffects}"`;
 
   // Если нет кастомной рамки, отдаем оптимизированный чистый рендер
-  if (config.frameColor === 'transparent' || !config.frameColor) {
-     return `<div class="relative inline-block flex-shrink-0 isolate ${wrapperEffects}" ${idString}><img src="${avatarUrl}" class="${cleanSizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${userObj.name}" />${badgeIconHtml}</div>`;
+  if (frameColor === 'transparent') {
+     return `<div class="relative inline-block flex-shrink-0 isolate ${wrapperEffects}" ${idString}><img src="${avatarUrl}" referrerpolicy="no-referrer" class="${cleanSizeClass} rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm ${animationClass}" title="${safeName}" alt="" />${badgeIconHtml}</div>`;
   }
 
   // Энтерпрайз-рендер с неоновым свечением и фоновыми анимациями
   return `
     <div ${idString} ${clickString}>
       <div class="relative ${cleanSizeClass} rounded-full transition-all duration-500" 
-           style="padding: 3px; background: ${config.frameColor}; box-shadow: 0 0 15px ${config.glowColor};">
-        <img src="${avatarUrl}" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-900 ${animationClass}" title="${userObj.name}" />
+           style="padding: 3px; background: ${frameColor}; box-shadow: 0 0 15px ${glowColor};">
+        <img src="${avatarUrl}" referrerpolicy="no-referrer" class="w-full h-full rounded-full object-cover border-2 border-white dark:border-gray-900 ${animationClass}" title="${safeName}" alt="" />
         ${config.animation === 'rainbow' ? '<div class="absolute inset-0 rounded-full border-2 border-white/20 animate-spin"></div>' : ''}
       </div>
       ${badgeIconHtml}
@@ -1826,7 +1842,14 @@ function loadBoard() {
     const docRef = db.collection("boards").doc(BOARD_ID);
     
     // 1. Слушаем метаданные доски (названия колонок, теги, фон, доступ)
-    docRef.onSnapshot((doc) => {
+    // Пароль проверяет сервер и выдаёт отметку unlocks/{uid}; здесь только проверяем, что она действует
+    let unlockState = 'unknown'; // unknown | checking | ok
+    const goToPasswordPrompt = () => {
+      const cParam = new URLSearchParams(window.location.search).get('c');
+      window.location.href = `index.html?auth_board=${encodeURIComponent(BOARD_ID)}${cParam ? '&c=' + encodeURIComponent(cParam) : ''}`;
+    };
+
+    const onBoardSnapshot = (doc) => {
       if (!doc.exists) {
         window.location.href = 'index.html'; return;
       }
@@ -1840,9 +1863,19 @@ function loadBoard() {
       }
 
       // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link
-      if (!isOwner && boardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== boardData.password) {
-        const cParam = new URLSearchParams(window.location.search).get('c');
-        window.location.href = `index.html?auth_board=${BOARD_ID}${cParam ? '&c=' + cParam : ''}`; 
+      if (!isOwner && (boardData.hasPassword || boardData.password) && unlockState !== 'ok') {
+        if (unlockState === 'checking') return;
+        unlockState = 'checking';
+        const snapshotDoc = doc;
+        docRef.collection('unlocks').doc(currentUser.id).get().then(u => {
+          if (u.exists && u.data().expiresAt && u.data().expiresAt.toMillis() > Date.now()) {
+            unlockState = 'ok';
+            // Повторяем обработку снапшота уже с разблокированным доступом
+            onBoardSnapshot(snapshotDoc);
+          } else {
+            goToPasswordPrompt();
+          }
+        }).catch(goToPasswordPrompt);
         return;
       }
 
@@ -1861,15 +1894,30 @@ function loadBoard() {
             }
           });
           syncAndRender();
+        }, (err) => {
+          // Разблокировка истекла или доступ отозван
+          console.error('cards listener', err);
+          if (err && err.code === 'permission-denied') goToPasswordPrompt();
         });
       } else {
         syncAndRender(); 
       }
 
       renderMembersSidebar();
-      if (isFirstChatLoad) {
+      if (!chatListenersStarted) {
+        chatListenersStarted = true;
         initChatListener(docRef);
         initActivityListener(docRef);
+      }
+    };
+
+    docRef.onSnapshot(onBoardSnapshot, (err) => {
+      // Не участник: правила не дают прочитать доску — предлагаем присоединиться по ссылке
+      console.error('board listener', err);
+      if (err && err.code === 'permission-denied') {
+        window.location.href = `index.html?join=${encodeURIComponent(BOARD_ID)}`;
+      } else {
+        showSystemToast('Нет соединения', 'Не удалось загрузить проект. Проверьте интернет.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
       }
     });
   }
@@ -1970,12 +2018,12 @@ function renderActivityLog() {
         <div class="flex-shrink-0">${getAvatarHTML(actualUser, 'w-10 h-10')}</div>
         <div class="flex flex-col min-w-0 flex-1 justify-center">
           <div class="flex items-center justify-between gap-2 mb-1">
-            <span class="text-[11px] font-black text-gray-900 dark:text-gray-100 truncate">${actualUser.name || 'User'}</span>
+            <span class="text-[11px] font-black text-gray-900 dark:text-gray-100 truncate">${esc(actualUser.name || 'User')}</span>
             <span class="text-[9px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded-md">${timeStr}</span>
           </div>
           <div class="text-xs text-gray-600 dark:text-gray-400 leading-snug flex items-start gap-1.5">
-            <i data-lucide="${data.icon || 'activity'}" class="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0"></i>
-            <span class="line-clamp-2">${data.text || '...'}</span>
+            <i data-lucide="${esc(data.icon || 'activity')}" class="w-3.5 h-3.5 text-purple-500 mt-0.5 flex-shrink-0"></i>
+            <span class="line-clamp-2">${esc(data.text || '...')}</span>
           </div>
         </div>
       </div>`;
@@ -2109,7 +2157,7 @@ function renderOptimisticChatMessage(docRef, msg) {
 }
 
 function initChatListener(docRef) {
-  docRef.collection("chat").orderBy("timestamp").limit(50).onSnapshot((snapshot) => {
+  docRef.collection("chat").orderBy("timestamp").limitToLast(50).onSnapshot((snapshot) => {
     const chatBox = document.getElementById("chatMessages");
     
     if (isFirstChatLoad) {
@@ -2179,28 +2227,6 @@ function downloadAndBurn(msgId, filename, base64url) {
 
 let pendingChatFile = null;
 
-function handleChatAttachment(e) {
-  if (isLocalBoard) {
-     showSystemToast('Недоступно', 'Вложения работают только в облачных проектах.', 'cloud-off', 'text-amber-500', 'bg-amber-50');
-     e.target.value = ''; return;
-  }
-  const file = e.target.files[0];
-  if (!file) return;
-  e.target.value = ''; 
-  
-  if (file.type.startsWith('image/')) {
-     uploadImageToImgbb(file); 
-  } else {
-     if (file.size > 1024 * 1024) {
-        return showSystemToast('Лимит превышен', 'Файл слишком большой! Для быстрого обмена (Base64) максимум 1 МБ.', 'alert-circle', 'text-red-500', 'bg-red-50');
-     }
-     pendingChatFile = file; 
-     const el = document.getElementById('fileTypeModal');
-     el.classList.remove('hidden');
-     setTimeout(() => el.classList.remove('opacity-0'), 10);
-  }
-}
-
 function closeFileTypeModal() {
   const el = document.getElementById('fileTypeModal');
   el.classList.add('opacity-0');
@@ -2221,7 +2247,7 @@ async function confirmFileUpload(retentionType) {
 
   const chatBox = document.getElementById("chatMessages");
   const tempId = 'load_' + Date.now();
-  chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Шифрование и отправка...</div>`;
+  chatBox.innerHTML += `<div id="${esc(tempId)}" class="text-xs text-blue-500 text-center animate-pulse py-2">Шифрование и отправка...</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
 
   try {
@@ -2262,7 +2288,7 @@ async function uploadImageToImgbb(file) {
   }
   const chatBox = document.getElementById("chatMessages");
   const tempId = 'load_' + Date.now();
-  chatBox.innerHTML += `<div id="${tempId}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка изображения...</div>`;
+  chatBox.innerHTML += `<div id="${esc(tempId)}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка изображения...</div>`;
   chatBox.scrollTop = chatBox.scrollHeight;
   try {
     const fd = new FormData(); fd.append('image', file);
@@ -2335,7 +2361,8 @@ function processBoardData(data) {
   }
 
   if (data.background) {
-    document.body.style.backgroundImage = `url('${data.background}')`;
+    const safeBg = safeUrl(data.background);
+    document.body.style.backgroundImage = safeBg ? `url(${JSON.stringify(safeBg)})` : '';
     document.body.style.backgroundSize = 'cover';
     document.body.style.backgroundPosition = 'center';
     document.body.style.backgroundAttachment = 'fixed';
@@ -2374,7 +2401,7 @@ function processBoardData(data) {
         const foundCard = col.cards?.find(c => c.id == targetCardId);
         if (foundCard) {
            // Находим узел карточки в DOM для эмуляции клика
-           const cardNode = document.querySelector(`[data-card="${targetCardId}"]`);
+           const cardNode = document.querySelector(`[data-card="${CSS.escape(String(targetCardId))}"]`);
            if (cardNode) {
               // Плавный скролл к задаче
               cardNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2426,13 +2453,54 @@ function handleChatAttachment(e) {
   if (file.type.startsWith('image/')) {
      uploadImageToImgbb(file); 
   } else {
-     if (file.size > 1024 * 1024) {
-        return showSystemToast('Лимит превышен', 'Файл слишком большой! Максимум 1 МБ.', 'alert-circle', 'text-red-500', 'bg-red-50');
+     if (file.size > MAX_CHAT_FILE_BYTES) {
+        return showSystemToast('Лимит превышен', 'Файл слишком большой! Максимум 700 КБ.', 'alert-circle', 'text-red-500', 'bg-red-50');
      }
      pendingChatFile = file; 
      const el = document.getElementById('fileTypeModal');
      el.classList.remove('hidden');
      setTimeout(() => el.classList.remove('opacity-0'), 10);
+  }
+}
+
+// Мета колонок для документа доски (без карточек — они живут в подколлекции cards)
+function getColumnsMeta() {
+  return columns.map(c => ({
+    id: c.id, name: c.name, color: c.color || 'default', spaceId: c.spaceId || 'default',
+    wipLimit: c.wipLimit || 0, sortBy: c.sortBy || 'manual'
+  }));
+}
+
+// Колонки текущей вкладки (пространства)
+function getSpaceColumns() {
+  return columns.filter(col => (col.spaceId || 'default') === currentSpaceId);
+}
+
+// Ближайший цвет из палитры колонок (AI присылает hex, а UI работает с ключами)
+function hexToColorKey(hex) {
+  const m = String(hex || '').match(/#?([0-9a-f]{6})/i);
+  if (!m) return 'default';
+  const toRgb = h => [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16));
+  const [r, g, b] = toRgb(m[1]);
+  let best = 'default', bestDist = Infinity;
+  Object.entries(BOARD_UI_COLORS).forEach(([key, data]) => {
+    const [r2, g2, b2] = toRgb(data.hex.slice(1));
+    const dist = (r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2;
+    if (dist < bestDist) { bestDist = dist; best = key; }
+  });
+  return best;
+}
+
+// Удаление карточек облачной доски по списку колонок (иначе остаются «сироты» в подколлекции)
+async function purgeCloudCards(colIds) {
+  if (isLocalBoard || !colIds || colIds.length === 0) return;
+  const ids = colIds.map(String);
+  const victims = Array.from(allCardsMap.values()).filter(c => ids.includes(String(c.columnId)));
+  const cardsRef = db.collection("boards").doc(BOARD_ID).collection("cards");
+  for (let i = 0; i < victims.length; i += 400) {
+    const batch = db.batch();
+    victims.slice(i, i + 400).forEach(c => batch.delete(cardsRef.doc(String(c.id))));
+    try { await batch.commit(); } catch (e) { console.error('purgeCloudCards', e); }
   }
 }
 
@@ -2442,7 +2510,7 @@ function persist() {
       } else {
         // ЭНТЕРПРАЙЗ: Duplicate state forbidden! В документ доски пишем только мету колонок.
         // Карточки живут в своей подколлекции. Исключаем дублирование стейта.
-        const columnsMeta = columns.map(c => ({ id: c.id, name: c.name, color: c.color, spaceId: c.spaceId || 'default' }));
+        const columnsMeta = getColumnsMeta();
         updateBoardData({ columns: columnsMeta });
       }
     }
@@ -2622,10 +2690,10 @@ function updateTagFilterDropdown() {
   currentTags.forEach(t => {
     const isActive = activeValue === t.id;
     html += `
-      <button onclick="selectTagFilter('${t.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${isActive ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
+      <button onclick="selectTagFilter(${jsArg(t.id)})" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-between ${isActive ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}">
         <div class="flex items-center gap-2.5">
-          <div class="w-3.5 h-3.5 rounded-full shadow-sm border ${t.color}"></div>
-          <span class="truncate max-w-[130px]">${t.name}</span>
+          <div class="w-3.5 h-3.5 rounded-full shadow-sm border ${esc(t.color)}"></div>
+          <span class="truncate max-w-[130px]">${esc(t.name)}</span>
         </div>
         ${isActive ? '<i data-lucide="check" class="w-4 h-4"></i>' : ''}
       </button>
@@ -2780,7 +2848,7 @@ function renderArchiveSidebar() {
 
   container.innerHTML = archivedCards.map(c => {
     const colName = (boardData.columns || []).find(col => col.id == c.columnId)?.name || 'Неизвестно';
-    const displayTitle = c.title || 'Без названия';
+    const displayTitle = esc(c.title || 'Без названия');
     
     let iconHtml = '<i data-lucide="layers" class="w-3.5 h-3.5"></i>';
     if (c.type === 'poll') iconHtml = '<i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>';
@@ -2792,17 +2860,17 @@ function renderArchiveSidebar() {
 
     // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЯ: Добавлен ID (archive-item-id) для точечной анимации удаления
     return `
-      <div id="archive-item-${c.id}" class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex flex-col gap-2 transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md animate-fade-in-up">
+      <div id="archive-item-${esc(c.id)}" class="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm flex flex-col gap-2 transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-md animate-fade-in-up">
         <div class="flex justify-between items-start gap-2">
           <h4 class="font-bold text-sm text-gray-900 dark:text-white line-clamp-2 leading-tight flex-1">${displayTitle}</h4>
-          <span class="text-gray-400 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-1.5 rounded shadow-sm flex-shrink-0" title="${c.type || 'task'}">${iconHtml}</span>
+          <span class="text-gray-400 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-1.5 rounded shadow-sm flex-shrink-0" title="${esc(c.type || 'task')}">${iconHtml}</span>
         </div>
-        <div class="text-[10px] text-gray-500 font-medium"><i data-lucide="layout" class="w-3 h-3 inline pb-0.5"></i> Из: ${colName}</div>
+        <div class="text-[10px] text-gray-500 font-medium"><i data-lucide="layout" class="w-3 h-3 inline pb-0.5"></i> Из: ${esc(colName)}</div>
         <div class="flex gap-2 mt-2 border-t border-gray-100 dark:border-gray-700/50 pt-3">
-          <button onclick="animateAndRestoreCard('${c.id}', '${c.columnId}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+          <button onclick="animateAndRestoreCard(${jsArg(c.id)}, ${jsArg(c.columnId)})" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
           </button>
-          <button onclick="animateAndDeleteCard('${c.columnId}', '${c.id}', 'объект')" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 rounded-lg transition-colors shadow-sm active:scale-95" title="Удалить навсегда">
+          <button onclick="animateAndDeleteCard(${jsArg(c.columnId)}, ${jsArg(c.id)}, 'объект')" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-800/50 rounded-lg transition-colors shadow-sm active:scale-95" title="Удалить навсегда">
             <i data-lucide="trash-2" class="w-4 h-4"></i>
           </button>
         </div>
@@ -2836,13 +2904,13 @@ function renderMembersSidebar() {
     
     if (isOwner && user.role !== 'owner') {
       roleSelect = `
-        <select onclick="event.stopPropagation()" onchange="changeUserRole('${uid}', this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
+        <select onclick="event.stopPropagation()" onchange="changeUserRole(${jsArg(uid)}, this.value)" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-1.5 outline-none cursor-pointer hover:border-blue-400 transition-colors">
           <option value="editor" ${user.role === 'editor' ? 'selected' : ''}>Редактор</option>
           <option value="viewer" ${user.role === 'viewer' ? 'selected' : ''}>Читатель</option>
         </select>
       `;
       deleteBtn = `
-        <button onclick="event.stopPropagation(); removeMember('${uid}', '${user.name}')" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
+        <button onclick="event.stopPropagation(); removeMember(${jsArg(uid)}, ${jsArg(user.name)})" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors ml-1 border border-transparent hover:border-red-100 dark:hover:border-red-800/50" title="Исключить из проекта">
           <i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i>
         </button>
       `;
@@ -2854,16 +2922,16 @@ function renderMembersSidebar() {
     const avatarHtml = `
       <div class="relative isolate">
         ${getAvatarHTML(user, 'w-10 h-10')}
-        <div id="online_dot_${uid}" class="online-indicator hidden absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm"></div>
+        <div id="online_dot_${esc(uid)}" class="online-indicator hidden absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full z-20 shadow-sm"></div>
       </div>
     `;
 
     return `
-      <div class="flex flex-col bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition-colors group overflow-hidden cursor-pointer shadow-sm" onclick="toggleMemberActions('${uid}')">
+      <div class="flex flex-col bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 transition-colors group overflow-hidden cursor-pointer shadow-sm" onclick="toggleMemberActions(${jsArg(uid)})">
         <div class="flex items-center gap-3 p-3 pointer-events-none">
             ${avatarHtml}
             <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${user.name} ${isMe ? '<span class="text-[10px] font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
+              <div class="flex items-center gap-2 mb-1"><span class="font-bold text-sm text-gray-900 dark:text-white truncate">${esc(user.name)} ${isMe ? '<span class="text-[10px] font-normal text-gray-400">(Вы)</span>' : ''}</span></div>
               ${roleBadge}
             </div>
             <div class="flex items-center pointer-events-auto">
@@ -2872,7 +2940,7 @@ function renderMembersSidebar() {
             </div>
         </div>
         <!-- ЭНТЕРПРАЙЗ: Индикация статуса участника -->
-        <div id="member_actions_${uid}" class="hidden flex items-center px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 mt-1 bg-gray-50/50 dark:bg-gray-950/20">
+        <div id="member_actions_${esc(uid)}" class="hidden flex items-center px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 mt-1 bg-gray-50/50 dark:bg-gray-950/20">
            <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 italic">
                <i data-lucide="info" class="w-3 h-3"></i>
                ${isMe ? 'Ваш профиль в этом проекте' : 'Участник синхронизирован'}
@@ -2922,14 +2990,18 @@ function removeMember(uid, name) {
   });
 }
   
+const CHAT_STICKERS = ['thumbs-up', 'heart', 'flame', 'party-popper', 'zap', 'check-circle-2'];
+
 function renderSingleMessage(msg, container, msgId) {
+  msg.user = msg.user || {};
   const isMe = msg.user.id === currentUser.id;
   const time = getChatMessageTime(msg.timestamp);
   
   let attachHtml = '';
   if (msg.attachment) {
     if (msg.attachment.type === 'image') {
-      attachHtml = `<img src="${msg.attachment.url}" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open('${msg.attachment.url}', '_blank')" />`;
+      const imgUrl = safeUrl(msg.attachment.url);
+      attachHtml = !imgUrl ? '' : `<img src="${esc(imgUrl)}" loading="lazy" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open(${jsArg(imgUrl)}, '_blank', 'noopener')" />`;
     } else {
       const isExpired = msg.attachment.expiresAt && Date.now() > msg.attachment.expiresAt;
       
@@ -2937,23 +3009,25 @@ function renderSingleMessage(msg, container, msgId) {
          attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-full overflow-hidden">⏳ Срок хранения файла истек</div>`;
       } else {
           const isBurn = msg.attachment.retention === 'burn';
+          const fileUrl = safeUrl(msg.attachment.url, { allowData: true });
+          const fileName = String(msg.attachment.name || 'file');
           const fileIcon = isBurn ? 'flame' : 'file';
           const fileColor = isBurn ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
           const badgeHtml = isBurn ? `<span class="flex-shrink-0 text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded">1 скачивание</span>` : '';
           
           const downloadBtn = isBurn 
-            ? `<button onclick="downloadAndBurn('${msgId}', '${msg.attachment.name}', '${msg.attachment.url}')" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
-            : `<a href="${msg.attachment.url}" download="${msg.attachment.name}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
+            ? `<button onclick="downloadAndBurn(${jsArg(msgId)}, ${jsArg(fileName)}, ${jsArg(fileUrl)})" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
+            : `<a href="${esc(fileUrl)}" download="${esc(fileName)}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
 
           attachHtml = `
             <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'} w-full overflow-hidden">
-              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${fileIcon}" class="w-4 h-4 ${fileColor}"></i></div>
+              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${esc(fileIcon)}" class="w-4 h-4 ${fileColor}"></i></div>
               <div class="flex-1 min-w-0 flex flex-col">
                 <div class="flex items-center gap-2 w-full">
-                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${msg.attachment.name}">${msg.attachment.name}</span>
+                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${esc(fileName)}">${esc(fileName)}</span>
                   ${badgeHtml}
                 </div>
-                <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${msg.attachment.size}</span>
+                <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${esc(msg.attachment.size)}</span>
               </div>
               ${downloadBtn}
             </div>`;
@@ -2962,7 +3036,7 @@ function renderSingleMessage(msg, container, msgId) {
   }
 
   let stickerHtml = '';
-  if (msg.sticker) {
+  if (msg.sticker && CHAT_STICKERS.includes(msg.sticker)) {
       let colorClass = 'text-blue-500';
       if(msg.sticker === 'heart') colorClass = 'text-rose-500';
       if(msg.sticker === 'flame') colorClass = 'text-orange-500';
@@ -2970,10 +3044,10 @@ function renderSingleMessage(msg, container, msgId) {
       if(msg.sticker === 'zap') colorClass = 'text-amber-500';
       if(msg.sticker === 'check-circle-2') colorClass = 'text-emerald-500';
       
-      stickerHtml = `<div class="mt-1 mb-1 p-3 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm w-fit ${isMe ? 'ml-auto' : ''}"><i data-lucide="${msg.sticker}" class="w-12 h-12 ${colorClass}"></i></div>`;
+      stickerHtml = `<div class="mt-1 mb-1 p-3 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm w-fit ${isMe ? 'ml-auto' : ''}"><i data-lucide="${esc(msg.sticker)}" class="w-12 h-12 ${colorClass}"></i></div>`;
   }
 
-  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-fit max-w-full ${isMe ? 'rounded-tr-sm ml-auto' : 'rounded-tl-sm'}">${msg.text}</div>` : '';
+  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-fit max-w-full ${isMe ? 'rounded-tr-sm ml-auto' : 'rounded-tl-sm'}">${esc(msg.text)}</div>` : '';
   const actualUser = (msg.user && boardData.users && boardData.users[msg.user.id]) ? boardData.users[msg.user.id] : msg.user;
 
   // ЭНТЕРПРАЙЗ UX: Телеграм-стиль лайков (В правом нижнем углу контента, без рамок)
@@ -2981,14 +3055,15 @@ function renderSingleMessage(msg, container, msgId) {
   const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
   
   // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Убраны рамки (ring), добавлены мягкие тени и ID для Optimistic UI
-  const likeBtnHtml = msg.isPending ? '' : `<button id="likeBtn_${msgId}" onclick="toggleMessageLike('${msgId}')" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${msgId}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
+  const likeBtnHtml = msg.isPending ? '' : `<button id="likeBtn_${esc(msgId)}" onclick="toggleMessageLike(${jsArg(msgId)})" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${esc(msgId)}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
 
-  container.innerHTML += `
-    <div id="msg_${msgId}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2 ${msg.isPending ? 'opacity-70' : ''}">
+  // insertAdjacentHTML не перепарсивает весь чат (в отличие от innerHTML +=)
+  container.insertAdjacentHTML('beforeend', `
+    <div id="msg_${esc(msgId)}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2 ${msg.isPending ? 'opacity-70' : ''}">
       ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
       <div class="flex flex-col w-full min-w-0">
         <div class="flex items-baseline gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}">
-          <span class="text-[10px] text-gray-500 font-bold truncate">${isMe ? 'Вы' : actualUser.name}</span>
+          <span class="text-[10px] text-gray-500 font-bold truncate">${isMe ? 'Вы' : esc(actualUser.name)}</span>
           <span class="text-[9px] text-gray-400">${time}</span>
         </div>
         <div class="relative w-fit max-w-full group/msg ${isMe ? 'ml-auto' : ''}">
@@ -2999,8 +3074,9 @@ function renderSingleMessage(msg, container, msgId) {
         </div>
       </div>
     </div>
-  `;
-  lucide.createIcons();
+  `);
+  // Иконки только внутри контейнера (работает и для отсоединённого временного контейнера)
+  lucide.createIcons({ root: container });
 }
   
 function sendChatMessage() {
@@ -3174,7 +3250,7 @@ function openViewModal(colId, cardId) {
         } else if (card.type === 'audio') {
             header.innerHTML = `<div class="flex items-center gap-2 text-emerald-500 mb-2"><i data-lucide="mic" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Голосовая заметка</span></div>`;
             body.innerHTML = `<div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-8 rounded-[2rem] border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
-                <button onclick="toggleAudioPlayer(this, ${colId}, '${card.id}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+                <button onclick="toggleAudioPlayer(this, ${jsArg(colId)}, ${jsArg(card.id)})" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
                     <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
                 </button>
                 <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden"><div class="audio-progress bg-emerald-500 h-full w-0"></div></div>
@@ -3190,7 +3266,7 @@ function openViewModal(colId, cardId) {
                let colsHtml = '';
                for (let c = 0; c < previewCols; c++) {
                   const val = card.tableData[r] && card.tableData[r][c] ? card.tableData[r][c] : '';
-                  colsHtml += `<td class="p-3 border-r border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 truncate max-w-[100px]">${val}</td>`;
+                  colsHtml += `<td class="p-3 border-r border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-300 truncate max-w-[100px]">${esc(val)}</td>`;
                }
                if (card.cols > previewCols) colsHtml += `<td class="p-3 text-xs text-gray-400 italic bg-gray-50/50 dark:bg-gray-800/50">...</td>`;
                tableRows += `<tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">${colsHtml}</tr>`;
@@ -3200,7 +3276,7 @@ function openViewModal(colId, cardId) {
             body.innerHTML = `<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-[2rem] overflow-hidden shadow-sm">
                 <div class="flex justify-between items-center bg-gray-50 dark:bg-gray-800/80 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Структура таблицы</span>
-                  <span class="text-[10px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800">${card.cols}x${card.rows}</span>
+                  <span class="text-[10px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-md border border-blue-200 dark:border-blue-800">${Number(card.cols) || 0}x${Number(card.rows) || 0}</span>
                 </div>
                 <div class="overflow-x-auto hide-scroll">
                   <table class="w-full text-left border-collapse">
@@ -3231,11 +3307,11 @@ function openViewModal(colId, cardId) {
             const doneCount = card.checklist.filter(i => i.isCompleted).length;
             const percent = Math.round((doneCount / card.checklist.length) * 100) || 0;
             const itemsHtml = card.checklist.map((item, idx) => `
-                <div onclick="event.stopPropagation(); toggleBoardTodo('${colId}', '${card.id}', ${idx}); setTimeout(()=>openViewModal('${colId}', '${card.id}'), 150)" class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 transition-colors hover:border-cyan-300 dark:hover:border-cyan-700 shadow-sm cursor-pointer">
+                <div onclick="event.stopPropagation(); toggleBoardTodo(${jsArg(colId)}, ${jsArg(card.id)}, ${idx}); setTimeout(()=>openViewModal(${jsArg(colId)}, ${jsArg(card.id)}), 150)" class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 transition-colors hover:border-cyan-300 dark:hover:border-cyan-700 shadow-sm cursor-pointer">
                   <div class="w-6 h-6 flex-shrink-0 mt-0.5 rounded-lg border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
                     ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
                   </div>
-                  <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} leading-relaxed select-none flex-1">${item.text}</span>
+                  <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} leading-relaxed select-none flex-1">${esc(item.text)}</span>
                 </div>
             `).join('');
             body.innerHTML = `<div class="bg-cyan-50/50 dark:bg-cyan-900/20 p-6 rounded-[2rem] border border-cyan-100 dark:border-cyan-800/50">
@@ -3247,28 +3323,30 @@ function openViewModal(colId, cardId) {
             header.innerHTML = `<div class="flex items-center gap-2 text-gray-500 mb-2"><i data-lucide="link" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Закладка</span></div>`;
             body.innerHTML = `<div class="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-[2rem] border border-gray-200 dark:border-gray-700 text-center">
                 <div class="w-20 h-20 bg-white dark:bg-gray-900 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-md border border-gray-100 dark:border-gray-800"><i data-lucide="external-link" class="w-10 h-10 text-gray-400"></i></div>
-                <a href="${card.url}" target="_blank" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-black text-xl break-all hover:underline mb-3 block leading-tight">${card.url}</a>
+                <a href="${esc(safeUrl(card.url))}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 font-black text-xl break-all hover:underline mb-3 block leading-tight">${esc(card.url)}</a>
                 <p class="text-sm text-gray-500 font-medium">Нажмите на ссылку, чтобы перейти на сайт.</p>
             </div>`;
         } else {
             header.innerHTML = `<div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="layers" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Задача проекта</span></div>`;        let taskHtml = '';
             // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Интерактивный Hover и Полноэкранный вызов для оригинала
-            if (card.image) taskHtml += `
-              <div class="relative group mb-6 cursor-zoom-in overflow-hidden rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700" onclick="openFullscreenImage('${card.image}')">
-                <img src="${card.image}" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105">
+            const safeImage = safeUrl(card.image);
+            const safeYt = safeYoutubeEmbed(card.youtubeEmbed);
+            if (safeImage) taskHtml += `
+              <div class="relative group mb-6 cursor-zoom-in overflow-hidden rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700" onclick="openFullscreenImage(${jsArg(safeImage)})">
+                <img src="${esc(safeImage)}" class="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105">
                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                   <i data-lucide="maximize-2" class="w-10 h-10 text-white drop-shadow-lg pointer-events-none"></i>
                 </div>
               </div>`;
-            if (card.youtubeEmbed) taskHtml += `<div class="relative w-full overflow-hidden rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-800 shadow-md bg-black"><iframe src="${card.youtubeEmbed}" class="w-full aspect-video rounded-[2rem] pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-            if (card.description) taskHtml += `<div class="md-content mb-8 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80"></div>${marked.parse(card.description)}</div>`;
+            if (safeYt) taskHtml += `<div class="relative w-full overflow-hidden rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-800 shadow-md bg-black"><iframe src="${esc(safeYt)}" class="w-full aspect-video rounded-[2rem] pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            if (card.description) taskHtml += `<div class="md-content mb-8 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80"></div>${sanitizeHTML(marked.parse(String(card.description)))}</div>`;
             if (card.checklist && card.checklist.length) {
                 taskHtml += `<div class="space-y-3 mb-6">${card.checklist.map((item, i) => `
                     <div onclick="toggleChecklistView(${i}); event.stopPropagation();" class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer group">
                         <div class="w-6 h-6 rounded-lg border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
                             ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
                         </div>
-                        <span class="text-sm font-medium flex-1 ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-relaxed select-none">${item.text}</span>
+                        <span class="text-sm font-medium flex-1 ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-relaxed select-none">${esc(item.text)}</span>
                     </div>`).join('')}</div>`;
             }
             body.innerHTML = taskHtml || `<div class="p-10 text-center text-gray-400 italic">Описание и подзадачи отсутствуют</div>`;
@@ -3282,36 +3360,9 @@ function renderPollResults(card) {
     if (card.isAnonymous) return `<div class="p-10 bg-gray-50 dark:bg-gray-900/50 rounded-[2rem] border border-dashed border-gray-200 dark:border-gray-700 text-center text-gray-500 text-sm font-medium"><i data-lucide="ghost" class="w-8 h-8 mx-auto mb-3 opacity-20"></i>Анонимный опрос. Имена скрыты.</div>`;
     return card.options.map(opt => `
         <div class="bg-gray-50/50 dark:bg-gray-900/30 p-5 rounded-[2rem] border border-gray-100 dark:border-gray-800 mb-4 transition-all hover:bg-white dark:hover:bg-gray-800">
-            <div class="flex justify-between font-bold text-sm mb-4"><span class="dark:text-white">${opt.text}</span><span class="text-purple-500 font-black">${opt.votes.length}</span></div>
-            <div class="flex flex-wrap gap-2">${opt.votes.map(uid => getAvatarHTML(boardData.users[uid] || {name:'User', avatar:''}, 'w-8 h-8')).join('') || '<span class="text-[10px] text-gray-400 italic">Голосов нет</span>'}</div>
+            <div class="flex justify-between font-bold text-sm mb-4"><span class="dark:text-white">${esc(opt.text)}</span><span class="text-purple-500 font-black">${(opt.votes || []).length}</span></div>
+            <div class="flex flex-wrap gap-2">${(opt.votes||[]).map(uid => getAvatarHTML((boardData.users||{})[uid] || {name:'User', avatar:''}, 'w-8 h-8')).join('') || '<span class="text-[10px] text-gray-400 italic">Голосов нет</span>'}</div>
         </div>`).join('');
-}
-
-function renderContentComments(comments = []) {
-    const list = document.getElementById('cvCommentsList');
-    document.getElementById('cvMyAvatar').innerHTML = getAvatarHTML(currentUser, 'w-10 h-10');
-    
-    if (comments.length === 0) {
-        list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs italic bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl">Обсуждений пока нет</div>`;
-    } else {
-        list.innerHTML = comments.map(c => {
-            const actualUser = (c.user && boardData.users && boardData.users[c.user.id]) ? boardData.users[c.user.id] : c.user;
-            return `
-            <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                ${getAvatarHTML(actualUser, 'w-8 h-8')}
-                <div>
-                    <div class="flex items-center gap-2 mb-1"><span class="font-bold text-xs dark:text-white">${actualUser.name}</span><span class="text-[9px] text-gray-400">${c.time}</span></div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">${c.text}</div>
-                </div>
-            </div>`;
-        }).join('');
-    }
-    lucide.createIcons();
-}
-
-function closeContentViewModal() {
-    if (currentPlayingAudio) currentPlayingAudio.pause();
-    toggleModal('contentViewModal', false);
 }
 
 function copyDeepLinkFromView() {
@@ -3319,30 +3370,6 @@ function copyDeepLinkFromView() {
   const url = window.location.origin + window.location.pathname + '?b=' + BOARD_ID + '&c=' + activeContentView.cardId;
   navigator.clipboard.writeText(url);
   showSystemToast('Ссылка скопирована!', 'Прямая ссылка на этот объект скопирована в буфер обмена.', 'link', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-}
-
-async function addCommentToContent() {
-    const input = document.getElementById('cvCommentInput');
-    const text = input.value.trim();
-    if (!text || !activeContentView) return;
-
-    columns = columns.map(col => {
-        if (col.id == activeContentView.colId) {
-            col.cards = col.cards.map(c => {
-                if (c.id == activeContentView.cardId) {
-                    if (!c.comments) c.comments = [];
-                    c.comments.push({ text, user: currentUser, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-                }
-                return c;
-            });
-        }
-        return col;
-    });
-
-    input.value = '';
-    persist();
-    const updatedCard = columns.find(col => col.id == activeContentView.colId).cards.find(c => c.id == activeContentView.cardId);
-    renderContentComments(updatedCard.comments);
 }
 
 function addColumn() { 
@@ -3399,9 +3426,14 @@ function deleteColumn() {
     const colCopy = JSON.parse(JSON.stringify(columns.find(c => c.id == editingColId)));
     const colIndex = columns.findIndex(c => c.id == editingColId);
     
+    const deletedColId = editingColId;
     columns = columns.filter(c => c.id != editingColId); 
     persist(); 
     if (!isLocalBoard) logActivity(`Удалил(а) колонку "${colName}" и весь её контент`, 'layout-x');
+    // Карточки облака удаляем после окна отмены, если колонку так и не вернули
+    if (!isLocalBoard) setTimeout(() => {
+      if (!columns.some(c => c.id == deletedColId)) purgeCloudCards([deletedColId]);
+    }, 8000);
     closeColModal(); 
     render(); 
     
@@ -3451,7 +3483,7 @@ async function archiveAllCardsInColumn() {
   });
 }
 
-  function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor='${key}'; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
+  function renderColorPicker() { document.getElementById('colorPicker').innerHTML = Object.entries(BOARD_UI_COLORS).map(([key, data]) => `<button onclick="selectedColColor=${jsArg(key)}; renderColorPicker()" class="w-10 h-10 rounded-full border-4 transition-all shadow-sm ${selectedColColor === key ? 'border-gray-900 dark:border-white scale-110 shadow-md' : 'border-transparent'}" style="background-color: ${data.hex};"></button>`).join(''); }
 
   function openEditModal(colId, cardId = null) {
   currentColumn = colId; 
@@ -3672,7 +3704,7 @@ async function generateCardCover() {
   }
 }
 
-function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag('${t.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + t.color : 'border-gray-200 dark:border-gray-700 text-gray-500'}">${t.name}</button>`).join(''); }
+function renderTagsPicker() { document.getElementById('editTagsContainer').innerHTML = getBoardTags().map(t => `<button onclick="toggleTag(${jsArg(t.id)})" class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${activeTags.includes(t.id) ? 'border-transparent shadow-sm ' + esc(t.color) : 'border-gray-200 dark:border-gray-700 text-gray-500'}">${esc(t.name)}</button>`).join(''); }
 function toggleTag(tagId) { activeTags.includes(tagId) ? activeTags = activeTags.filter(t => t !== tagId) : activeTags.push(tagId); renderTagsPicker(); }
 
 // GRANULAR WRITE: Сохранение отдельного документа в подколлекцию
@@ -3893,7 +3925,7 @@ function renderChecklistEdit() {
   progressBar.className = percent === 100 ? 'bg-green-500 h-full transition-all duration-300' : 'bg-blue-500 h-full transition-all duration-300';
   
   container.innerHTML = activeChecklist.map((item, index) => `
-    <div class="flex items-start justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" data-id="${index}">
+    <div class="flex items-start justify-between group bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm" data-id="${esc(index)}">
       <div class="drag-handle cursor-grab text-gray-400 hover:text-blue-500 px-2 flex-shrink-0 mt-0.5">
         <i data-lucide="grip-vertical" class="w-4 h-4"></i>
       </div>
@@ -3901,7 +3933,7 @@ function renderChecklistEdit() {
         <div class="w-5 h-5 flex-shrink-0 mt-0.5 rounded-md border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
           ${item.isCompleted ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
         </div>
-        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight select-none">${item.text}</span>
+        <span class="text-sm ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} break-words flex-1 leading-tight select-none">${esc(item.text)}</span>
       </div>
       <button onclick="removeChecklistItem(${index})" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex-shrink-0 mt-[-4px]">
         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -3953,7 +3985,7 @@ function renderChecklistView() {
       <div class="w-6 h-6 flex-shrink-0 mt-0.5 rounded-lg border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'}">
         ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
       </div>
-      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words flex-1 leading-relaxed select-none">${item.text}</span>
+      <span class="text-sm font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800 dark:text-gray-200'} break-words flex-1 leading-relaxed select-none">${esc(item.text)}</span>
     </div>
   `).join('');
   container.innerHTML = html + '</div>'; lucide.createIcons();
@@ -4040,8 +4072,9 @@ if (!window.blockoDelegationInited) {
           openMoreAddModal(col); 
           break;
         case 'setColSort': 
-          const updatedCols = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
-          updateBoardData({ columns: updatedCols });
+          columns = columns.map(c => c.id == col ? {...c, sortBy: opt} : c);
+          persist();
+          if (!isLocalBoard) render();
           break;
         case 'closeEdit': 
           closeEditModal(); 
@@ -4186,8 +4219,8 @@ function render() {
         
         if (c.type === 'table') {
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-              ${isViewer ? '' : `<button data-action="deleteCard" data-type="таблицу" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white dark:bg-gray-900 border border-blue-100 dark:border-blue-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button data-action="deleteCard" data-type="таблицу" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
               <div class="flex items-center gap-2 mb-2 pointer-events-none">
                 <i data-lucide="table" class="w-3 h-3 text-blue-500"></i>
                 <span class="text-[9px] font-black uppercase tracking-widest text-blue-500">Таблица</span>
@@ -4216,19 +4249,19 @@ function render() {
             const barColor = myVote ? 'bg-purple-500' : 'bg-purple-200 dark:bg-purple-900/50';
             const textColor = myVote ? 'text-purple-700 dark:text-purple-300' : 'text-gray-700 dark:text-gray-300';
             return `
-              <div data-action="votePoll" data-col="${col.id}" data-card="${c.id}" data-opt="${i}" 
+              <div data-action="votePoll" data-col="${esc(col.id)}" data-card="${esc(c.id)}" data-opt="${esc(i)}" 
                    class="relative overflow-hidden rounded-xl bg-purple-50/30 dark:bg-purple-900/10 border border-purple-100/50 dark:border-purple-800/30 p-2.5 cursor-pointer group/opt mb-2 transition-all active:scale-[0.98]">
                 <div class="absolute left-0 top-0 bottom-0 ${barColor} opacity-20 transition-all duration-500 pointer-events-none" style="width: ${percent}%"></div>
                 <div class="relative z-10 flex justify-between items-center text-[11px] font-bold ${textColor} pointer-events-none">
-                  <span class="flex items-center gap-1.5 truncate pr-2">${opt.text} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
+                  <span class="flex items-center gap-1.5 truncate pr-2">${esc(opt.text)} ${myVote ? '<i data-lucide="check-circle-2" class="w-3 h-3 text-purple-500"></i>' : ''}</span>
                   <span class="flex-shrink-0">${percent}%</span>
                 </div>
               </div>`;
           }).join('');
 
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
-              ${isViewer ? '' : `<button data-action="deleteCard" data-type="опрос" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white dark:bg-gray-800 border border-purple-100 dark:border-purple-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none">
+              ${isViewer ? '' : `<button data-action="deleteCard" data-type="опрос" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
               <div class="flex items-center gap-2 mb-2 pointer-events-none">
                 <i data-lucide="bar-chart-3" class="w-3 h-3 text-purple-500"></i>
                 <span class="text-[9px] font-black uppercase tracking-widest text-purple-500">Опрос</span>
@@ -4249,15 +4282,15 @@ function render() {
 
         if (c.type === 'audio') {
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-              ${isViewer ? '' : `<button data-action="deleteCard" data-type="заметку" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white dark:bg-gray-800 border border-emerald-100 dark:border-emerald-900/30 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button data-action="deleteCard" data-type="заметку" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
               <div class="flex items-center gap-2 mb-2 pointer-events-none">
                 <i data-lucide="mic" class="w-3 h-3 text-emerald-500"></i>
                 <span class="text-[9px] font-black uppercase tracking-widest text-emerald-500">Аудио</span>
               </div>
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <div class="flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/20 p-2 rounded-xl mb-2 border border-emerald-100/50 dark:border-emerald-800/30 pointer-events-none">
-                <button data-action="toggleAudio" data-col="${col.id}" data-card="${c.id}" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm pointer-events-auto">
+                <button data-action="toggleAudio" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="w-8 h-8 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-sm pointer-events-auto">
                   <i data-lucide="play" class="w-4 h-4 fill-current ml-0.5 btn-icon pointer-events-none"></i>
                 </button>
                 <div class="flex-1 h-1.5 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden relative pointer-events-none">
@@ -4289,8 +4322,8 @@ function render() {
           }
 
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none">
-               ${isViewer ? '' : `<button data-action="deleteCard" data-type="таймер" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-rose-100 dark:border-rose-900/30 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none">
+               ${isViewer ? '' : `<button data-action="deleteCard" data-type="таймер" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
                <div class="flex items-center gap-2 mb-3 pointer-events-none">
                  <div class="p-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-md text-rose-500"><i data-lucide="timer" class="w-3.5 h-3.5"></i></div>
                  <span class="text-[10px] font-black uppercase tracking-widest text-rose-500">Таймер</span>
@@ -4313,17 +4346,17 @@ function render() {
           const doneCount = c.checklist.filter(i => i.isCompleted).length;
           const percent = Math.round((doneCount / c.checklist.length) * 100) || 0;
           const itemsHtml = c.checklist.map((item, idx) => `
-            <div onclick="event.stopPropagation(); toggleBoardTodo('${col.id}', '${c.id}', ${idx})" class="flex items-start gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 hover:border-cyan-200 dark:hover:border-cyan-800 transition-colors mb-2 last:mb-0 relative z-20 pointer-events-auto group/chk cursor-pointer">
+            <div onclick="event.stopPropagation(); toggleBoardTodo(${jsArg(col.id)}, ${jsArg(c.id)}, ${idx})" class="flex items-start gap-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700/50 hover:border-cyan-200 dark:hover:border-cyan-800 transition-colors mb-2 last:mb-0 relative z-20 pointer-events-auto group/chk cursor-pointer">
               <div class="w-5 h-5 flex-shrink-0 rounded-md border-2 flex items-center justify-center transition-all ${item.isCompleted ? 'bg-cyan-500 border-cyan-500' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'}">
                 ${item.isCompleted ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
               </div>
-              <span class="text-xs font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-snug select-none flex-1">${item.text}</span>
+              <span class="text-xs font-medium ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-snug select-none flex-1">${esc(item.text)}</span>
             </div>
           `).join('');
 
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white dark:bg-gray-800 border border-cyan-100 dark:border-cyan-900/30 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-              ${isViewer ? '' : `<button data-action="deleteCard" data-type="чек-лист" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white dark:bg-gray-800 border border-cyan-100 dark:border-cyan-900/30 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button data-action="deleteCard" data-type="чек-лист" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
               <div class="flex items-center justify-between mb-3 pointer-events-none">
                 <div class="flex items-center gap-2">
                   <div class="p-1.5 bg-cyan-100 dark:bg-cyan-900/30 rounded-md text-cyan-500"><i data-lucide="list-todo" class="w-3.5 h-3.5"></i></div>
@@ -4348,14 +4381,14 @@ function render() {
 
         if (c.type === 'link') {
           return `
-            <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
-              ${isViewer ? '' : `<button data-action="deleteCard" data-type="ссылку" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+            <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all group relative select-none cursor-pointer">
+              ${isViewer ? '' : `<button data-action="deleteCard" data-type="ссылку" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="trash-2" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
               <div class="flex items-center gap-2 mb-3 pointer-events-none">
                 <div class="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-md text-gray-500 dark:text-gray-400"><i data-lucide="link" class="w-3.5 h-3.5"></i></div>
                 <span class="text-[10px] font-black uppercase tracking-widest text-gray-500">Закладка</span>
               </div>
               <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
-              <a href="${c.url}" target="_blank" onclick="event.stopPropagation()" class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 relative z-20 pointer-events-auto transition-colors mt-3 shadow-sm">
+              <a href="${esc(safeUrl(c.url) || '#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 relative z-20 pointer-events-auto transition-colors mt-3 shadow-sm">
                 <span class="truncate">${c.url.replace(/^https?:\/\//, '')}</span>
                 <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0 text-blue-500"></i>
               </a>
@@ -4388,7 +4421,7 @@ function render() {
         let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'} pointer-events-none"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
         
         // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Текстовые читаемые теги
-        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${t.color}">${t.name}</span>` : ''; }).join('')}</div>` : '';
+        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('')}</div>` : '';
         const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
         
         let priorityHtml = '';
@@ -4405,11 +4438,11 @@ function render() {
         const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
 
         return `
-          <div data-id="${c.id}" data-action="viewCard" data-col="${col.id}" data-card="${c.id}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col justify-between">
-            ${isViewer ? '' : `<button data-action="editCard" data-col="${col.id}" data-card="${c.id}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
+          <div data-id="${esc(c.id)}" data-action="viewCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="card-item ${overdueClass} bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3.5 rounded-xl ${isViewer ? 'cursor-pointer' : 'cursor-grab'} shadow-sm hover:shadow-md transition-all group relative select-none flex flex-col justify-between">
+            ${isViewer ? '' : `<button data-action="editCard" data-col="${esc(col.id)}" data-card="${esc(c.id)}" class="absolute top-2 right-2 text-gray-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 bg-white dark:bg-gray-800 p-1.5 rounded-lg border dark:border-gray-700 shadow-sm z-10 transition-opacity"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>`}
             
             <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
-            ${c.image ? `<div class="compact-hide mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${c.imageThumb || c.image}" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
+            ${c.image ? `<div class="compact-hide mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${esc(safeUrl(c.imageThumb, {allowData:true}) || safeUrl(c.image, {allowData:true}))}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
             
             <div class="flex flex-col items-start w-full pointer-events-none">
               ${tagsHtml}
@@ -4440,55 +4473,55 @@ function render() {
           <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none relative z-20">
             <div class="flex items-center gap-2 pointer-events-none">
               <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]" title="${col.name}">${col.name}</h2>
+              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]" title="${esc(col.name)}">${esc(col.name)}</h2>
               <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${countColor} flex items-center shadow-sm transition-colors" title="${wipLimit > 0 ? 'Задач / Лимит (WIP)' : 'Количество задач'}">${wipText} ${warningIcon}</span>
             </div>
             ${isViewer ? '' : `
             <div class="flex items-center gap-0.5 ml-auto relative">
                 <button onclick="document.querySelectorAll('.col-sort-menu').forEach(m => m !== this.nextElementSibling && m.classList.add('hidden')); this.nextElementSibling.classList.toggle('hidden'); event.stopPropagation();" class="p-1.5 rounded-lg border transition-all ${sortBtnClass}" title="Авто-сортировка задач">
-                    <i data-lucide="${activeSortIcon}" class="w-4 h-4 pointer-events-none"></i>
+                    <i data-lucide="${esc(activeSortIcon)}" class="w-4 h-4 pointer-events-none"></i>
                 </button>
                 <div class="col-sort-menu hidden absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl z-50 overflow-hidden transform origin-top-right transition-all">
                     <div class="px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-1.5">
                       <i data-lucide="arrow-up-down" class="w-3 h-3"></i> Сортировка колонки
                     </div>
                     <div class="p-1.5 flex flex-col gap-0.5">
-                        <button data-action="setColSort" data-col="${col.id}" data-opt="manual" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'manual' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                        <button data-action="setColSort" data-col="${esc(col.id)}" data-opt="manual" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'manual' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
                             <div class="flex items-center gap-2"><i data-lucide="hand" class="w-3.5 h-3.5 text-gray-400"></i> Вручную (DnD)</div>
                             ${sortBy === 'manual' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
                         </button>
-                        <button data-action="setColSort" data-col="${col.id}" data-opt="date_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'date_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                        <button data-action="setColSort" data-col="${esc(col.id)}" data-opt="date_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'date_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
                             <div class="flex items-center gap-2"><i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Новые сверху</div>
                             ${sortBy === 'date_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
                         </button>
-                        <button data-action="setColSort" data-col="${col.id}" data-opt="deadline" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'deadline' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                        <button data-action="setColSort" data-col="${esc(col.id)}" data-opt="deadline" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'deadline' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
                             <div class="flex items-center gap-2"><i data-lucide="clock" class="w-3.5 h-3.5 text-rose-500"></i> Дедлайны</div>
                             ${sortBy === 'deadline' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
                         </button>
-                        <button data-action="setColSort" data-col="${col.id}" data-opt="priority_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'priority_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                        <button data-action="setColSort" data-col="${esc(col.id)}" data-opt="priority_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'priority_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
                             <div class="flex items-center gap-2"><i data-lucide="flame" class="w-3.5 h-3.5 text-red-500"></i> По приоритету</div>
                             ${sortBy === 'priority_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
                         </button>
-                        <button data-action="setColSort" data-col="${col.id}" data-opt="sp_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'sp_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
+                        <button data-action="setColSort" data-col="${esc(col.id)}" data-opt="sp_desc" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${sortBy === 'sp_desc' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : ''}">
                             <div class="flex items-center gap-2"><i data-lucide="scale" class="w-3.5 h-3.5 text-indigo-500"></i> По весу (SP)</div>
                             ${sortBy === 'sp_desc' ? '<i data-lucide="check" class="w-3.5 h-3.5"></i>' : ''}
                         </button>
                     </div>
                 </div>
-                <button data-action="editCol" data-col="${col.id}" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
+                <button data-action="editCol" data-col="${esc(col.id)}" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
             </div>
             `}
           </div>
-        <div id="cards-${col.id}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${col.id}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative z-10">
+        <div id="cards-${esc(col.id)}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${esc(col.id)}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative z-10">
           ${cardsHtml}
           ${emptyStateHtml}
         </div>
         ${isViewer ? '' : `
         <div class="p-3 pt-0 flex gap-2 mt-auto">
-          <button data-action="editCard" data-col="${col.id}" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
+          <button data-action="editCard" data-col="${esc(col.id)}" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
             <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Карточка
           </button>
-          <button data-action="moreAdd" data-col="${col.id}" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
+          <button data-action="moreAdd" data-col="${esc(col.id)}" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
             <i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i>
           </button>
         </div>`}
@@ -4794,12 +4827,12 @@ function renderSettingsTags() {
   form.style.display = (isOwnerOrEditor || isLocalBoard) ? 'block' : 'none';
   list.innerHTML = getBoardTags().map(t => `
     <div class="flex items-center justify-between bg-white dark:bg-gray-800 p-2 rounded-xl border border-gray-100 dark:border-gray-700">
-      <span class="px-3 py-1 rounded-lg text-xs font-bold border ${t.color}">${t.name}</span>
-      ${(isOwnerOrEditor || isLocalBoard) ? `<button onclick="deleteCustomTag('${t.id}')" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+      <span class="px-3 py-1 rounded-lg text-xs font-bold border ${esc(t.color)}">${esc(t.name)}</span>
+      ${(isOwnerOrEditor || isLocalBoard) ? `<button onclick="deleteCustomTag(${jsArg(t.id)})" class="text-gray-400 hover:text-red-500 p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
     </div>
   `).join('');
   document.getElementById('newTagColorPicker').innerHTML = TAG_PALETTE.map(c => `
-    <button onclick="newTagSelectedColor='${c}'; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
+    <button onclick="newTagSelectedColor=${jsArg(c)}; renderSettingsTags()" class="w-6 h-6 flex-shrink-0 rounded-full border-2 transition-transform ${newTagSelectedColor === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'} ${c.split(' ')[0]}"></button>
   `).join(''); lucide.createIcons();
 }
 
@@ -4813,6 +4846,16 @@ function addNewCustomTag() {
 function deleteCustomTag(tagId) {
   openConfirmModal('Удалить тег?', 'Этот тег будет навсегда удален со всех карточек в этом проекте.', 'Удалить тег', true, () => {
     updateBoardData({ tags: getBoardTags().filter(t => t.id !== tagId) });
+    if (!isLocalBoard) {
+      const cardsRef = db.collection("boards").doc(BOARD_ID).collection("cards");
+      const tagged = Array.from(allCardsMap.values()).filter(c => Array.isArray(c.tags) && c.tags.includes(tagId));
+      for (let i = 0; i < tagged.length; i += 400) {
+        const batch = db.batch();
+        tagged.slice(i, i + 400).forEach(c => batch.update(cardsRef.doc(String(c.id)), { tags: firebase.firestore.FieldValue.arrayRemove(tagId) }));
+        batch.commit().catch(e => console.error('deleteCustomTag', e));
+      }
+      return;
+    }
     columns = columns.map(col => {
       return { ...col, cards: (col.cards || []).map(card => { if (card.tags && card.tags.includes(tagId)) return { ...card, tags: card.tags.filter(id => id !== tagId) }; return card; }) };
     }); 
@@ -4823,11 +4866,11 @@ function deleteCustomTag(tagId) {
 async function checkAILimit() {
   // ЭНТЕРПРАЙЗ: Система динамического квотирования ресурсов.
   // 1. Идентификация тарифа и базовых лимитов
-  const currentPlanData = Object.values(PLANS).find(p => p.id === userPlan) || PLANS.FREE;
+  const currentPlanData = getPlanLimits(userPlan);
   let baseLimit = currentPlanData.aiLimit; 
   
   // Безлимит для тарифа Company
-  if (baseLimit === 999) return true; 
+  if (baseLimit >= 999) return true; 
 
   try {
     const userRef = db.collection('users').doc(currentUser.id);
@@ -4992,7 +5035,8 @@ document.addEventListener('keydown', (e) => {
       return el && el.style.display !== 'none' && !el.classList.contains('translate-x-full');
   });
   
-  if (e.key === 'Enter' && !isInputFocused && !isModalOpen && !isSidebarOpen && activeTag !== 'button' && activeTag !== 'a') {
+  const focusOnPage = !document.activeElement || document.activeElement === document.body;
+  if (e.key === 'Enter' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey && focusOnPage && !isInputFocused && !isModalOpen && !isSidebarOpen) {
     e.preventDefault();
     activateGlobalVoiceAgent();
   }
@@ -5688,8 +5732,8 @@ function openPollStatsModal(colId, cardId) {
     } else {
         container.innerHTML = card.options.map(opt => `
             <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 mb-3">
-                <div class="flex justify-between font-bold text-sm mb-3"><span>${opt.text}</span><span class="text-purple-500">${opt.votes.length}</span></div>
-                <div class="flex flex-wrap gap-2">${opt.votes.map(uid => getAvatarHTML(boardData.users[uid] || {name:'User', avatar:''}, 'w-7 h-7')).join('') || '<span class="text-[10px] text-gray-400">Нет голосов</span>'}</div>
+                <div class="flex justify-between font-bold text-sm mb-3"><span>${esc(opt.text)}</span><span class="text-purple-500">${(opt.votes||[]).length}</span></div>
+                <div class="flex flex-wrap gap-2">${(opt.votes||[]).map(uid => getAvatarHTML((boardData.users||{})[uid] || {name:'User', avatar:''}, 'w-7 h-7')).join('') || '<span class="text-[10px] text-gray-400">Нет голосов</span>'}</div>
             </div>
         `).join('');
     }
@@ -5708,7 +5752,7 @@ function openAudioModal(colId, cardId) {
     
     document.getElementById('cvBody').innerHTML = `
         <div class="bg-emerald-50/50 dark:bg-emerald-900/20 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/50 flex flex-col items-center">
-            <button onclick="toggleAudioPlayer(this, ${colId}, '${cardId}')" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
+            <button onclick="toggleAudioPlayer(this, ${jsArg(colId)}, ${jsArg(cardId)})" class="w-20 h-20 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform mb-4">
                 <i data-lucide="play" class="w-10 h-10 fill-current ml-1 btn-icon"></i>
             </button>
             <div class="w-full h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden">
@@ -5728,15 +5772,17 @@ function renderContentComments(comments = []) {
     if (comments.length === 0) {
         list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs italic bg-gray-50/50 dark:bg-gray-900/20 rounded-2xl">Обсуждений пока нет</div>`;
     } else {
-        list.innerHTML = comments.map(c => `
+        list.innerHTML = comments.map(c => {
+            const actualUser = (c.user && boardData.users && boardData.users[c.user.id]) ? boardData.users[c.user.id] : (c.user || {});
+            return `
             <div class="flex gap-3 bg-white dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                ${getAvatarHTML(c.user, 'w-8 h-8')}
+                ${getAvatarHTML(actualUser, 'w-8 h-8')}
                 <div>
-                    <div class="flex items-center gap-2 mb-1"><span class="font-bold text-xs dark:text-white">${c.user.name}</span><span class="text-[9px] text-gray-400">${c.time}</span></div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">${c.text}</div>
+                    <div class="flex items-center gap-2 mb-1"><span class="font-bold text-xs dark:text-white">${esc(actualUser.name)}</span><span class="text-[9px] text-gray-400">${esc(c.time)}</span></div>
+                    <div class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed break-words">${esc(c.text)}</div>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
     lucide.createIcons();
 
@@ -6012,10 +6058,10 @@ function renderPollComments() {
       ${getAvatarHTML(actualUser, "w-8 h-8")}
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2 mb-0.5">
-          <span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${actualUser.name}</span>
-          <span class="text-[9px] text-gray-400">${c.time}</span>
+          <span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${esc((actualUser||{}).name)}</span>
+          <span class="text-[9px] text-gray-400">${esc(c.time)}</span>
         </div>
-        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${c.text}</div>
+        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${esc(c.text)}</div>
       </div>
     </div>
   `}).join('');
@@ -6271,7 +6317,7 @@ function renderExcelTable() {
 
   let bodyHtml = '';
   for (let r = 0; r < activeTableData.rows; r++) {
-    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group/row" data-row-idx="${r}">`;
+    bodyHtml += `<tr class="border-b dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group/row" data-row-idx="${esc(r)}">`;
     bodyHtml += `<td class="p-0 border-r dark:border-gray-700 bg-gray-50 dark:bg-gray-900/30 w-24 relative">
       <div class="flex items-center h-full min-h-[44px]">
          <div class="px-2 cursor-grab row-drag-handle opacity-20 group-hover/row:opacity-100 hover:text-blue-500 transition-all flex items-center h-full"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
@@ -6283,7 +6329,7 @@ function renderExcelTable() {
     for (let c = 0; c < activeTableData.cols; c++) {
       const val = activeTableData.tableData[r] && activeTableData.tableData[r][c] ? activeTableData.tableData[r][c] : "";
       bodyHtml += `<td class="p-0 border-r dark:border-gray-700 relative">
-        <input type="text" value="${val}" oninput="updateTableCell(${r}, ${c}, this.value)" class="w-full h-full min-h-[44px] px-3 py-2 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" />
+        <input type="text" value="${esc(val)}" oninput="updateTableCell(${r}, ${c}, this.value)" class="w-full h-full min-h-[44px] px-3 py-2 bg-transparent outline-none text-sm dark:text-white focus:bg-white dark:focus:bg-gray-700 transition-all border-2 border-transparent focus:border-blue-500" />
       </td>`;
     }
     bodyHtml += `</tr>`;
@@ -6397,7 +6443,7 @@ function updateCompactUI(isCompact) {
   const btn = document.getElementById('btnCompactToggle');
   
   if (iconWrap && textLabel && btn) {
-    iconWrap.innerHTML = `<i data-lucide="${isCompact ? 'list' : 'align-justify'}" class="w-5 h-5 pointer-events-none"></i>`;
+    iconWrap.innerHTML = `<i data-lucide="${esc(isCompact ? 'list' : 'align-justify')}" class="w-5 h-5 pointer-events-none"></i>`;
     textLabel.innerText = isCompact ? 'Стандарт' : 'Компакт';
     
     if (isCompact) {
@@ -6460,7 +6506,7 @@ function updateOledUI(isOled) {
   const btn = document.getElementById('btnOledToggle');
   
   if (iconWrap && textLabel && btn) {
-    iconWrap.innerHTML = `<i data-lucide="${isOled ? 'sun-dim' : 'contrast'}" class="w-5 h-5 pointer-events-none"></i>`;
+    iconWrap.innerHTML = `<i data-lucide="${esc(isOled ? 'sun-dim' : 'contrast')}" class="w-5 h-5 pointer-events-none"></i>`;
     textLabel.innerText = isOled ? 'Обычный' : 'OLED Black';
     
     if (isOled) {
@@ -6517,7 +6563,7 @@ function updateFocusUI() {
   const btn = document.getElementById('btnFocusToggle');
   
   if (iconWrap && textLabel && btn) {
-    iconWrap.innerHTML = `<i data-lucide="${isFocus ? 'minimize' : 'maximize'}" class="w-5 h-5 pointer-events-none"></i>`;
+    iconWrap.innerHTML = `<i data-lucide="${esc(isFocus ? 'minimize' : 'maximize')}" class="w-5 h-5 pointer-events-none"></i>`;
     textLabel.innerText = isFocus ? 'Свернуть' : 'Фокус';
     
     if (isFocus) {
@@ -6695,7 +6741,7 @@ async function sendAiMessage() {
     <div class="flex gap-3 flex-row-reverse mt-2 animate-fade-in-up">
       ${getAvatarHTML(currentUser, 'w-8 h-8 flex-shrink-0')}
       <div class="bg-indigo-600 text-white shadow-md px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words max-w-[85%] rounded-tr-sm">
-        ${text}
+        ${esc(text)}
       </div>
     </div>
   `;
@@ -6704,7 +6750,7 @@ async function sendAiMessage() {
   // Показываем лоадер "Анализирую..."
   const loadId = 'ai_load_' + Date.now();
   chatBox.innerHTML += `
-    <div id="${loadId}" class="flex gap-3 mt-4 animate-fade-in-up">
+    <div id="${esc(loadId)}" class="flex gap-3 mt-4 animate-fade-in-up">
       <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center flex-shrink-0 border border-indigo-200 dark:border-indigo-800/50"><i data-lucide="sparkles" class="w-4 h-4 text-indigo-500 animate-pulse"></i></div>
       <div class="bg-gray-100 dark:bg-gray-800 px-4 py-2.5 rounded-2xl text-sm text-gray-500 dark:text-gray-400 rounded-tl-sm w-fit flex items-center gap-2 border border-gray-200/50 dark:border-gray-700/50">
         <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Анализирую...
@@ -6754,7 +6800,7 @@ async function sendAiMessage() {
       return ''; 
     });
 
-    let formattedText = marked.parse(replyText.trim());
+    let formattedText = sanitizeHTML(marked.parse(replyText.trim()));
 
     if (actions.length > 0) {
       if (isAiAutoMode) {
@@ -6762,10 +6808,10 @@ async function sendAiMessage() {
         formattedText += `<div class="mt-4 flex flex-col gap-2 border-t border-emerald-200/50 dark:border-emerald-700/50 pt-4">
           <div class="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 mb-1"><i data-lucide="zap" class="w-3.5 h-3.5"></i> Автопилот выполнил:</div>`;
         actions.forEach(act => {
-          let labelText = act.title;
-          if (act.type === 'DELETE_COLUMN' || act.type === 'DELETE_CARD') labelText = `Удаление: ${act.title}`;
-          if (act.type === 'MOVE_CARD') labelText = `Перемещение: ${act.title}`;
-          if (act.type === 'RENAME_BOARD' || act.type === 'RENAME_COLUMN') labelText = `Переименование: ${act.title}`;
+          let labelText = esc(act.title);
+          if (act.type === 'DELETE_COLUMN' || act.type === 'DELETE_CARD') labelText = `Удаление: ${esc(act.title)}`;
+          if (act.type === 'MOVE_CARD') labelText = `Перемещение: ${esc(act.title)}`;
+          if (act.type === 'RENAME_BOARD' || act.type === 'RENAME_COLUMN') labelText = `Переименование: ${esc(act.title)}`;
           
           formattedText += `<div class="text-[11px] text-gray-600 dark:text-gray-300 flex items-center gap-1.5 font-medium"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i> ${labelText}</div>`;
           setTimeout(() => aiExecuteAction(act.type, act.safeTitle, act.safeData, true), 100);
@@ -6793,11 +6839,11 @@ async function sendAiMessage() {
           else if (act.type === 'RENAME_BOARD' || act.type === 'RENAME_COLUMN') { icon = 'edit-3'; label = 'Переименовать'; colorClass = 'text-violet-600 dark:text-violet-400'; bgClass = 'bg-violet-100 dark:bg-violet-900/50'; }
 
           formattedText += `
-            <button onclick="aiExecuteAction('${act.type}', '${act.safeTitle}', '${act.safeData}')" class="flex items-center gap-3 w-full text-left px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow-md group active:scale-95">
-              <div class="${bgClass} p-2 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="${icon}" class="w-4 h-4 ${colorClass}"></i></div>
+            <button onclick="aiExecuteAction(${jsArg(act.type)}, ${jsArg(act.safeTitle)}, ${jsArg(act.safeData)})" class="flex items-center gap-3 w-full text-left px-4 py-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all shadow-sm hover:shadow-md group active:scale-95">
+              <div class="${bgClass} p-2 rounded-lg group-hover:scale-110 transition-transform"><i data-lucide="${esc(icon)}" class="w-4 h-4 ${colorClass}"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-xs font-bold text-gray-900 dark:text-white flex items-center gap-1.5"><i data-lucide="zap" class="w-3 h-3 text-amber-500"></i> ${label}</div>
-                <div class="text-[11px] text-gray-500 truncate font-medium mt-0.5">${act.title}</div>
+                <div class="text-[11px] text-gray-500 truncate font-medium mt-0.5">${esc(act.title)}</div>
               </div>
             </button>
           `;
@@ -6846,12 +6892,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   // --- КОНСТРУКТОР ДОСКИ И ДИЗАЙН ---
   if (type === 'RENAME_BOARD') {
     boardData.title = title;
-    if (isLocalBoard) {
-      saveLocalBoard(BOARD_ID, boardData);
-      processBoardData(boardData); // Мгновенно обновляем заголовок
-    } else {
-      db.collection("boards").doc(BOARD_ID).update({ title: title });
-    }
+    updateBoardData({ title: title }); // локально сразу перерисует заголовок
     if (!isAuto) { showSystemToast('Успех', `Доска переименована в "${title}"!`, 'edit-3', 'text-violet-500', 'bg-violet-50 dark:bg-violet-900/30'); toggleAiSidebar(); }
     return;
   }
@@ -6860,7 +6901,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
     if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     col.name = data.trim();
-    if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+    persist(); render();
     if (!isAuto) { showSystemToast('Успех', `Колонка переименована в "${col.name}".`, 'edit-3', 'text-violet-500', 'bg-violet-50 dark:bg-violet-900/30'); toggleAiSidebar(); }
     return;
   }
@@ -6875,8 +6916,8 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
     if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
-    if (colorMatch) col.color = colorMatch[0];
-    if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+    if (colorMatch) col.color = hexToColorKey(colorMatch[0]);
+    persist(); render();
     if (!isAuto) { showSystemToast('Успех', `Цвет колонки изменен.`, 'palette', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30'); toggleAiSidebar(); }
     return;
   }
@@ -6884,9 +6925,9 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   if (type === 'COLUMN') {
     const newColId = 'col_' + Date.now();
     const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
-    const colColor = colorMatch ? colorMatch[0] : '#6366f1'; 
-    columns.push({ id: newColId, name: title, color: colColor, cards: [] });
-    if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+    const colColor = colorMatch ? hexToColorKey(colorMatch[0]) : 'purple'; 
+    columns.push({ id: newColId, name: title, color: colColor, sortBy: 'manual', spaceId: currentSpaceId, cards: [] });
+    persist(); render();
     if (!isAuto) { if(typeof fireConfetti === 'function') fireConfetti(); showSystemToast('Успех', `Колонка создана!`, 'layout-template', 'text-pink-500', 'bg-pink-50 dark:bg-pink-900/30'); toggleAiSidebar(); }
     return; 
   }
@@ -6899,7 +6940,8 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     // ВСЕГДА запрашиваем подтверждение для удаления колонки, даже в Авторежиме!
     openConfirmModal(`Удалить колонку "${col.name}"?`, 'AI запрашивает разрешение на удаление. Вы можете сказать "Да" или "Нет" в микрофон.', 'Удалить', true, () => {
       columns = columns.filter(c => c.id !== col.id);
-      if (isLocalBoard) { persist(); render(); } else { db.collection("boards").doc(BOARD_ID).update({ columns }); }
+      persist(); render();
+      purgeCloudCards([col.id]);
       showSystemToast('Уничтожено', `Колонка удалена.`, 'trash-2', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     });
     if (!isAuto) toggleAiSidebar();
@@ -6968,7 +7010,8 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     return;
   }
   
-  const targetColId = columns[0].id; 
+  const spaceCols = getSpaceColumns();
+  const targetColId = (spaceCols[0] || columns[0]).id; 
   const cardId = 'card_' + Date.now();
   
   let newCard = { id: cardId, title, author: currentUser, columnId: targetColId, archived: false, order: allCards.length, comments: [] };

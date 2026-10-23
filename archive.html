@@ -27,12 +27,13 @@
   <link rel="preconnect" href="https://firestore.googleapis.com">
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
+  <script src="security.js"></script>
   
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
@@ -186,6 +187,8 @@
           window.location.href = 'index.html';
        }
     } else {
+      let archiveCardsUnsub = null;
+      const toPasswordPrompt = () => { window.location.href = `index.html?auth_board=${encodeURIComponent(BOARD_ID)}&target=archive`; };
       db.collection("boards").doc(BOARD_ID).onSnapshot(doc => {
         if (!doc.exists) return window.location.href = 'index.html';
         currentBoardData = doc.data();
@@ -198,18 +201,22 @@
           return;
         }
 
-        if (!isOwner && currentBoardData.password && sessionStorage.getItem('blocko_auth_' + BOARD_ID) !== currentBoardData.password) {
-          window.location.href = `index.html?auth_board=${BOARD_ID}&target=archive`;
-          return;
-        }
-
         setupArchiveUI();
         
-        // ЭНТЕРПРАЙЗ: Слушаем подколлекцию cards для облачной доски (Real-time Archive Sync)
-        db.collection("boards").doc(BOARD_ID).collection("cards").where("archived", "==", true).onSnapshot(cardsSnap => {
-          onlineArchivedCards = cardsSnap.docs.map(c => ({ id: c.id, ...c.data() }));
-          renderArchive();
-        });
+        // ЭНТЕРПРАЙЗ: Слушаем подколлекцию cards для облачной доски (одна подписка на всю сессию).
+        // Для доски с паролем правила пустят только после проверки пароля на сервере.
+        if (!archiveCardsUnsub) {
+          archiveCardsUnsub = db.collection("boards").doc(BOARD_ID).collection("cards").where("archived", "==", true).onSnapshot(cardsSnap => {
+            onlineArchivedCards = cardsSnap.docs.map(c => ({ id: c.id, ...c.data() }));
+            renderArchive();
+          }, err => {
+            console.error('archive cards', err);
+            if (err && err.code === 'permission-denied') toPasswordPrompt();
+          });
+        }
+      }, err => {
+        console.error('archive board', err);
+        window.location.href = 'index.html?error=not_member';
       });
     }
   }
@@ -288,20 +295,20 @@
     archivedCards.sort((a, b) => b.id - a.id);
 
     archivedCards = archivedCards.filter(c => 
-      c.title.toLowerCase().includes(searchQuery) || 
+      String(c.title || '').toLowerCase().includes(searchQuery) || 
       (c.description && c.description.toLowerCase().includes(searchQuery))
     );
 
     if (archivedCards.length === 0 && searchQuery !== '') {
-      grid.innerHTML = `<div class="col-span-full py-16 text-center"><p class="text-gray-500">По запросу "${searchQuery}" не найдено.</p></div>`;
+      grid.innerHTML = `<div class="col-span-full py-16 text-center"><p class="text-gray-500">По запросу "${esc(searchQuery)}" не найдено.</p></div>`;
       return;
     }
 
     grid.innerHTML = archivedCards.map(card => {
       const cleanDesc = cleanMarkdown(card.description);
       const tagsHtml = card.tags && card.tags.length > 0 
-        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + card.tags.map(tId => { const t = getTagInfo(tId); return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${t.color}">${t.name}</span>` : ''; }).join('') + `</div>` : '';
-      const imageHtml = card.image ? `<img src="${card.image}" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` : '';
+        ? `<div class="flex gap-1.5 mb-3 flex-wrap">` + card.tags.map(tId => { const t = getTagInfo(tId); return t ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('') + `</div>` : '';
+      const imageHtml = safeUrl(card.image, {allowData:true}) ? `<img src="${esc(safeUrl(card.image, {allowData:true}))}" alt="" referrerpolicy="no-referrer" loading="lazy" class="w-full h-32 object-cover rounded-2xl mb-4 border border-gray-100 dark:border-gray-800" />` : '';
 
       let typeIconHtml = '';
       if (card.type === 'poll') typeIconHtml = `<i data-lucide="bar-chart-3" class="w-3.5 h-3.5 text-purple-500"></i>`;
@@ -314,10 +321,10 @@
 
       const actionsHtml = isOwner 
         ? `<div class="flex gap-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-4">
-            <button onclick="restoreCard('${card.id}', '${card.originColId}')" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
+            <button onclick="restoreCard(${jsArg(card.id)}, ${jsArg(card.originColId)})" class="flex-1 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Вернуть
             </button>
-            <button onclick="permanentDelete('${card.id}')" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
+            <button onclick="permanentDelete(${jsArg(card.id)})" class="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors" title="Удалить навсегда">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>`
@@ -331,11 +338,11 @@
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 rounded-3xl shadow-sm relative group flex flex-col hover:border-amber-400 transition-colors">
           <div class="flex justify-between items-start mb-3">
             <div class="flex items-center gap-2">${typeIconHtml} ${tagsHtml}</div>
-            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">${card.colName}</div>
+            <div class="text-[10px] font-bold text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md uppercase tracking-wider ml-auto whitespace-nowrap" title="Исходная колонка">${esc(card.colName)}</div>
           </div>
           ${imageHtml}
-          <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${card.title}</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${cleanDesc}</p>
+          <h3 class="font-bold text-lg mb-2 text-gray-900 dark:text-white line-clamp-2">${esc(card.title)}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3 leading-relaxed flex-1">${esc(cleanDesc)}</p>
           ${actionsHtml}
         </div>
       `;

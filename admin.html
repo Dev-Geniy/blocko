@@ -9,12 +9,14 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <!-- Firebase Core -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="security.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -655,22 +657,8 @@
     if (!user) return window.location.href = 'index.html';
     
     try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        const data = userDoc.exists ? userDoc.data() : {};
-        
-        if (!data.isAdmin) {
-            // ЭНТЕРПРАЙЗ: Бэкдор для инициализации владельца (Zero-Trust Bootstrap)
-            const secret = prompt("BLOCKO PRO SECURITY:\nВведите ключ шифрования для доступа к Command Center:");
-            if (secret === "blocko_god_mode_2026") {
-                await db.collection('users').doc(user.uid).set({ isAdmin: true }, { merge: true });
-                showToast("Уровень доступа: GOD MODE. Обновление протоколов...");
-                setTimeout(() => window.location.reload(), 1500);
-            } else {
-                window.location.href = 'index.html';
-            }
-            return;
-        }
-
+    // Доступ: владелец проекта или email из system/admins (то же проверяют Firestore Rules).
+    // Флаг isAdmin в профиле больше не используется — его нельзя выставить с клиента.
     // ЭНТЕРПРАЙЗ: Железный занавес безопасности (Real-time RBAC Barrier)
     const ownerEmail = 'uajerryua@gmail.com';
     let hasAccess = user.email === ownerEmail;
@@ -679,7 +667,7 @@
         try {
             const sysDoc = await db.collection('system').doc('admins').get();
             if (sysDoc.exists && sysDoc.data().emails) {
-                if (sysDoc.data().emails.includes(user.email)) hasAccess = true;
+                if (sysDoc.data().emails.map(e => String(e).toLowerCase()).includes(String(user.email).toLowerCase())) hasAccess = true;
             }
         } catch(e) {
             console.error("Auth verify error", e);
@@ -846,22 +834,22 @@
         if (u.plan === 'infinity') planColor = 'bg-gradient-to-r from-orange-500/20 to-red-500/20 text-orange-400 shadow-lg border border-orange-500/40';
 
         return `
-          <tr onclick="openUserProfile('${u.uid}')" class="hover:bg-gray-800/60 transition-colors group cursor-pointer">
+          <tr onclick="openUserProfile(${jsArg(u.uid)})" class="hover:bg-gray-800/60 transition-colors group cursor-pointer">
             <td class="px-6 py-4">
               <div class="flex items-center gap-3">
-                <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
+                <img src="${esc(safeAvatar)}" class="w-10 h-10 rounded-full border border-gray-700 object-cover shadow-sm" />
                 <div>
                   <div class="text-sm font-bold text-white flex items-center gap-1.5">
-                    ${safeName} 
+                    ${esc(safeName)} 
                     ${u.isAdmin ? '<i data-lucide="shield-check" class="w-3.5 h-3.5 text-indigo-500" title="Администратор"></i>' : ''}
-                    ${u.badgeStatus && u.badgeStatus !== 'none' ? `<i data-lucide="award" class="w-3.5 h-3.5 text-amber-500" title="${u.badgeStatus}"></i>` : ''}
+                    ${u.badgeStatus && u.badgeStatus !== 'none' ? `<i data-lucide="award" class="w-3.5 h-3.5 text-amber-500" title="${esc(u.badgeStatus)}"></i>` : ''}
                   </div>
-                  <div class="text-[10px] text-gray-500 font-mono mt-0.5">${u.email || u.uid}</div>
+                  <div class="text-[10px] text-gray-500 font-mono mt-0.5">${esc(u.email || u.uid)}</div>
                 </div>
               </div>
             </td>
             <td class="px-6 py-4">
-              <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${planColor}">${u.plan || 'Free'}</span>
+              <span class="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${planColor}">${esc(u.plan || 'Free')}</span>
             </td>
             <td class="px-6 py-4 text-center">
               <div class="inline-flex items-center gap-1.5 text-emerald-400 font-black bg-emerald-500/10 px-2 py-1 rounded-lg border border-emerald-500/20">
@@ -978,12 +966,12 @@
              let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
              
              return `
-               <div onclick="openUserProfile('${tUid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer group">
+               <div onclick="openUserProfile(${jsArg(tUid)})" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-800 transition-colors cursor-pointer group">
                   <div class="flex items-center gap-3">
-                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700" />
+                     <img src="${esc(tAvatar)}" class="w-8 h-8 rounded-full object-cover border border-gray-700" />
                      <div>
-                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-indigo-400 transition-colors">${tName}</div>
-                        <div class="text-[9px] text-gray-500 font-mono leading-none">${tUid}</div>
+                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-indigo-400 transition-colors">${esc(tName)}</div>
+                        <div class="text-[9px] text-gray-500 font-mono leading-none">${esc(tUid)}</div>
                      </div>
                   </div>
                   <div class="px-2 py-0.5 rounded border text-[9px] font-black tracking-widest ${planColor}">${planLabel}</div>
@@ -1029,12 +1017,12 @@
              let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
              
              return `
-               <div onclick="openUserProfile('${tUser.uid}')" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-500/20 transition-colors cursor-pointer group">
+               <div onclick="openUserProfile(${jsArg(tUser.uid)})" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-purple-500/20 transition-colors cursor-pointer group">
                   <div class="flex items-center gap-3">
-                     <img src="${tAvatar}" class="w-8 h-8 rounded-full object-cover border border-gray-700 shadow-sm" />
+                     <img src="${esc(tAvatar)}" class="w-8 h-8 rounded-full object-cover border border-gray-700 shadow-sm" />
                      <div>
-                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-purple-300 transition-colors">${tName}</div>
-                        <div class="text-[9px] text-gray-500 font-mono leading-none">${tUser.uid}</div>
+                        <div class="text-xs font-bold text-white leading-none mb-1 group-hover:text-purple-300 transition-colors">${esc(tName)}</div>
+                        <div class="text-[9px] text-gray-500 font-mono leading-none">${esc(tUser.uid)}</div>
                      </div>
                   </div>
                   <div class="px-2 py-0.5 rounded border text-[9px] font-black tracking-widest ${planColor}">${planLabel}</div>
@@ -1237,7 +1225,7 @@
          'plan_pro_2m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner"><i data-lucide="zap" class="w-3 h-3"></i> PRO (2 мес)</div>',
          'plan_fl_1m': '<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-inner"><i data-lucide="briefcase" class="w-3 h-3"></i> FL (1 мес)</div>'
       };
-      return oldLabels[promo.type] || `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-500/10 text-gray-400 border border-gray-500/20 shadow-inner whitespace-nowrap"><i data-lucide="ticket" class="w-3 h-3"></i> ${promo.type || 'Бонус'}</div>`;
+      return oldLabels[promo.type] || `<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-500/10 text-gray-400 border border-gray-500/20 shadow-inner whitespace-nowrap"><i data-lucide="ticket" class="w-3 h-3"></i> ${esc(promo.type || 'Бонус')}</div>`;
   }
 
   function renderPromos() {
@@ -1264,12 +1252,12 @@
 
          return `
             <tr class="hover:bg-gray-800/40 transition-colors group">
-               <td class="px-4 py-4 font-mono font-bold text-white tracking-wider text-sm">${p.id}</td>
+               <td class="px-4 py-4 font-mono font-bold text-white tracking-wider text-sm">${esc(p.id)}</td>
                <td class="px-4 py-4 text-xs font-bold">${getPromoLabelHtml(p)}</td>
                <td class="px-4 py-4 text-center text-xs text-white font-mono font-bold">${usesStr}</td>
                <td class="px-4 py-4 text-center">${statusHtml}</td>
                <td class="px-4 py-4 text-right">
-                 <button onclick="deletePromo('${p.id}')" class="p-2 text-gray-500 hover:text-red-500 bg-gray-800/50 hover:bg-red-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-red-500/30 inline-block" title="Отозвать промокод">
+                 <button onclick="deletePromo(${jsArg(p.id)})" class="p-2 text-gray-500 hover:text-red-500 bg-gray-800/50 hover:bg-red-500/10 rounded-xl transition-all shadow-sm active:scale-95 border border-transparent hover:border-red-500/30 inline-block" title="Отозвать промокод">
                    <i data-lucide="trash-2" class="w-4 h-4"></i>
                  </button>
                </td>
@@ -1462,17 +1450,17 @@
          const typeBadge = badgeMap[t.type] || badgeMap['other'];
 
          return `
-            <div class="bg-gray-800/40 border border-gray-700/50 p-4 rounded-2xl hover:bg-gray-800 hover:border-indigo-500/30 transition-all cursor-pointer group flex items-start gap-4" onclick="openTicketModal('${t.id}')">
-               <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-700 object-cover flex-shrink-0" />
+            <div class="bg-gray-800/40 border border-gray-700/50 p-4 rounded-2xl hover:bg-gray-800 hover:border-indigo-500/30 transition-all cursor-pointer group flex items-start gap-4" onclick="openTicketModal(${jsArg(t.id)})">
+               <img src="${esc(safeAvatar)}" class="w-10 h-10 rounded-full border border-gray-700 object-cover flex-shrink-0" />
                <div class="flex-1 min-w-0">
                   <div class="flex justify-between items-center mb-1">
                      <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold text-white truncate">${safeName}</span>
+                        <span class="text-sm font-bold text-white truncate">${esc(safeName)}</span>
                         ${typeBadge}
                      </div>
-                     <span class="text-[10px] text-gray-500 font-mono">${dateStr}</span>
+                     <span class="text-[10px] text-gray-500 font-mono">${esc(dateStr)}</span>
                   </div>
-                  <div class="text-xs text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300 transition-colors">${t.message || 'Без текста'}</div>
+                  <div class="text-xs text-gray-400 line-clamp-2 leading-relaxed group-hover:text-gray-300 transition-colors">${esc(t.message || 'Без текста')}</div>
                </div>
             </div>
          `;
@@ -1509,7 +1497,7 @@
      const mailBtn = document.getElementById('tmMailBtn');
      if (t.user && t.user.email) {
          mailBtn.style.display = 'flex';
-         mailBtn.onclick = () => window.open(`mailto:${t.user.email}?subject=RE: Ваш тикет в Blocko Pro Support`);
+         mailBtn.onclick = () => window.open(`mailto:${encodeURIComponent(t.user.email || '')}?subject=${encodeURIComponent('RE: Ваш тикет в Blocko Pro Support')}`);
      } else {
          mailBtn.style.display = 'none';
      }
@@ -1635,8 +1623,8 @@
           else {
               statusUi = `
                 <div class="flex gap-2 w-full sm:w-auto">
-                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'reject')" class="flex-1 sm:flex-none px-4 py-2 bg-gray-800 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-gray-700 hover:border-rose-500/50 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> Отклонить</button>
-                   <button onclick="reviewQuest('${q.id}', '${q.userId}', '${q.type}', 'approve')" class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Выдать награду</button>
+                   <button onclick="reviewQuest(${jsArg(q.id)}, ${jsArg(q.userId)}, ${jsArg(q.type)}, 'reject')" class="flex-1 sm:flex-none px-4 py-2 bg-gray-800 hover:bg-rose-500/20 text-gray-400 hover:text-rose-400 border border-gray-700 hover:border-rose-500/50 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"><i data-lucide="x" class="w-4 h-4"></i> Отклонить</button>
+                   <button onclick="reviewQuest(${jsArg(q.id)}, ${jsArg(q.userId)}, ${jsArg(q.type)}, 'approve')" class="flex-1 sm:flex-none px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 rounded-xl font-bold text-sm transition-all active:scale-95 flex items-center justify-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Выдать награду</button>
                 </div>
               `;
           }
@@ -1647,8 +1635,8 @@
                   <div class="flex items-center gap-3">
                      <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(q.userName)}&background=3b82f6&color=fff" class="w-10 h-10 rounded-full border border-gray-600">
                      <div>
-                        <div class="font-bold text-white text-sm">${q.userName} <span class="text-gray-500 text-xs ml-2 font-normal">${q.userEmail}</span></div>
-                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">UID: ${q.userId} • Дата: ${formatFirebaseDate(q.createdAt)}</div>
+                        <div class="font-bold text-white text-sm">${esc(q.userName)} <span class="text-gray-500 text-xs ml-2 font-normal">${esc(q.userEmail)}</span></div>
+                        <div class="text-[10px] text-gray-400 font-mono mt-0.5">UID: ${esc(q.userId)} • Дата: ${esc(formatFirebaseDate(q.createdAt))}</div>
                      </div>
                   </div>
                   <div class="hidden sm:block">${typeBadge}</div>
@@ -1658,7 +1646,7 @@
 
                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-700">
                   <div class="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ссылка на работу пользователя:</div>
-                  <a href="${q.link}" target="_blank" class="text-blue-400 hover:text-blue-300 font-medium text-sm break-all flex items-center gap-2 group"><i data-lucide="external-link" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> ${q.link}</a>
+                  <a href="${esc(safeUrl(q.link) || '#')}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 font-medium text-sm break-all flex items-center gap-2 group"><i data-lucide="external-link" class="w-4 h-4 group-hover:scale-110 transition-transform"></i> ${esc(q.link)}</a>
                </div>
 
                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mt-2 pt-4 border-t border-gray-700">
@@ -1781,10 +1769,10 @@
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
                <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                     <img src="${safeAvatar}" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                     <img src="${esc(safeAvatar)}" class="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 object-cover shadow-sm group-hover:scale-105 transition-transform" />
                      <div>
-                        <div class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">${safeName}</div>
-                        <div class="text-[10px] text-gray-500 font-mono mt-0.5">${safeEmail}</div>
+                        <div class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">${esc(safeName)}</div>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5">${esc(safeEmail)}</div>
                      </div>
                   </div>
                </td>
@@ -1804,7 +1792,7 @@
                </td>
                <td class="px-6 py-4 text-right">
                  <!-- Глобальный вызов с полной блокировкой всплытия событий -->
-                 <button onclick="window.openCpaModal(event, '${p.id}')" class="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 inline-flex items-center justify-center active:scale-95" title="Детали и Выплаты">
+                 <button onclick="window.openCpaModal(event, ${jsArg(p.id)})" class="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all shadow-sm border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800/50 inline-flex items-center justify-center active:scale-95" title="Детали и Выплаты">
                    <i data-lucide="external-link" class="w-4 h-4 pointer-events-none"></i>
                  </button>
                </td>
@@ -1870,11 +1858,11 @@
                      <div class="p-3 bg-white dark:bg-gray-800 rounded-xl border border-rose-200 dark:border-rose-900/50 flex justify-between items-center shadow-sm">
                         <div>
                            <div class="text-xs font-bold text-gray-900 dark:text-white">Заявка на вывод: <span class="text-rose-500 font-black">$${amt.toFixed(2)}</span></div>
-                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${esc(dateStr)}</div>
                         </div>
                         <div class="flex items-center gap-2">
-                           <button onclick="window.approvePayout('${partnerId}', '${tx.id}')" class="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Одобрить"><i data-lucide="check" class="w-4 h-4"></i></button>
-                           <button onclick="window.rejectPayout('${partnerId}', '${tx.id}', ${amt})" class="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-rose-200 dark:border-rose-800" title="Отклонить"><i data-lucide="x" class="w-4 h-4"></i></button>
+                           <button onclick="window.approvePayout(${jsArg(partnerId)}, ${jsArg(tx.id)})" class="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-emerald-200 dark:border-emerald-800" title="Одобрить"><i data-lucide="check" class="w-4 h-4"></i></button>
+                           <button onclick="window.rejectPayout(${jsArg(partnerId)}, ${jsArg(tx.id)}, ${amt})" class="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-colors active:scale-95 shadow-sm border border-rose-200 dark:border-rose-800" title="Отклонить"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                      </div>
                   `;
@@ -1898,8 +1886,8 @@
                   return `
                      <div class="p-3 bg-white dark:bg-gray-800/80 rounded-xl border border-gray-100 dark:border-gray-700/50 flex justify-between items-center mb-2 shadow-sm">
                         <div>
-                           <div class="text-xs font-bold text-gray-900 dark:text-gray-200">${tx.description || 'Транзакция'}</div>
-                           <div class="text-[9px] text-gray-500 font-mono mt-1">${dateStr}</div>
+                           <div class="text-xs font-bold text-gray-900 dark:text-gray-200">${esc(tx.description || 'Транзакция')}</div>
+                           <div class="text-[9px] text-gray-500 font-mono mt-1">${esc(dateStr)}</div>
                            ${statusHtml}
                         </div>
                         <div class="px-3 py-1.5 rounded-lg border text-sm font-black ${colorClass}">
@@ -1922,11 +1910,11 @@
               <div class="flex flex-col md:flex-row gap-8 mt-2">
                 <div class="w-full md:w-1/3 flex flex-col gap-6">
                   <div class="flex items-center gap-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                     <img src="${safeAvatar}" class="w-16 h-16 rounded-full border-2 border-indigo-500/30 object-cover shadow-lg" />
+                     <img src="${esc(safeAvatar)}" class="w-16 h-16 rounded-full border-2 border-indigo-500/30 object-cover shadow-lg" />
                      <div class="min-w-0">
-                        <h3 class="text-lg font-black text-gray-900 dark:text-white truncate">${safeName}</h3>
-                        <div class="text-[10px] text-gray-500 font-mono mt-0.5 truncate">${safeEmail}</div>
-                        <div class="text-[9px] text-gray-400 font-mono mt-1 truncate">UID: <span>${partnerId}</span></div>
+                        <h3 class="text-lg font-black text-gray-900 dark:text-white truncate">${esc(safeName)}</h3>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5 truncate">${esc(safeEmail)}</div>
+                        <div class="text-[9px] text-gray-400 font-mono mt-1 truncate">UID: <span>${esc(partnerId)}</span></div>
                      </div>
                   </div>
 
