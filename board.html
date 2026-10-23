@@ -2778,8 +2778,9 @@ const SidebarManager = {
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
 window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
-window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
-window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
+window.toggleSettings = () => SidebarManager.toggle('settingsSidebar', () => { if (typeof renderSettingsTags === 'function') renderSettingsTags(); });
+// Список участников рисуем при открытии (раньше — только из облачного снапшота, и у локальных досок он был пуст)
+window.toggleMembers = () => SidebarManager.toggle('membersSidebar', () => { if (typeof renderMembersSidebar === 'function') renderMembersSidebar(); });
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
   const chatBox = document.getElementById('chatMessages');
   if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
@@ -4230,7 +4231,9 @@ function render() {
         const displayTitle = highlightText(c.title, searchQuery);
         // ЭНТЕРПРАЙЗ: Динамическая резолюция пользователя. Берем актуальный профиль из меты доски, а не старый слепок
         const actualAuthor = (c.author && boardData.users && boardData.users[c.author.id]) ? boardData.users[c.author.id] : c.author;
-        const authorAvatar = actualAuthor ? getAvatarHTML(actualAuthor, 'w-5 h-5 pointer-events-none') : '';
+        // Аватар автора нужен только в команде: на личной доске он одинаковый на всех карточках и лишь шумит
+        const isTeamBoard = Object.keys(boardData.users || {}).length > 1;
+        const authorAvatar = (actualAuthor && isTeamBoard) ? getAvatarHTML(actualAuthor, 'w-5 h-5 pointer-events-none') : '';
         const commentsCountText = c.comments && c.comments.length > 0 
             ? `<span class="flex items-center gap-1 pointer-events-none"><i data-lucide="message-square" class="w-3 h-3"></i> ${(c.comments || []).length}</span>` 
             : '';
@@ -4248,12 +4251,7 @@ function render() {
                  <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
                  <span class="text-[10px] font-bold text-gray-500">${Number(c.cols) || 0} x ${Number(c.rows) || 0} ячеек</span>
               </div>
-              <div class="flex justify-between items-center mt-3 pointer-events-none">
-                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                    ${commentsCountText || ''}
-                </div>
-                ${authorAvatar}
-              </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>
           `;
         }
@@ -4316,12 +4314,7 @@ function render() {
                   <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
                 </div>
               </div>
-              <div class="flex justify-between items-center mt-3 pointer-events-none">
-                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                    ${commentsCountText || ''}
-                </div>
-                ${authorAvatar}
-              </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4350,12 +4343,7 @@ function render() {
                <div class="p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl text-center border border-rose-100/50 dark:border-rose-800/30 pointer-events-none">
                  ${timeHtml}
                </div>
-               <div class="flex justify-between items-center mt-3 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                      ${commentsCountText || ''}
-                 </div>
-                 ${authorAvatar}
-               </div>
+               ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4386,12 +4374,7 @@ function render() {
                 <div class="bg-cyan-500 h-full transition-all" style="width: ${percent}%"></div>
               </div>
               <div class="space-y-1">${itemsHtml}</div>
-              <div class="flex justify-between items-center mt-3 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                      ${commentsCountText || ''}
-                 </div>
-                 ${authorAvatar}
-               </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4408,11 +4391,7 @@ function render() {
                 <span class="truncate">${esc(String(c.url || '').replace(/^https?:\/\//, ''))}</span>
                 <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0 text-blue-500"></i>
               </a>
-              <div class="flex justify-between items-center mt-3 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                                    </div>
-                 ${authorAvatar}
-               </div>
+              ${authorAvatar ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest"></div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
