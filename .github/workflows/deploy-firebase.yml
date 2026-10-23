@@ -36,25 +36,32 @@ jobs:
           node-version: 20
 
       - name: Проверка ключа
+        id: key
         env:
           SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
+          # Без ключа деплой не выполняем, но и не «краснеем»: сайт (GitHub Pages) обновляется независимо
           if [ -z "$SA" ]; then
-            echo "::error::Не задан секрет FIREBASE_SERVICE_ACCOUNT. Инструкция — в DEPLOY.md, раздел «Автодеплой через GitHub»."
-            exit 1
+            echo "::warning::Секрет FIREBASE_SERVICE_ACCOUNT не задан — сервер не обновлён. Инструкция: DEPLOY.md, раздел «Автодеплой через GitHub»."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Установка зависимостей
+        if: steps.key.outputs.ready == 'true'
         working-directory: functions
         run: npm install --no-audit --no-fund
 
       - name: Тесты
+        if: steps.key.outputs.ready == 'true'
         working-directory: functions
         run: npm test
 
       - name: Секреты PayPal
+        if: steps.key.outputs.ready == 'true'
         env:
           PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
           PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
@@ -73,6 +80,7 @@ jobs:
           fi
 
       - name: Деплой функций и правил
+        if: steps.key.outputs.ready == 'true'
         run: npx --yes firebase-tools@13 deploy --only functions,firestore:rules --project "$FIREBASE_PROJECT" --force --non-interactive
 
       - name: Удалить ключ
