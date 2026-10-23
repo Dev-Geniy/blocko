@@ -48,7 +48,14 @@ const DAILY_QUESTS = {
 
 const DAILY_GIFT_COINS = 50;
 const SIGNUP_REFERRAL_CREDITS = 10;
-const CPA_COMMISSION = 0.2;
+// CPA RevShare по рангу партнёра (как в кабинете и админке): Silver 30%, Gold 40% (от 10 продаж), Platinum 50% (от 50)
+const CPA_COMMISSION = 0.3;
+function cpaRate(sales) {
+  const n = Number(sales) || 0;
+  if (n >= 50) return 0.5;
+  if (n >= 10) return 0.4;
+  return CPA_COMMISSION;
+}
 const CPA_MIN_WITHDRAW_USD = 50;
 const CPA_MIN_TRANSFER_USD = 10;
 
@@ -82,6 +89,6 @@ function dayKey(now = Date.now()) {
 
 module.exports = {
   DAY_MS, MONTH_MS, COIN_PACKS, PLAN_PRICES, STORE_PRODUCTS, REFERRAL_TIERS, DAILY_QUESTS,
-  DAILY_GIFT_COINS, SIGNUP_REFERRAL_CREDITS, CPA_COMMISSION, CPA_MIN_WITHDRAW_USD, CPA_MIN_TRANSFER_USD, MEMBER_LIMITS, BOARD_LIMITS,
+  DAILY_GIFT_COINS, SIGNUP_REFERRAL_CREDITS, CPA_COMMISSION, cpaRate, CPA_MIN_WITHDRAW_USD, CPA_MIN_TRANSFER_USD, MEMBER_LIMITS, BOARD_LIMITS,
   effectivePlan, extendPlan, dayKey,
 };

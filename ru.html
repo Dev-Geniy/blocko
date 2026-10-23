@@ -10,28 +10,23 @@
   <meta name="author" content="Blocko Pro Team">
   
   <!-- SEO & Internationalization -->
-  <link rel="canonical" href="https://твоя-ссылка.github.io/ru.html" />
-  <link rel="alternate" hreflang="ru" href="https://твоя-ссылка.github.io/ru.html" />
-  <link rel="alternate" hreflang="uk" href="https://твоя-ссылка.github.io/uk.html" />
-  <link rel="alternate" hreflang="en" href="https://твоя-ссылка.github.io/en.html" />
-  <link rel="alternate" hreflang="hi" href="https://твоя-ссылка.github.io/hi.html" />
-  <link rel="alternate" hreflang="es" href="https://твоя-ссылка.github.io/es.html" />
-  <link rel="alternate" hreflang="zh" href="https://твоя-ссылка.github.io/zh.html" />
-  <link rel="alternate" hreflang="x-default" href="https://твоя-ссылка.github.io/en.html" />
+  <link rel="canonical" href="https://blocko.cloud/ru.html" />
+  <link rel="alternate" hreflang="ru" href="https://blocko.cloud/ru.html" />
   
   <!-- БРЕНДОВЫЙ ФАВИКОН -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
   
   <!-- Open Graph -->
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://твоя-ссылка.github.io/ru.html">
+  <meta property="og:url" content="https://blocko.cloud/ru.html">
   <meta property="og:title" content="Blocko Pro — Защищенные проекты">
   <meta property="og:description" content="Офлайн-режим, AI-генерация и геймификация. Организуй свою команду на высшем уровне.">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <script> tailwind.config = {darkMode: 'class', theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] } } } } </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
     body { font-family: 'Inter', sans-serif; }
@@ -64,6 +59,7 @@
       -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
     }
   </style>
+  <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
   <!-- ЭНТЕРПРАЙЗ АБСТРАКЦИЯ: Инновационный живой фон -->

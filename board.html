@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FlowBoard - Рабочая область</title>
+  <title>Доска — Blocko Pro</title>
 
   <!-- Фавикон -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
@@ -14,6 +14,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <!-- ЭНТЕРПРАЙЗ: Жесткая фиксация версий библиотек (Dependency Pinning) для защиты от поломок API -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -26,10 +28,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script> 
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
     /* Плавающие macOS скроллбары */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -142,10 +143,7 @@
     }
   </style>
   
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
-  </script>
-</head>
+  </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
 
 <div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
@@ -164,17 +162,17 @@
 </div>
 
 <div id="headerWrapper" class="group/header w-full relative z-[60] flex flex-col shadow-sm transition-all duration-300">
-  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-[60] relative">
-    <div class="flex items-center gap-3">
-      <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
+  <header class="px-3 sm:px-5 h-14 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex justify-between items-center gap-2 z-[60] relative">
+    <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none">
+      <a href="index.html" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="На главную">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </a>
       <!-- ЭНТЕРПРАЙЗ: Кнопка переключения лейаута Пространств -->
-      <button onclick="toggleSpacesLayout()" class="hidden md:flex p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors active:scale-95" title="Переключить вид панели досок (Сверху / Сбоку)">
+      <button onclick="toggleSpacesLayout()" class="hidden md:flex w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Переключить вид панели досок (Сверху / Сбоку)">
         <i data-lucide="sidebar-open" class="w-5 h-5 pointer-events-none"></i>
       </button>
-      <div class="flex items-center gap-3">
-        <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-base sm:text-lg font-semibold tracking-tight cursor-pointer hover:text-blue-600 transition-colors truncate min-w-0 max-w-[40vw] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
         
         <!-- ПРЕМИАЛЬНЫЙ ИНДИКАТОР ПОДКЛЮЧЕНИЯ (Control Panel Style) -->
         <div id="boardStatusBadge" class="hidden flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all select-none cursor-help hover:scale-105 active:scale-95" title="Индикатор сети">
@@ -185,10 +183,9 @@
     
     <div class="flex-1 items-center justify-between mx-4 gap-4 hidden md:flex">
         <div class="relative z-[100]" id="shareMenuWrapper">
-          <div id="shareLinkContainer" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full pl-4 pr-1.5 py-1.5 border border-transparent dark:border-gray-700 w-40 cursor-pointer group hover:border-blue-300 dark:hover:border-blue-700 transition-colors shadow-sm" onclick="toggleShareMenu()" title="Поделиться доской">
-            <div class="flex-1 truncate text-[10px] font-black text-gray-600 dark:text-gray-300 uppercase tracking-widest select-none text-center flex justify-center items-center gap-1" id="shareUrlText"><i data-lucide="link" class="w-3 h-3"></i> Поделиться</div>
-            <div class="ml-1 p-1 bg-white dark:bg-gray-900 rounded-full text-gray-400 group-hover:text-blue-500 shadow-sm transition-colors"><i data-lucide="chevron-down" class="w-3 h-3"></i></div>
-          </div>
+          <button type="button" id="shareLinkContainer" onclick="toggleShareMenu()" title="Пригласить в проект" class="h-9 px-3 inline-flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="user-plus" class="w-4 h-4"></i><span id="shareUrlText">Пригласить</span>
+          </button>
           
           <!-- Выпадающий список ролей -->
           <div id="shareMenuDropdown" class="hidden absolute top-full mt-2 left-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl w-64 z-[100] overflow-hidden transform origin-top-left transition-all">
@@ -220,17 +217,17 @@
 
           <div class="flex flex-1 max-w-xl items-center gap-2">
         <div class="relative flex-1">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input type="text" id="boardSearch" oninput="debouncedSearch()" placeholder="Поиск задач..." 
-                 class="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-transparent focus:bg-white dark:focus:bg-gray-700 focus:ring-2 focus:ring-blue-500 rounded-xl text-sm outline-none transition-all dark:text-white">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+          <input type="text" id="boardSearch" oninput="debouncedSearch()" placeholder="Поиск задач" 
+                 class="w-full h-9 pl-9 pr-3 bg-gray-100 dark:bg-gray-900 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-gray-900 rounded-lg text-sm outline-none transition-all dark:text-white placeholder-gray-400">
         </div>
         
         <!-- КАСТОМНЫЙ ФИЛЬТР ТЕГОВ В ЕДИННОЙ ДИЗАЙН-СИСТЕМЕ -->
         <div class="relative" id="tagFilterWrapper">
           <input type="hidden" id="tagFilter" value="all">
-          <button onclick="toggleTagFilterMenu()" id="btnTagFilter" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-pink-50 dark:hover:bg-pink-900/30 hover:text-pink-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 flex items-center justify-center gap-2" title="Фильтр по тегам">
+          <button onclick="toggleTagFilterMenu()" id="btnTagFilter" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Фильтр по тегам">
             <i data-lucide="filter" class="w-4 h-4"></i>
-            <span id="tagFilterActiveDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-pink-500 rounded-full border border-white dark:border-gray-900"></span>
+            <span id="tagFilterActiveDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full border border-white dark:border-gray-900"></span>
           </button>
           
           <!-- Выпадающее меню фильтра -->
@@ -246,47 +243,47 @@
       </div>
     </div>
 
-    <div class="flex gap-2 items-center">
-      <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
+    <div class="flex gap-0.5 sm:gap-1 items-center flex-shrink-0">
+      <button onclick="toggleMobileMenu()" class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" aria-label="Меню">
         <i data-lucide="menu" class="w-4 h-4"></i>
       </button>
-      <button id="btnActivityLog" onclick="toggleActivityLog()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Журнал действий">
+      <button id="btnActivityLog" onclick="toggleActivityLog()" class="hidden sm:flex w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Журнал действий">
         <i data-lucide="activity" class="w-4 h-4"></i>
       </button>
-      <button onclick="toggleArchive()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Архив проекта">
+      <button onclick="toggleArchive()" class="hidden sm:flex w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Архив проекта">
         <i data-lucide="archive" class="w-4 h-4"></i>
       </button>
-      <button id="btnTeam" onclick="toggleMembers()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Команда проекта">
+      <button id="btnTeam" onclick="toggleMembers()" class="hidden sm:flex w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Команда проекта">
         <i data-lucide="users" class="w-4 h-4"></i>
       </button>
-      <button onclick="toggleSettings()" class="hidden sm:block p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-sky-900/30 hover:text-sky-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400 mr-1" title="Настройки доски">
+      <button onclick="toggleSettings()" class="hidden sm:flex w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Настройки доски">
         <i data-lucide="settings" class="w-4 h-4"></i>
       </button>
-      <button id="btnChat" onclick="toggleChat()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-500 transition-colors shadow-sm relative text-gray-600 dark:text-gray-400" title="Чат">
+      <button id="btnChat" onclick="toggleChat()" class="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors relative" title="Чат">
         <i data-lucide="message-square" class="w-4 h-4"></i>
         <span id="chatBadge" class="hidden absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse border-2 border-white dark:border-gray-900 shadow-sm">0</span>
       </button>
-      <button id="addColumnBtn" onclick="addColumn()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white p-2.5 rounded-xl flex items-center justify-center text-sm shadow-lg shadow-blue-500/25 active:scale-95 transition-all" title="Добавить колонку">
-        <i data-lucide="plus" class="w-5 h-5"></i>
+      <button id="addColumnBtn" onclick="addColumn()" class="ml-1 h-9 px-2.5 sm:px-3 inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors" title="Добавить колонку">
+        <i data-lucide="plus" class="w-4 h-4"></i><span class="hidden lg:inline">Колонка</span>
       </button>
     </div>
   </header>
 
   <!-- ЭНТЕРПРАЙЗ: Интеллектуальная панель вкладок (Hover-режим) -->
   <div id="spacesSubHeaderWrapper" class="relative z-10 w-full overflow-hidden transition-all duration-300 ease-in-out max-h-[60px] opacity-100 group-[.is-collapsed]/header:max-h-0 group-[.is-collapsed]/header:opacity-0 md:group-[.is-collapsed]/header:group-hover/header:max-h-[60px] md:group-[.is-collapsed]/header:group-hover/header:opacity-100">
-    <div id="spacesSubHeader" onclick="toggleSpacesCollapse(event)" class="hidden px-6 py-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/60 backdrop-blur-md flex items-center gap-2 overflow-x-auto hide-scroll transition-all cursor-pointer hover:bg-gray-100/80 dark:hover:bg-gray-800/80" title="Нажмите на пустое место, чтобы скрыть панель">
+    <div id="spacesSubHeader" class="hidden px-3 sm:px-5 py-1.5 border-b border-gray-200/80 dark:border-gray-800 bg-white/70 dark:bg-gray-950/70 backdrop-blur-md flex items-center gap-1 overflow-x-auto hide-scroll" title="Нажмите на пустое место, чтобы скрыть панель">
       <div id="boardSpacesContainer" class="flex items-center gap-1.5 cursor-default" onclick="event.stopPropagation()">
          <!-- JS Injects Tabs Here -->
       </div>
       <div class="w-px h-4 bg-gray-300 dark:bg-gray-700 mx-1 flex-shrink-0 cursor-default" onclick="event.stopPropagation()"></div>
-      <button onclick="event.stopPropagation(); addSpace()" class="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-white dark:bg-gray-800 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors border border-gray-200 dark:border-gray-700 font-bold text-[10px] uppercase tracking-wider shadow-sm active:scale-95" title="Создать новую вкладку-доску">
-         <i data-lucide="plus" class="w-3 h-3 pointer-events-none"></i> Новая доска
+      <button onclick="event.stopPropagation(); addSpace()" class="flex-shrink-0 flex items-center gap-1 h-8 px-2.5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-sm font-medium" title="Добавить вкладку внутри проекта">
+         <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Вкладка
       </button>
     </div>
   </div>
 
   <!-- Мобильный тогл (Кнопка-стрелка, смещенная в бок) -->
-  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="md:hidden absolute -bottom-5 right-6 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 shadow-lg text-gray-500 hover:text-blue-500 hover:scale-110 active:scale-95 transition-all">
+  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="hidden absolute -bottom-5 right-6 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 shadow-lg text-gray-500 hover:text-blue-500 hover:scale-110 active:scale-95 transition-all">
      <i data-lucide="chevron-up" id="mobileSpacesToggleIcon" class="w-4 h-4"></i>
   </button>
 </div>
@@ -555,17 +552,77 @@
   </aside>
 </div>
 
-<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 overflow-y-auto py-10 px-4">  <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 m-auto">
-    <div class="flex justify-between items-center mb-5 pb-4 border-b border-gray-100 dark:border-gray-700/50">
-      <input id="editTitle" placeholder="Введите название задачи..." class="text-2xl font-bold bg-transparent outline-none w-full dark:text-white placeholder-gray-400 dark:placeholder-gray-600" />
-      <button onclick="closeEditModal()" class="ml-4 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded-full"><i data-lucide="x" class="w-5 h-5"></i></button>
+<div id="editCardModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 overflow-y-auto py-10 px-4">  <div class="bg-white dark:bg-gray-900 p-5 sm:p-6 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800 m-auto">
+    <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+      <input id="editTitle" placeholder="Название задачи" class="text-xl sm:text-2xl font-semibold tracking-tight bg-transparent outline-none w-full dark:text-white placeholder-gray-300 dark:placeholder-gray-600" />
+      <button onclick="closeEditModal()" aria-label="Закрыть" class="ml-3 w-9 h-9 shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
     </div>
-    <div class="flex-1 overflow-y-auto pr-2 space-y-6">
-      <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Теги (Labels)</span><div id="editTagsContainer" class="flex gap-2 flex-wrap"></div></div>
-      <div class="grid grid-cols-3 gap-4">
-        <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Дедлайн</span><input type="date" id="editDueDate" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" /></div>
+    <div class="flex-1 overflow-y-auto pr-1 space-y-5">
+      <div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Описание</span>
+        
+        <!-- AI Buttons Block (Dark/Purple tint) -->
+        <div class="flex items-center w-full gap-1 mb-2 overflow-x-auto hide-scroll">
+          <button onclick="generateAIDescFromTitle()" id="aiGenTitleBtn" class="h-8 px-2.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg inline-flex items-center gap-1.5 transition-colors">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-500"></i> Описание с AI
+          </button>
+          
+          <button onclick="generateAIDescFromText()" id="aiGenTextBtn" class="h-8 px-2.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg inline-flex items-center gap-1.5 transition-colors">
+            <i data-lucide="wand-2" class="w-3.5 h-3.5 text-blue-500"></i> Улучшить текст
+          </button>
+          
+          <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="h-8 px-2.5 shrink-0 whitespace-nowrap text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg inline-flex items-center gap-1.5 transition-colors">
+            <i data-lucide="list-checks" class="w-3.5 h-3.5 text-blue-500"></i> Подзадачи из текста
+          </button>
+        </div>
+
+        <!-- Markdown Editor Block -->
+        <div class="bg-white dark:bg-[#18181b] border border-gray-200 dark:border-[#27272a] rounded-xl overflow-hidden flex flex-col">
+          <!-- Formatting Toolbar -->
+          <div class="px-2 py-1.5 border-b border-gray-100 dark:border-[#27272a] flex flex-wrap items-center gap-1 bg-gray-50 dark:bg-[#18181b]">
+            <!-- Line 1 -->
+            <div class="contents">
+              <button onclick="insertMarkdown('**', '**')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors text-sm font-black w-7 h-7 flex items-center justify-center">B</button>
+              <button onclick="insertMarkdown('*', '*')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors text-sm italic font-serif w-7 h-7 flex items-center justify-center">I</button>
+              <button onclick="insertMarkdown('~~', '~~')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors text-sm line-through w-7 h-7 flex items-center justify-center">S</button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('### ', '')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors text-sm font-black w-7 h-7 flex items-center justify-center">H</button>
+              <button onclick="insertMarkdown('> ', '')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="quote" class="w-4 h-4"></i></button>
+              <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="code" class="w-4 h-4"></i></button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('- ', '')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="list" class="w-4 h-4"></i></button>
+            </div>
+            <!-- Line 2 -->
+            <div class="contents">
+              <button onclick="insertMarkdown('1. ', '')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
+              <button onclick="insertMarkdown('- [ ] ', '')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="check-square" class="w-4 h-4"></i></button>
+              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+              <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded transition-colors w-7 h-7 flex items-center justify-center"><i data-lucide="link" class="w-4 h-4"></i></button>
+            </div>
+            <!-- Mic -->
+            <div class="ml-auto">
+              <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-2 bg-gray-200 dark:bg-[#27272a] hover:bg-gray-300 dark:hover:bg-[#3f3f46] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center w-fit border border-gray-300 dark:border-[#2E364F]">
+                <i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i>
+              </button>
+            </div>
+          </div>
+          <!-- Textarea -->
+          <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-5 py-4 bg-transparent border-none outline-none text-sm font-mono text-gray-800 dark:text-gray-300 resize-y focus:ring-0 leading-relaxed whitespace-pre-wrap"></textarea>
+        </div>
+      </div>
+      <div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex justify-between items-center">Подзадачи<span id="checklistProgressText" class="text-blue-500 font-bold">0%</span></span>
+        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden"><div id="checklistProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div></div>
+        <div id="editChecklistContainer" class="space-y-2 mb-3"></div>
+        <div class="flex gap-2">
+          <input id="newChecklistItem" enterkeyhint="done" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи" class="flex-1 min-w-0 px-4 py-3 bg-transparent border border-gray-200 dark:border-gray-700 hover:border-blue-500 focus:border-blue-500 rounded-xl outline-none text-sm font-medium dark:text-white transition-colors" />
+          <button onclick="addChecklistItem()" aria-label="Добавить подзадачу" class="shrink-0 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 px-3.5 rounded-xl text-sm font-medium transition-colors"><i data-lucide="plus" class="w-4 h-4 sm:hidden"></i><span class="hidden sm:inline">Добавить</span></button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div><span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Дедлайн</span><input type="date" id="editDueDate" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" /></div>
         <div>
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3">Приоритет</span>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Приоритет</span>
           <select id="editPriority" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 cursor-pointer appearance-none transition-shadow">
             <option value="low">Низкий</option>
             <option value="normal" selected>Обычный</option>
@@ -573,13 +630,16 @@
             <option value="critical">Критичный</option>
           </select>
         </div>
-        <div><span class="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-3" title="Оценка сложности (Story Points)">Story Points</span><input type="number" min="0" max="99" id="editStoryPoints" placeholder="SP" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 text-center transition-shadow" /></div>
+        <div><span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2" title="Оценка сложности в очках (Story Points)">Оценка</span><input type="number" min="0" max="99" id="editStoryPoints" placeholder="SP" class="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-medium dark:text-white focus:ring-2 focus:ring-blue-500 text-center transition-shadow" /></div>
       </div>
+      <div><span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Теги</span><div id="editTagsContainer" class="flex gap-2 flex-wrap"></div></div>
+      <details class="group/media rounded-xl border border-gray-200 dark:border-gray-800">
+        <summary class="cursor-pointer select-none list-none flex items-center justify-between px-4 h-11 text-sm font-medium text-gray-700 dark:text-gray-300">
+          <span class="flex items-center gap-2"><i data-lucide="image" class="w-4 h-4 text-gray-400"></i> Обложка, картинка или видео</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400 transition-transform group-open/media:rotate-180"></i>
+        </summary>
+        <div class="px-4 pb-4">
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">Медиа и Обложка</span>
-          <span class="text-[9px] text-indigo-500 font-black bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800"><i data-lucide="sparkles" class="w-3 h-3 inline pb-0.5"></i> AI VISION</span>
-        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 relative mb-3">
           <!-- Левая часть: Дропзона и превью -->
           <label id="dropzoneLabel" class="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl cursor-pointer h-36 relative overflow-hidden transition-all group bg-gray-50/50 dark:bg-gray-900/30 sm:col-span-1">
@@ -614,90 +674,22 @@
         
         <div id="uploadStatus" class="text-xs font-bold text-indigo-500 text-center mt-2 h-4 transition-all"></div>
       </div>
-      <div>
-        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 flex justify-between items-center">Чек-лист<span id="checklistProgressText" class="text-blue-500 font-bold">0%</span></span>
-        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-3 overflow-hidden"><div id="checklistProgressBar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div></div>
-        <div id="editChecklistContainer" class="space-y-2 mb-3"></div>
-        <div class="flex gap-3">
-          <input id="newChecklistItem" onkeypress="if(event.key==='Enter') addChecklistItem()" placeholder="Добавить пункт подзадачи" class="flex-1 px-4 py-3 bg-transparent border border-gray-200 dark:border-gray-700 hover:border-blue-500 focus:border-blue-500 rounded-xl outline-none text-sm font-medium dark:text-white transition-colors" />
-          <button onclick="addChecklistItem()" class="bg-blue-600/10 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white px-5 py-3 rounded-xl text-sm font-bold transition-colors">Добавить</button>
         </div>
-      </div>
-
-      <div>
-        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-3">Описание (Markdown)</span>
-        
-        <!-- AI Buttons Block (Dark/Purple tint) -->
-        <div class="flex items-center w-full bg-indigo-50/50 dark:bg-[#1A1D2E] border border-indigo-100 dark:border-[#2C324D] rounded-xl p-1 mb-3">
-          <button onclick="generateAIDescFromTitle()" id="aiGenTitleBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
-            <i data-lucide="heading" class="w-3.5 h-3.5"></i> По заголовку
-          </button>
-          <div class="w-px h-4 bg-indigo-200 dark:bg-[#2A2F45]"></div>
-          <button onclick="generateAIDescFromText()" id="aiGenTextBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
-            <i data-lucide="align-justify" class="w-3.5 h-3.5"></i> По тексту
-          </button>
-          <div class="w-px h-4 bg-indigo-200 dark:bg-[#2A2F45]"></div>
-          <button onclick="generateAIChecklistFromDesc()" id="aiGenChecklistBtn" class="flex-1 text-[10px] sm:text-[11px] font-bold text-indigo-600 dark:text-indigo-400 py-2 hover:bg-white dark:hover:bg-white/5 rounded-lg flex items-center justify-center gap-1.5 transition-colors">
-            <i data-lucide="list-checks" class="w-3.5 h-3.5"></i> Чек-лист
-          </button>
-        </div>
-
-        <!-- Markdown Editor Block -->
-        <div class="bg-white dark:bg-[#141824] border border-gray-200 dark:border-[#23293D] rounded-2xl overflow-hidden flex flex-col shadow-sm">
-          <!-- Formatting Toolbar -->
-          <div class="p-3 border-b border-gray-100 dark:border-[#23293D] flex flex-col gap-3 bg-gray-50 dark:bg-[#141824]">
-            <!-- Line 1 -->
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
-              <button onclick="insertMarkdown('**', '**')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm font-black w-6 h-6 flex items-center justify-center">B</button>
-              <button onclick="insertMarkdown('*', '*')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm italic font-serif w-6 h-6 flex items-center justify-center">I</button>
-              <button onclick="insertMarkdown('~~', '~~')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm line-through w-6 h-6 flex items-center justify-center">S</button>
-              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
-              <button onclick="insertMarkdown('### ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors text-sm font-black w-6 h-6 flex items-center justify-center">H</button>
-              <button onclick="insertMarkdown('> ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="quote" class="w-4 h-4"></i></button>
-              <button onclick="insertMarkdown('\n```\n', '\n```\n')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="code" class="w-4 h-4"></i></button>
-              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
-              <button onclick="insertMarkdown('- ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="list" class="w-4 h-4"></i></button>
-            </div>
-            <!-- Line 2 -->
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-1">
-              <button onclick="insertMarkdown('1. ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="list-ordered" class="w-4 h-4"></i></button>
-              <button onclick="insertMarkdown('- [ ] ', '')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="check-square" class="w-4 h-4"></i></button>
-              <div class="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
-              <button onclick="insertMarkdown('[Текст ссылки](https://', ')')" class="text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 transition-colors w-6 h-6 flex items-center justify-center"><i data-lucide="link" class="w-4 h-4"></i></button>
-            </div>
-            <!-- Mic -->
-            <div class="mt-1 px-1">
-              <button id="descMicBtn" onclick="toggleDescVoiceInput()" class="p-2 bg-gray-200 dark:bg-[#1F2537] hover:bg-gray-300 dark:hover:bg-[#2A3147] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-xl transition-all shadow-sm active:scale-95 flex items-center justify-center w-fit border border-gray-300 dark:border-[#2E364F]">
-                <i data-lucide="mic" class="w-4 h-4 pointer-events-none"></i>
-              </button>
-            </div>
-          </div>
-          <!-- Textarea -->
-          <textarea id="editDescription" placeholder="Пишите свободно... Нажмите Enter для переноса строки.&#10;&#10;Текст больше не будет сплошным монолитом. Выделяйте фрагменты и применяйте форматирование сверху." rows="6" class="w-full px-5 py-4 bg-transparent border-none outline-none text-sm font-mono text-gray-800 dark:text-gray-300 resize-y focus:ring-0 leading-relaxed whitespace-pre-wrap"></textarea>
-        </div>
-      </div>
+      </details>
     </div>
     
-    <!-- Footer Actions (Compact Square Buttons) -->
-    <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
-      <div class="flex gap-2">
-        <button onclick="deleteCard()" class="w-12 h-12 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
-          <i data-lucide="trash-2" class="w-5 h-5"></i>
-        </button>
-        <button onclick="archiveCard()" class="w-12 h-12 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
-          <i data-lucide="archive" class="w-5 h-5"></i>
-        </button>
-        <button onclick="duplicateCard()" id="btnDuplicateCard" class="hidden w-12 h-12 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-900/30" title="Дублировать (Копия)">
-          <i data-lucide="copy" class="w-5 h-5"></i>
-        </button>
-        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" class="hidden w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на задачу">
-          <i data-lucide="link" class="w-5 h-5"></i>
-        </button>
+    <!-- Нижняя панель: второстепенные действия слева, главное — справа -->
+    <div class="flex justify-between items-center gap-2 mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
+      <div class="flex gap-1 min-w-0">
+        <button onclick="deleteCard()" title="Удалить" class="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        <button onclick="archiveCard()" title="В архив" class="w-10 h-10 shrink-0 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="archive" class="w-4 h-4"></i></button>
+        <button onclick="duplicateCard()" id="btnDuplicateCard" title="Дублировать" class="hidden w-10 h-10 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="copy" class="w-4 h-4"></i></button>
+        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" title="Ссылка на задачу" class="hidden w-10 h-10 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="link" class="w-4 h-4"></i></button>
       </div>
-      <div class="flex items-center gap-4">
-        <button onclick="closeEditModal()" class="px-2 font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">Отмена</button>
-        <button onclick="saveCard()" class="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-          <i data-lucide="check" class="w-6 h-6"></i>
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="closeEditModal()" class="hidden sm:inline-flex h-10 px-3 items-center rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Отмена</button>
+        <button onclick="saveCard()" class="h-10 px-4 inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-lg transition-colors">
+          <i data-lucide="check" class="w-4 h-4"></i><span>Сохранить</span>
         </button>
       </div>
     </div>
@@ -927,36 +919,34 @@
 </div>
 
 <div id="contentViewModal" class="hidden fixed inset-0 z-[1000] flex items-start justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-200 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-700 relative overflow-hidden m-auto">
-    <button onclick="closeContentViewModal()" class="absolute top-6 right-6 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 p-2.5 rounded-2xl transition-colors z-20 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
-      <i data-lucide="x" class="w-6 h-6"></i>
-    </button>
+  <div class="bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh] border border-gray-200 dark:border-gray-800 relative overflow-hidden m-auto">
+    <button onclick="closeContentViewModal()" aria-label="Закрыть" class="absolute top-4 right-4 w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors z-20">
+      <i data-lucide="x" class="w-5 h-5"></i>
+    </button>
 
-    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
-      <div id="cvHeader" class="mb-6"></div>
-      <h2 id="cvTitle" class="text-3xl font-bold text-gray-900 dark:text-white mb-4 leading-tight"></h2>
-      
-      <!-- БЛОК ИНФОРМАЦИИ ОБ АВТОРЕ -->
-      <div class="flex items-center gap-2.5 mb-6 bg-gray-50 dark:bg-gray-900/50 w-fit px-3 py-1.5 rounded-2xl border border-gray-100 dark:border-gray-700">
-          <div id="viewAuthorAvatarWrap" class="flex-shrink-0"></div>
-          <div class="text-xs font-medium text-gray-500">
-              Создал(а): <span id="viewAuthorName" class="font-bold text-gray-900 dark:text-white"></span>
-          </div>
-      </div>
-      <!-- /КОНЕЦ БЛОКА АВТОРА -->
+    <div class="flex-1 overflow-y-auto pr-2 hide-scroll">
+      <div id="cvHeader" class="mb-1 pr-10"></div>
+      <h2 id="cvTitle" class="text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 dark:text-white mb-3 leading-snug pr-10"></h2>
+      
+      <!-- БЛОК ИНФОРМАЦИИ ОБ АВТОРЕ -->
+      <div class="flex items-center gap-2 mb-6">
+          <div id="viewAuthorAvatarWrap" class="flex-shrink-0"></div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+              Автор: <span id="viewAuthorName" class="font-medium text-gray-700 dark:text-gray-200"></span>
+          </div>
+      </div>
+      <!-- /КОНЕЦ БЛОКА АВТОРА -->
 
-      <div id="cvBody" class="mb-8"></div>
+      <div id="cvBody" class="mb-8"></div>
 
-      <div class="mt-8 pt-8 border-t border-gray-100 dark:border-gray-700">
-        <h3 class="text-sm font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-          <i data-lucide="message-square" class="w-4 h-4 text-blue-500"></i> Обсуждение
-        </h3>
+      <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Комментарии</h3>
         <div id="cvCommentsList" class="space-y-4 mb-6"></div>
         <!-- Обновленное поле комментария -->
-        <div class="flex gap-3 bg-gray-50 dark:bg-[#141824] p-2 rounded-[1.5rem] border border-gray-200 dark:border-[#23293D] shadow-inner mb-4">
+        <div class="flex gap-2 items-center bg-gray-50 dark:bg-gray-800/60 p-1.5 rounded-xl border border-gray-200 dark:border-gray-700 mb-4 focus-within:border-blue-500">
           <div id="cvMyAvatar" class="flex-shrink-0"></div>
           <div class="flex-1 flex gap-2 items-center">
-            <input id="cvCommentInput" placeholder="Напишите сообщение..." class="flex-1 bg-transparent border-none outline-none text-sm dark:text-white px-3 placeholder-gray-500" onkeypress="if(event.key==='Enter') addCommentToContent()" />
+            <input id="cvCommentInput" placeholder="Написать комментарий…" class="flex-1 min-w-0 bg-transparent border-none outline-none text-sm dark:text-white px-3 placeholder-gray-500" onkeypress="if(event.key==='Enter') addCommentToContent()" />
             <button onclick="addCommentToContent()" class="w-10 h-10 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-md active:scale-95 flex-shrink-0">
               <i data-lucide="send" class="w-4 h-4 ml-[-2px]"></i>
             </button>
@@ -964,23 +954,21 @@
         </div>
             
         <!-- Обновленные квадратные кнопки действий -->
-        <div id="cvActionsPanel" class="flex justify-between items-center pt-5 border-t border-gray-100 dark:border-gray-700/50 mt-4">
-          <div class="flex gap-2">
-            <button onclick="handleViewDelete()" class="w-12 h-12 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
-              <i data-lucide="trash-2" class="w-5 h-5"></i>
+        <div id="cvActionsPanel" class="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-800 mt-2 gap-2">
+          <div class="flex gap-1">
+            <button onclick="copyDeepLinkFromView()" class="h-10 px-3 inline-flex items-center gap-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Скопировать ссылку на задачу">
+              <i data-lucide="link" class="w-4 h-4"></i><span class="hidden sm:inline">Ссылка</span>
             </button>
-            <button onclick="handleViewArchive()" class="w-12 h-12 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
-              <i data-lucide="archive" class="w-5 h-5"></i>
+            <button onclick="handleViewArchive()" class="h-10 px-3 inline-flex items-center gap-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Убрать в архив">
+              <i data-lucide="archive" class="w-4 h-4"></i><span class="hidden sm:inline">В архив</span>
             </button>
-            <button onclick="copyDeepLinkFromView()" class="w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на объект">
-              <i data-lucide="link" class="w-5 h-5"></i>
-            </button>
-          </div>
-          <div class="flex items-center gap-4">
-            <button onclick="openEditModalFromView()" id="cvEditBtn" class="h-12 px-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-              <i data-lucide="edit-3" class="w-5 h-5"></i> Изменить
+            <button onclick="handleViewDelete()" class="h-10 w-10 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors" title="Удалить">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
+          <button onclick="openEditModalFromView()" id="cvEditBtn" class="h-10 px-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors">
+            <i data-lucide="pencil" class="w-4 h-4"></i> Изменить
+          </button>
         </div>
 
           </div>
@@ -1113,7 +1101,7 @@
 </div>
 
 <!-- ЭНТЕРПРАЙЗ: Плавающая кнопка вызова AI-ассистента (Позиция под шторками) -->
-<button onclick="toggleAiSidebar()" id="aiFloatingBtn" class="fixed bottom-24 right-6 z-30 w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-white/20 dark:border-gray-800">
+<button onclick="toggleAiSidebar()" id="aiFloatingBtn" aria-label="AI-помощник" class="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] sm:bottom-24 right-4 sm:right-6 z-30 w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 group border-2 border-white/20 dark:border-gray-800">
   <i data-lucide="sparkles" class="w-6 h-6 group-hover:animate-pulse"></i>
   <span class="absolute -top-1 -right-1 flex h-4 w-4">
     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
@@ -1136,64 +1124,52 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) window.location.reload();
 });
-// ЭНТЕРПРАЙЗ: Продвинутый движок рендеринга Markdown с внедрением UI-компонентов Tailwind
+// Markdown: чистая типографика без «декора» — текст задачи должен читаться, а не отвлекать
 if (typeof marked !== 'undefined') {
   const renderer = new marked.Renderer();
-  
-  // 1. Премиальные интерактивные ссылки с обрезкой (Truncation) и анимациями
+
   renderer.link = function(href, title, text) {
     href = esc(safeUrl(href) || '#'); title = esc(title || '');
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || href}" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-0.5 mb-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl font-bold no-underline hover:bg-blue-100 dark:hover:bg-blue-900/40 hover:scale-[1.03] active:scale-95 transition-all shadow-sm border border-blue-100/50 dark:border-blue-800/30 align-middle max-w-full"><svg class="w-3.5 h-3.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span class="truncate max-w-[150px] sm:max-w-[250px] inline-block align-bottom">${text}</span></a>`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || href}" class="text-blue-600 dark:text-blue-400 underline underline-offset-2 decoration-blue-300 dark:decoration-blue-700 hover:decoration-current break-words">${text}</a>`;
   };
 
-  // 2. Иерархия заголовков (Градиенты и разделители)
   renderer.heading = function(text, level) {
-    if (level === 1) {
-      return `<h1 class="text-3xl sm:text-4xl font-black mt-8 mb-5 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 leading-tight">${text}</h1>`;
-    } else if (level === 2) {
-      return `<h2 class="text-xl sm:text-2xl font-extrabold mt-8 mb-4 text-gray-800 dark:text-gray-100 border-b border-gray-200/50 dark:border-gray-700/50 pb-2">${text}</h2>`;
-    } else {
-      return `<h${level} class="text-lg font-bold mt-6 mb-3 text-gray-700 dark:text-gray-300 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>${text}</h${level}>`;
-    }
+    const size = level === 1 ? 'text-xl' : level === 2 ? 'text-lg' : 'text-base';
+    return `<h${level} class="${size} font-semibold mt-5 mb-2 text-gray-900 dark:text-white">${text}</h${level}>`;
   };
 
-  // 3. Элегантные цитаты
   renderer.blockquote = function(quote) {
-    return `<blockquote class="relative p-5 my-6 bg-indigo-50/50 dark:bg-indigo-900/10 border-l-4 border-indigo-500 rounded-r-2xl italic text-gray-700 dark:text-gray-300 shadow-sm"><svg class="absolute top-4 right-4 w-10 h-10 text-indigo-500/10 dark:text-indigo-400/10 rotate-180 pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"></path><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.999v2H14c-1 0-2 .008-2 1.031V20c0 1 0 1 1 1z"></path></svg><div class="relative z-10">${quote}</div></blockquote>`;
+    return `<blockquote class="my-3 pl-4 border-l-2 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400">${quote}</blockquote>`;
   };
 
-  // 4. Mac-Style блоки кода
   renderer.code = function(code, language) {
-    return `<div class="relative my-6 group"><div class="absolute top-0 left-0 w-full h-8 bg-gray-800 dark:bg-black/60 rounded-t-2xl flex items-center px-4 gap-1.5 border-b border-white/10 z-10"><div class="w-2.5 h-2.5 rounded-full bg-red-500/80 shadow-sm"></div><div class="w-2.5 h-2.5 rounded-full bg-amber-500/80 shadow-sm"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500/80 shadow-sm"></div><span class="ml-2 text-[10px] font-mono text-gray-400 font-bold uppercase">${language || 'Code'}</span></div><pre class="bg-gray-900 dark:bg-black pt-12 pb-5 px-5 rounded-2xl overflow-x-auto shadow-xl border border-gray-800/50"><code class="text-sm font-mono text-gray-300 leading-relaxed">${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
+    return `<pre class="my-3 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 overflow-x-auto text-[13px] leading-relaxed"><code class="font-mono text-gray-800 dark:text-gray-200">${esc(code)}</code></pre>`;
   };
 
-  // 5. Выделение инлайн-кода
   renderer.codespan = function(text) {
-    return `<code class="px-1.5 py-0.5 mx-0.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 font-mono text-[0.85em] font-bold rounded-md border border-rose-100/50 dark:border-rose-800/30">${text}</code>`;
+    return `<code class="px-1 py-0.5 rounded bg-gray-100 dark:bg-gray-800 font-mono text-[0.9em] text-gray-800 dark:text-gray-200">${text}</code>`;
   };
 
-  // 6. Списки с кастомными буллитами (Векторные шевроны)
-  let listDepth = 0;
   renderer.list = function(body, ordered, start) {
     const type = ordered ? 'ol' : 'ul';
-    const classes = ordered ? 'list-decimal list-inside space-y-2 mb-6 ml-2 marker:text-blue-500 marker:font-black' : 'space-y-2 mb-6';
+    const classes = ordered ? 'list-decimal pl-5 space-y-1 my-3' : 'list-disc pl-5 space-y-1 my-3 marker:text-gray-400';
     return `<${type} class="${classes}">${body}</${type}>`;
   };
 
   renderer.listitem = function(text, task, checked) {
     if (task) {
-      return `<li class="flex items-start gap-3 my-2 bg-gray-50/50 dark:bg-gray-800/30 p-2 rounded-xl"><div class="mt-0.5 w-5 h-5 flex-shrink-0 rounded border-2 flex items-center justify-center transition-colors ${checked ? 'bg-blue-500 border-blue-500' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 shadow-inner'}">${checked ? '<svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>' : ''}</div><span class="${checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}">${text.replace(/<input.*?>/, '')}</span></li>`;
+      return `<li class="list-none -ml-5 flex items-start gap-2"><span class="mt-1 w-4 h-4 shrink-0 rounded border ${checked ? 'bg-blue-600 border-blue-600' : 'border-gray-300 dark:border-gray-600'}"></span><span class="${checked ? 'line-through text-gray-400' : ''}">${text.replace(/^<input[^>]*>\s*/, '')}</span></li>`;
     }
-    // Если это ненумерованный список (ul)
-    if (!text.match(/^\d+\./)) {
-       return `<li class="flex items-start gap-2.5 my-1.5"><svg class="w-4 h-4 text-blue-500 flex-shrink-0 mt-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg><span class="text-gray-700 dark:text-gray-200 leading-relaxed">${text}</span></li>`;
-    }
-    return `<li class="text-gray-700 dark:text-gray-200 pl-1 mb-1.5">${text}</li>`;
+    return `<li class="text-gray-700 dark:text-gray-200">${text}</li>`;
   };
 
   renderer.strong = function(text) {
-     return `<strong class="font-extrabold text-gray-900 dark:text-white bg-blue-50 dark:bg-blue-900/30 px-1 rounded-sm">${text}</strong>`;
-  }
+    return `<strong class="font-semibold text-gray-900 dark:text-white">${text}</strong>`;
+  };
+
+  renderer.paragraph = function(text) {
+    return `<p class="my-2 leading-relaxed">${text}</p>`;
+  };
 
   marked.setOptions({
     renderer: renderer,
@@ -1496,16 +1472,15 @@ function renderSpacesUI() {
               : 'bg-transparent text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-gray-800/60 border-transparent';
        } else {
            activeClasses = isActive 
-              ? 'bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/40 dark:to-gray-800 text-blue-700 dark:text-blue-400 shadow-md border-blue-200/50 dark:border-blue-700/50 scale-105 z-10' 
-              : 'bg-white/60 dark:bg-gray-800/60 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-gray-700 border-gray-200/50 dark:border-gray-700/50';
+              ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm border-gray-200 dark:border-gray-700' 
+              : 'bg-transparent text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/70 border-transparent';
        }
        
-       const layoutClasses = isVertical ? 'w-full py-2.5 px-3 justify-start' : 'px-4 py-2';
+       const layoutClasses = isVertical ? 'w-full py-2 px-3 justify-start' : 'h-8 px-3';
        
        return `
           <div class="flex items-center group/space relative space-tab-item ${isVertical ? 'w-full' : ''}" data-id="${esc(space.id)}">
-              <button onclick="switchSpace(${jsArg(space.id)})" class="rounded-xl text-xs font-bold transition-all border ${activeClasses} flex items-center gap-2.5 select-none ${layoutClasses}">
-                 <i data-lucide="${esc(isActive ? 'layout' : 'folder')}" class="w-4 h-4 flex-shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-400 group-hover/space:text-gray-600 dark:group-hover/space:text-gray-300'} pointer-events-none"></i>
+              <button onclick="switchSpace(${jsArg(space.id)})" class="rounded-lg text-sm font-medium transition-colors border ${activeClasses} flex items-center gap-2 select-none ${layoutClasses}">
                  <span class="truncate">${esc(space.name)}</span>
               </button>
               ${isActive && boardData.spaces.length > 1 ? `
@@ -1661,7 +1636,7 @@ function deleteSpace(spaceId) {
 auth.onAuthStateChanged(async (user) => {
   const loader = document.getElementById('globalLoader');
   if (user) {
-    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
+    const safeAvatar = user.photoURL || ''; // пусто → при отрисовке подставятся инициалы
     
     let badgeStatus = 'none';
     let customAvatar = null;
@@ -1727,7 +1702,7 @@ function getAvatarHTML(userObj, sizeClass, idAttr = '') {
   const config = userObj.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
   const frameColor = safeColor(config.frameColor);
   const glowColor = safeColor(config.glowColor);
-  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || 'User')}`;
+  const fallbackAvatar = initialsAvatar(userObj.name || 'User');
   const avatarUrl = esc(safeUrl(userObj.customAvatar) || safeUrl(userObj.avatar) || fallbackAvatar);
   const safeName = esc(userObj.name || 'User');
   const badge = userObj.badgeStatus || userObj.badge || 'none'; // Поддержка старого формата
@@ -1838,7 +1813,7 @@ function loadBoard() {
       processBoardData(boardData);
     }
   } else {
-    document.getElementById('shareUrlText').innerText = window.location.href;
+    // (подпись кнопки «Пригласить» не заменяем адресом страницы)
     const docRef = db.collection("boards").doc(BOARD_ID);
     
     // 1. Слушаем метаданные доски (названия колонок, теги, фон, доступ)
@@ -2777,8 +2752,9 @@ const SidebarManager = {
 window.toggleAiSidebar = () => SidebarManager.toggle('aiSidebar', () => setTimeout(() => document.getElementById('aiChatInput')?.focus(), 100));
 window.toggleArchive = () => SidebarManager.toggle('archiveSidebar', () => { if (typeof renderArchiveSidebar === 'function') renderArchiveSidebar(); });
 window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => { if (typeof renderActivityLog === 'function') renderActivityLog(); });
-window.toggleSettings = () => SidebarManager.toggle('settingsSidebar');
-window.toggleMembers = () => SidebarManager.toggle('membersSidebar');
+window.toggleSettings = () => SidebarManager.toggle('settingsSidebar', () => { if (typeof renderSettingsTags === 'function') renderSettingsTags(); });
+// Список участников рисуем при открытии (раньше — только из облачного снапшота, и у локальных досок он был пуст)
+window.toggleMembers = () => SidebarManager.toggle('membersSidebar', () => { if (typeof renderMembersSidebar === 'function') renderMembersSidebar(); });
 window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
   const chatBox = document.getElementById('chatMessages');
   if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
@@ -2944,12 +2920,12 @@ function renderMembersSidebar() {
             </div>
         </div>
         <!-- ЭНТЕРПРАЙЗ: Индикация статуса участника -->
-        <div id="member_actions_${esc(uid)}" class="hidden flex items-center px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 mt-1 bg-gray-50/50 dark:bg-gray-950/20">
-           <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 italic">
-               <i data-lucide="info" class="w-3 h-3"></i>
-               ${isMe ? 'Ваш профиль в этом проекте' : 'Участник синхронизирован'}
-           </div>
-        </div>
+        <div id="member_actions_${esc(uid)}" class="hidden flex items-center px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 mt-1 bg-gray-50/50 dark:bg-gray-950/20">
+           <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 italic">
+               <i data-lucide="info" class="w-3 h-3"></i>
+               ${isMe ? 'Ваш профиль в этом проекте' : 'Участник синхронизирован'}
+           </div>
+        </div>
       </div>
     `;
   }).join('');
@@ -3224,29 +3200,29 @@ function toggleModal(modalId, show) {
 
 // ЭКСПЕРТНОЕ РЕШЕНИЕ: УНИФИЦИРОВАННЫЙ КОНТРОЛЛЕР МОДАЛЬНЫХ ОКОН
 function openViewModal(colId, cardId) {
-    const col = columns.find(c => c.id == colId);
-    if (!col) return; // БЕЗОПАСНОСТЬ: если колонка не найдена
-    
-    const card = col.cards?.find(c => c.id == cardId);
-    if (!card) return; // БЕЗОПАСНОСТЬ: если карточка не найдена
+    const col = columns.find(c => c.id == colId);
+    if (!col) return; // БЕЗОПАСНОСТЬ: если колонка не найдена
+    
+    const card = col.cards?.find(c => c.id == cardId);
+    if (!card) return; // БЕЗОПАСНОСТЬ: если карточка не найдена
 
-    activeContentView = { colId, cardId, type: card.type || 'task' };
-    viewingCard = card; 
-    currentColumn = colId;
+    activeContentView = { colId, cardId, type: card.type || 'task' };
+    viewingCard = card; 
+    currentColumn = colId;
 
-    const body = document.getElementById('cvBody');
-    const header = document.getElementById('cvHeader');
-    document.getElementById('cvTitle').innerText = card.title;
-    
-    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
-    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
-    if (actualAuthor) {
-       const avatarWrap = document.getElementById('viewAuthorAvatarWrap');
-       const nameEl = document.getElementById('viewAuthorName');
-       
-       if (avatarWrap) avatarWrap.innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
-       if (nameEl) nameEl.innerText = actualAuthor.name;
-    }
+    const body = document.getElementById('cvBody');
+    const header = document.getElementById('cvHeader');
+    document.getElementById('cvTitle').innerText = card.title;
+    
+    // ЭНТЕРПРАЙЗ: Динамический аватар автора в модалке
+    const actualAuthor = (card.author && boardData.users && boardData.users[card.author.id]) ? boardData.users[card.author.id] : card.author;
+    if (actualAuthor) {
+       const avatarWrap = document.getElementById('viewAuthorAvatarWrap');
+       const nameEl = document.getElementById('viewAuthorName');
+       
+       if (avatarWrap) avatarWrap.innerHTML = getAvatarHTML(actualAuthor, 'w-6 h-6');
+       if (nameEl) nameEl.innerText = actualAuthor.name;
+    }
 
     if (card.type === 'poll') {
             header.innerHTML = `<div class="flex items-center gap-2 text-purple-500 mb-2"><i data-lucide="bar-chart-3" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Результаты опроса</span></div>`;
@@ -3331,7 +3307,7 @@ function openViewModal(colId, cardId) {
                 <p class="text-sm text-gray-500 font-medium">Нажмите на ссылку, чтобы перейти на сайт.</p>
             </div>`;
         } else {
-            header.innerHTML = `<div class="flex items-center gap-2 text-blue-500 mb-2"><i data-lucide="layers" class="w-4 h-4"></i><span class="text-[10px] font-black uppercase tracking-widest">Задача проекта</span></div>`;        let taskHtml = '';
+            header.innerHTML = `<div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 mb-1 text-xs font-medium"><i data-lucide="square-check-big" class="w-3.5 h-3.5"></i>Задача</div>`;        let taskHtml = '';
             // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Интерактивный Hover и Полноэкранный вызов для оригинала
             const safeImage = safeUrl(card.image);
             const safeYt = safeYoutubeEmbed(card.youtubeEmbed);
@@ -3343,12 +3319,12 @@ function openViewModal(colId, cardId) {
                 </div>
               </div>`;
             if (safeYt) taskHtml += `<div class="relative w-full overflow-hidden rounded-[2rem] mb-6 border border-gray-100 dark:border-gray-800 shadow-md bg-black"><iframe src="${esc(safeYt)}" class="w-full aspect-video rounded-[2rem] pointer-events-auto" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-            if (card.description) taskHtml += `<div class="md-content mb-8 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-900 p-6 sm:p-8 rounded-[2rem] border border-gray-100 dark:border-gray-800 shadow-sm relative overflow-hidden group"><div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-80"></div>${sanitizeHTML(marked.parse(String(card.description)))}</div>`;
+            if (card.description) taskHtml += `<div class="md-content mb-6 text-gray-700 dark:text-gray-300">${sanitizeHTML(marked.parse(String(card.description)))}</div>`;
             if (card.checklist && card.checklist.length) {
-                taskHtml += `<div class="space-y-3 mb-6">${card.checklist.map((item, i) => `
-                    <div onclick="toggleChecklistView(${i}); event.stopPropagation();" class="flex items-start gap-3 p-4 bg-white dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all hover:border-blue-300 dark:hover:border-blue-700 cursor-pointer group">
-                        <div class="w-6 h-6 rounded-lg border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${item.isCompleted ? 'bg-blue-500 border-blue-500' : 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
-                            ${item.isCompleted ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                taskHtml += `<div class="mb-6"><div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 px-2">Подзадачи · ${card.checklist.filter(x => x.isCompleted).length} из ${card.checklist.length}</div>${card.checklist.map((item, i) => `
+                    <div onclick="toggleChecklistView(${i}); event.stopPropagation();" class="flex items-start gap-3 px-2 py-2 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/60 cursor-pointer group">
+                        <div class="w-5 h-5 rounded-md border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${item.isCompleted ? 'bg-blue-600 border-blue-600' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600'}">
+                            ${item.isCompleted ? '<i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>' : ''}
                         </div>
                         <span class="text-sm font-medium flex-1 ${item.isCompleted ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'} leading-relaxed select-none">${esc(item.text)}</span>
                     </div>`).join('')}</div>`;
@@ -3537,11 +3513,11 @@ async function archiveAllCardsInColumn() {
   const btnDup = document.getElementById('btnDuplicateCard');
   const btnLink = document.getElementById('btnCopyDeepLink');
   if (editingCard) {
-      if(btnDup) btnDup.classList.remove('hidden');
-      if(btnLink) btnLink.classList.remove('hidden');
+      if(btnDup) { btnDup.classList.remove('hidden'); btnDup.classList.add('flex'); }
+      if(btnLink) { btnLink.classList.remove('hidden'); btnLink.classList.add('flex'); }
   } else {
-      if(btnDup) btnDup.classList.add('hidden');
-      if(btnLink) btnLink.classList.add('hidden');
+      if(btnDup) { btnDup.classList.add('hidden'); btnDup.classList.remove('flex'); }
+      if(btnLink) { btnLink.classList.add('hidden'); btnLink.classList.remove('flex'); }
   }
   
   renderTagsPicker(); 
@@ -4113,6 +4089,19 @@ if (!window.blockoDelegationInited) {
 let renderRAF = null;
 
 function render() {
+  // Защита от «битых» данных (старые версии, импорт, ручные правки): одна кривая карточка не должна ронять всю доску
+  columns.forEach(col => {
+    if (!Array.isArray(col.cards)) col.cards = [];
+    col.cards.forEach(c => {
+      if (c.checklist !== undefined && !Array.isArray(c.checklist)) c.checklist = [];
+      if (c.type === 'todo' && !Array.isArray(c.checklist)) c.checklist = [];
+      if (c.type === 'poll' && !Array.isArray(c.options)) c.options = [];
+      if (c.comments !== undefined && !Array.isArray(c.comments)) c.comments = [];
+      if (c.tags !== undefined && !Array.isArray(c.tags)) c.tags = [];
+    });
+  });
+  // Локальная доска: общий список карточек (нужен AI-командам и порядку новых карточек)
+  if (isLocalBoard) allCards = columns.flatMap(col => (col.cards || []).map(card => ({ ...card, columnId: card.columnId != null ? card.columnId : col.id })));
   if (renderRAF) cancelAnimationFrame(renderRAF);
 
   renderRAF = requestAnimationFrame(() => {
@@ -4169,14 +4158,15 @@ function render() {
       const activeCardsCount = safeCards.filter(c => !c.archived).length;
       const isOverWip = wipLimit > 0 && activeCardsCount > wipLimit;
       
-      const overWipBg = isOverWip ? 'bg-red-50/50 dark:bg-red-900/10 border-red-300 dark:border-red-800/80 shadow-red-500/10' : `bg-gray-100 dark:bg-gray-800/60 ${colorStyle.border}`;
+      // Колонка — спокойная серая подложка; цвет колонки показывает только точка у названия
+      const overWipBg = isOverWip ? 'bg-red-50/60 dark:bg-red-950/30 ring-1 ring-red-200 dark:ring-red-900/60' : 'bg-gray-100/80 dark:bg-gray-900/70';
 
       const wrap = document.createElement('div');
       wrap.dataset.id = col.id; 
-      wrap.className = `flex-shrink-0 w-[320px] rounded-2xl border flex flex-col max-h-full shadow-sm transition-all duration-300 ${overWipBg}`;
+      wrap.className = `board-column flex-shrink-0 w-[300px] rounded-2xl flex flex-col max-h-full transition-colors ${overWipBg}`;
 
       const filteredCards = safeCards.filter(card => {
-        const matchesSearch = card.title.toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
+        const matchesSearch = String(card.title || '').toLowerCase().includes(searchQuery) || (card.description || "").toLowerCase().includes(searchQuery);
         const matchesTag = filterTag === "all" || (card.tags && card.tags.includes(filterTag));
         return matchesSearch && matchesTag && !card.archived; 
       });
@@ -4216,9 +4206,11 @@ function render() {
         const displayTitle = highlightText(c.title, searchQuery);
         // ЭНТЕРПРАЙЗ: Динамическая резолюция пользователя. Берем актуальный профиль из меты доски, а не старый слепок
         const actualAuthor = (c.author && boardData.users && boardData.users[c.author.id]) ? boardData.users[c.author.id] : c.author;
-        const authorAvatar = actualAuthor ? getAvatarHTML(actualAuthor, 'w-5 h-5 pointer-events-none') : '';
+        // Аватар автора нужен только в команде: на личной доске он одинаковый на всех карточках и лишь шумит
+        const isTeamBoard = Object.keys(boardData.users || {}).length > 1;
+        const authorAvatar = (actualAuthor && isTeamBoard) ? getAvatarHTML(actualAuthor, 'w-5 h-5 pointer-events-none') : '';
         const commentsCountText = c.comments && c.comments.length > 0 
-            ? `<span class="flex items-center gap-1 pointer-events-none"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
+            ? `<span class="flex items-center gap-1 pointer-events-none"><i data-lucide="message-square" class="w-3 h-3"></i> ${(c.comments || []).length}</span>` 
             : '';
         
         if (c.type === 'table') {
@@ -4232,20 +4224,16 @@ function render() {
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <div class="flex items-center gap-1.5 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-2 border border-blue-100/50 dark:border-blue-800/30 pointer-events-none">
                  <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
-                 <span class="text-[10px] font-bold text-gray-500">${c.cols} x ${c.rows} ячеек</span>
+                 <span class="text-[10px] font-bold text-gray-500">${Number(c.cols) || 0} x ${Number(c.rows) || 0} ячеек</span>
               </div>
-              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  <span>Excel</span>
-                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-                </div>
-                ${authorAvatar}
-              </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>
           `;
         }
 
         if (c.type === 'poll') {
+          c.options = Array.isArray(c.options) ? c.options : [];
+          c.options.forEach(o => { if (!Array.isArray(o.votes)) o.votes = []; });
           const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
           const optionsHtml = c.options.map((opt, i) => {
             const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
@@ -4272,12 +4260,12 @@ function render() {
               </div>
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <div class="space-y-1 mb-2 relative z-20 pointer-events-auto">${optionsHtml}</div>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                 <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                   <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
                   <span class="opacity-50">|</span>
                   ${commentsCountText ? `${commentsCountText} <span class="opacity-50">|</span> ` : ''}
-                  <span>${c.isAnonymous ? 'Анон' : 'Публ'}</span>
+                  <span>${c.isAnonymous ? 'Анонимно' : 'Открыто'}</span>
                 </div>
                 ${authorAvatar}
               </div>
@@ -4301,13 +4289,7 @@ function render() {
                   <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
                 </div>
               </div>
-              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-                <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  <span>Аудио</span>
-                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-                </div>
-                ${authorAvatar}
-              </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4320,7 +4302,9 @@ function render() {
             const d = Math.floor(diff / (1000 * 60 * 60 * 24));
             const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            timeHtml = `<div class="text-2xl font-black text-rose-500">${d}д ${h}ч ${m}м</div>`;
+            // Красным — только последние сутки, иначе спокойный нейтральный цвет
+            const urgentTimer = d < 1;
+            timeHtml = `<div class="text-lg font-semibold tabular-nums ${urgentTimer ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}">${d}д ${h}ч ${m}м</div>`;
           } else {
             timeHtml = `<div class="text-sm font-black text-gray-500 uppercase tracking-widest">Время вышло</div>`;
           }
@@ -4333,16 +4317,10 @@ function render() {
                  <span class="text-[10px] font-black uppercase tracking-widest text-rose-500">Таймер</span>
                </div>
                <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
-               <div class="p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl text-center border border-rose-100/50 dark:border-rose-800/30 pointer-events-none">
+               <div class="px-3 py-2 bg-gray-50 dark:bg-gray-800/60 rounded-lg text-center pointer-events-none">
                  ${timeHtml}
                </div>
-               <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Ожидание</span>
-                   ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-                 </div>
-                 ${authorAvatar}
-               </div>
+               ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4373,13 +4351,7 @@ function render() {
                 <div class="bg-cyan-500 h-full transition-all" style="width: ${percent}%"></div>
               </div>
               <div class="space-y-1">${itemsHtml}</div>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Задачи</span>
-                   ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
-                 </div>
-                 ${authorAvatar}
-               </div>
+              ${(commentsCountText || authorAvatar) ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">${commentsCountText || ''}</div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4393,15 +4365,10 @@ function render() {
               </div>
               <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <a href="${esc(safeUrl(c.url) || '#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 relative z-20 pointer-events-auto transition-colors mt-3 shadow-sm">
-                <span class="truncate">${c.url.replace(/^https?:\/\//, '')}</span>
+                <span class="truncate">${esc(String(c.url || '').replace(/^https?:\/\//, ''))}</span>
                 <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0 text-blue-500"></i>
               </a>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Web</span>
-                 </div>
-                 ${authorAvatar}
-               </div>
+              ${authorAvatar ? `<div class="flex justify-between items-center mt-3 pointer-events-none"><div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest"></div>${authorAvatar}</div>` : ''}
             </div>`;
         }
 
@@ -4412,8 +4379,8 @@ function render() {
           const done = c.checklist.filter(i => i.isCompleted).length;
           const percent = Math.round((done / c.checklist.length) * 100);
           checklistHtml = `
-            <div class="mt-3 mb-1 pointer-events-none">
-              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+            <div class="pointer-events-none">
+              <div class="flex justify-between items-center gap-3 text-[10px] font-bold text-gray-400 mb-1 min-w-[96px]">
                 <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${c.checklist.length}</span>
                 <span>${percent}%</span>
               </div>
@@ -4425,8 +4392,8 @@ function render() {
         let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'} pointer-events-none"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
         
         // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Текстовые читаемые теги
-        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('')}</div>` : '';
-        const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
+        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold leading-4 border ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('')}</div>` : '';
+        const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${(c.comments || []).length}</div>` : '';
         
         let priorityHtml = '';
         if (c.priority === 'low') {
@@ -4436,7 +4403,7 @@ function render() {
         } else if (c.priority === 'critical') {
           priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 animate-pulse" title="Приоритет: КРИТИЧНЫЙ"><i data-lucide="zap" class="w-3.5 h-3.5 text-red-600 dark:text-red-400 fill-current"></i></div>`;
         }        
-        const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${c.storyPoints}</span>` : '';
+        const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${esc(c.storyPoints)}</span>` : '';
         
         // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Понятный индикатор видео вместо красного квадрата
         const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
@@ -4448,37 +4415,37 @@ function render() {
             <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
             ${c.image ? `<div class="compact-hide mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${esc(safeUrl(c.imageThumb, {allowData:true}) || safeUrl(c.image, {allowData:true}))}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
             
-            <div class="flex flex-col items-start w-full pointer-events-none">
+            <div class="flex flex-col items-start gap-1.5 w-full pointer-events-none">
               ${tagsHtml}
-              <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 line-clamp-3">${displayTitle}</div>
+              <div class="font-semibold text-sm leading-snug text-gray-900 dark:text-white pr-6 line-clamp-3">${displayTitle}</div>
             </div>
-            
-            <div class="flex items-center justify-between w-full mt-auto pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-              <div class="flex items-center gap-1.5">${dueDateHtml}${checklistHtml || normalComments}</div>
+            ${(dueDateHtml || checklistHtml || normalComments || priorityHtml || spHtml || ytBadgeHtml) ? `
+            <div class="flex items-center justify-between gap-2 w-full mt-3 pointer-events-none">
+              <div class="flex items-center gap-1.5 min-w-0">${dueDateHtml}${checklistHtml || normalComments}</div>
               <div class="flex items-center gap-1.5 justify-end flex-shrink-0">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
-            </div>
+            </div>` : ''}
           </div>`;
       }).join('');
       
       // ЭНТЕРПРАЙЗ: Заглушка занимает всё свободное пространство пустой колонки, становясь огромным "магнитом"
       const emptyStateHtml = filteredCards.length === 0 
-        ? `<div class="empty-state-placeholder w-full min-h-[100px] flex-1 border-2 border-dashed border-gray-300 dark:border-gray-700/50 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs font-bold gap-2 select-none opacity-50 pointer-events-none mt-0 mb-auto"><i data-lucide="download-cloud" class="w-5 h-5 pointer-events-none"></i> Перетащите сюда</div>` 
+        ? `<div class="empty-state-placeholder w-full min-h-[72px] border border-dashed border-gray-300 dark:border-gray-700 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs select-none pointer-events-none mb-auto">Пока пусто</div>` 
         : '';
         
-      const countColor = isOverWip ? 'text-red-600 bg-red-100 dark:bg-red-900/40 border-red-200 dark:border-red-800' : 'text-gray-600 dark:text-gray-400 bg-white/50 dark:bg-black/20 border-gray-200/50 dark:border-gray-700/50';
+      const countColor = isOverWip ? 'text-red-600 dark:text-red-400' : 'text-gray-400 dark:text-gray-500';
         const wipText = wipLimit > 0 ? `${filteredCards.length} / ${wipLimit}` : `${filteredCards.length}`;
-        const warningIcon = isOverWip ? `<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500 animate-pulse ml-0.5"></i>` : '';
+        const warningIcon = isOverWip ? `<i data-lucide="alert-triangle" class="w-3 h-3 text-red-500 ml-1"></i>` : '';
 
         const activeSortIcon = sortBy === 'date_desc' ? 'sparkles' : sortBy === 'deadline' ? 'clock' : sortBy === 'priority_desc' ? 'flame' : sortBy === 'sp_desc' ? 'scale' : 'arrow-up-down';
         const isSorted = sortBy !== 'manual';
-        const sortBtnClass = isSorted ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' : 'text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800 border-transparent';
+        const sortBtnClass = isSorted ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-transparent' : 'text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 border-transparent';
 
         wrap.innerHTML = `
-          <div class="p-4 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none relative z-20">
-            <div class="flex items-center gap-2 pointer-events-none">
-              <div class="w-3 h-3 rounded-full shadow-sm" style="background-color: ${colorStyle.hex}"></div>
-              <h2 class="font-bold text-sm text-gray-900 dark:text-white truncate max-w-[120px]" title="${esc(col.name)}">${esc(col.name)}</h2>
-              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full border ${countColor} flex items-center shadow-sm transition-colors" title="${wipLimit > 0 ? 'Задач / Лимит (WIP)' : 'Количество задач'}">${wipText} ${warningIcon}</span>
+          <div class="px-3 pt-3 pb-1.5 flex justify-between items-center col-handle ${isViewer ? '' : 'cursor-grab'} select-none relative z-20">
+            <div class="flex items-center gap-2 pointer-events-none min-w-0 pl-1">
+              <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${colorStyle.hex}"></span>
+              <h2 class="font-semibold text-sm text-gray-800 dark:text-gray-100 truncate max-w-[150px]" title="${esc(col.name)}">${esc(col.name)}</h2>
+              <span class="text-xs font-medium tabular-nums ${countColor} flex items-center" title="${wipLimit > 0 ? 'Задач / лимит (WIP)' : 'Количество задач'}">${wipText}${warningIcon}</span>
             </div>
             ${isViewer ? '' : `
             <div class="flex items-center gap-0.5 ml-auto relative">
@@ -4512,21 +4479,21 @@ function render() {
                         </button>
                     </div>
                 </div>
-                <button data-action="editCol" data-col="${esc(col.id)}" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
+                <button data-action="editCol" data-col="${esc(col.id)}" title="Настройки колонки" class="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/70 dark:hover:bg-gray-800 p-1.5 rounded-lg transition-colors"><i data-lucide="more-horizontal" class="w-4 h-4 pointer-events-none"></i></button>
             </div>
             `}
           </div>
-        <div id="cards-${esc(col.id)}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${esc(col.id)}"`} class="p-3 flex-1 overflow-y-auto hide-scroll gap-3 min-h-[120px] flex flex-col ${isViewer ? '' : 'cursor-pointer'} relative z-10">
+        <div id="cards-${esc(col.id)}" ${isViewer ? '' : `data-dblaction="quickAdd" data-col="${esc(col.id)}"`} class="px-2 pt-1.5 pb-2 flex-1 overflow-y-auto hide-scroll gap-2 min-h-[80px] flex flex-col relative z-10">
           ${cardsHtml}
           ${emptyStateHtml}
         </div>
         ${isViewer ? '' : `
-        <div class="p-3 pt-0 flex gap-2 mt-auto">
-          <button data-action="editCard" data-col="${esc(col.id)}" class="flex-[4] py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 dark:hover:text-white hover:bg-white/50 dark:hover:bg-black/20 transition-colors border border-transparent dark:border-gray-700/50 border-dashed">
-            <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Карточка
+        <div class="px-2 pb-2 flex gap-1 mt-auto">
+          <button data-action="editCard" data-col="${esc(col.id)}" class="flex-1 h-9 px-2.5 rounded-lg flex items-center gap-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 transition-colors">
+            <i data-lucide="plus" class="w-4 h-4 pointer-events-none"></i> Добавить задачу
           </button>
-          <button data-action="moreAdd" data-col="${esc(col.id)}" class="flex-1 py-2.5 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-white/50 dark:hover:bg-black/20 rounded-xl transition-colors border border-transparent dark:border-gray-700/50">
-            <i data-lucide="more-horizontal" class="w-5 h-5 pointer-events-none"></i>
+          <button data-action="moreAdd" data-col="${esc(col.id)}" title="Другие типы: опрос, список, таблица, таймер, ссылка, аудио" class="h-9 w-9 shrink-0 flex items-center justify-center text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200/70 dark:hover:bg-gray-800 rounded-lg transition-colors">
+            <i data-lucide="layout-grid" class="w-4 h-4 pointer-events-none"></i>
           </button>
         </div>`}
       `;
@@ -4534,7 +4501,7 @@ function render() {
       fragment.appendChild(wrap);
       
       // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
-      const colEl = wrap.querySelector(`#cards-${col.id}`);
+      const colEl = wrap.querySelector(`#cards-${CSS.escape(String(col.id))}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
         sort: !isSorted, // ЭНТЕРПРАЙЗ: Отключаем ручную сортировку (DnD внутри колонки), если активна умная сортировка
@@ -4574,8 +4541,10 @@ function render() {
         onEnd: async function (evt) {
           document.body.classList.remove('is-dragging-card');
           const cardId = evt.item.dataset.id;
-          const fromColId = evt.from.id.replace('cards-', '');
-          const toColId = evt.to.id.replace('cards-', '');
+          // id из DOM — строка, а в данных колонки могут иметь числовой id: берём исходный тип
+          const colIdOf = (raw) => { const col = columns.find(c => String(c.id) === raw); return col ? col.id : raw; };
+          const fromColId = colIdOf(evt.from.id.replace('cards-', ''));
+          const toColId = colIdOf(evt.to.id.replace('cards-', ''));
           
           // Получаем актуальный срез DOM-элементов для обеих колонок
           const toItems = Array.from(evt.to.querySelectorAll('.card-item'));
@@ -5079,10 +5048,10 @@ function activateGlobalVoiceAgent() {
     closeGlobalVoiceAgent();
     
     // ЭНТЕРПРАЙЗ: Голосовое подтверждение деструктивных действий (Если открыта модалка)
-    const confirmModal = document.getElementById('confirmModal');
+    const confirmModal = document.getElementById('customConfirmModal');
     if (confirmModal && !confirmModal.classList.contains('hidden')) {
         if (commandLower.includes('да') || commandLower.includes('подтверждаю') || commandLower.includes('удаляй') || commandLower.includes('согласен')) {
-            const confirmBtn = document.getElementById('confirmModalBtn');
+            const confirmBtn = document.getElementById('confirmBtnAction');
             if (confirmBtn) confirmBtn.click();
             return showSystemToast('Голос', 'Действие подтверждено', 'mic', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
         } else if (commandLower.includes('нет') || commandLower.includes('отмена') || commandLower.includes('стоп')) {
@@ -6046,63 +6015,12 @@ function openEditModalFromView() {
   }
 }
   
-function renderPollComments() {
-  const list = document.getElementById('pollCommentsList');
-  const poll = columns.find(c => c.id == activePollData.colId).cards.find(c => c.id == activePollData.cardId);
-  
-  if (!poll.comments || poll.comments.length === 0) {
-    list.innerHTML = '<div class="text-gray-400 text-center py-4 text-xs">Обсуждений пока нет. Будьте первыми!</div>';
-    return;
-  }
-
-  list.innerHTML = poll.comments.map(c => {
-    const actualUser = (c.user && boardData.users && boardData.users[c.user.id]) ? boardData.users[c.user.id] : c.user;
-    return `
-    <div class="flex gap-3 bg-gray-50/50 dark:bg-gray-900/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
-      ${getAvatarHTML(actualUser, "w-8 h-8")}
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 mb-0.5">
-          <span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${esc((actualUser||{}).name)}</span>
-          <span class="text-[9px] text-gray-400">${esc(c.time)}</span>
-        </div>
-        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${esc(c.text)}</div>
-      </div>
-    </div>
-  `}).join('');
-  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
-}
-  
-function addCommentToPoll() {
-  const input = document.getElementById('pollCommentInput');
-  const text = input.value.trim();
-  if (!text || !activePollData) return;
-
-  columns = columns.map(col => {
-    if (col.id == activePollData.colId) {
-      col.cards = col.cards.map(c => {
-        if (c.id == activePollData.cardId) {
-          if (!c.comments) c.comments = [];
-          c.comments.push({
-            text,
-            user: currentUser,
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-          });
-        }
-        return c;
-      });
-    }
-    return col;
-  });
-
-  input.value = '';
-  persist();
-  renderPollComments();
-  lucide.createIcons();
-}
-
+// (комментарии в опросе ведутся через общее окно просмотра — renderContentComments)
 function closePollStatsModal() {
   const modal = document.getElementById('pollStatsModal');
   const content = document.getElementById('pollStatsContent');
+  // Статистика опроса открывается в общем окне просмотра — закрываем его
+  if (!modal || !content) { if (typeof closeContentViewModal === 'function') closeContentViewModal(); return; }
   modal.classList.add('opacity-0');
   content.classList.add('scale-95');
   setTimeout(() => modal.classList.add('hidden'), 300);
@@ -6902,7 +6820,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   }
 
   if (type === 'RENAME_COLUMN') {
-    const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
+    const col = columns.find(c => String(c.name || '').toLowerCase() === title.toLowerCase());
     if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     col.name = data.trim();
     persist(); render();
@@ -6917,7 +6835,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   }
 
   if (type === 'CHANGE_COL_COLOR') {
-    const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
+    const col = columns.find(c => String(c.name || '').toLowerCase() === title.toLowerCase());
     if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     const colorMatch = data.match(/#[0-9A-Fa-f]{6}/i);
     if (colorMatch) col.color = hexToColorKey(colorMatch[0]);
@@ -6938,7 +6856,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
 
   // --- ДЕСТРУКТОР (Удаление) ---
   if (type === 'DELETE_COLUMN') {
-    const col = columns.find(c => c.name.toLowerCase() === title.toLowerCase());
+    const col = columns.find(c => String(c.name || '').toLowerCase() === title.toLowerCase());
     if (!col) return !isAuto && showSystemToast('Ошибка', `Колонка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     
     // ВСЕГДА запрашиваем подтверждение для удаления колонки, даже в Авторежиме!
@@ -6953,7 +6871,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   }
 
   if (type === 'DELETE_CARD') {
-    const card = allCards.find(c => c.title.toLowerCase() === title.toLowerCase());
+    const card = allCards.find(c => String(c.title || '').toLowerCase() === title.toLowerCase());
     if (!card) return !isAuto && showSystemToast('Ошибка', `Объект "${title}" не найден.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     
     if (isLocalBoard) {
@@ -6968,13 +6886,13 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
 
   // --- ЛОГИСТИКА (Перемещение) ---
   if (type === 'MOVE_CARD') {
-    const card = allCards.find(c => c.title.toLowerCase() === title.toLowerCase());
+    const card = allCards.find(c => String(c.title || '').toLowerCase() === title.toLowerCase());
     if (!card) return !isAuto && showSystemToast('Ошибка', `Карточка "${title}" не найдена.`, 'alert-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/20');
     
     const targetAction = data.trim().toUpperCase();
     let targetColId = card.columnId;
     let newOrder = card.order;
-    const colCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+    const colCards = allCards.filter(c => c.columnId == targetColId).sort((a,b) => a.order - b.order);
     const currIdx = colCards.findIndex(c => c.id === card.id);
 
     if (targetAction === 'UP' && currIdx > 0) newOrder = colCards[currIdx - 1].order - 1;
@@ -6982,16 +6900,16 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     else if (targetAction === 'TOP') newOrder = (colCards[0]?.order || 0) - 1000;
     else if (targetAction === 'BOTTOM') newOrder = (colCards[colCards.length - 1]?.order || 0) + 1000;
     else {
-      const destCol = columns.find(c => c.name.toLowerCase() === data.trim().toLowerCase());
+      const destCol = columns.find(c => String(c.name || '').toLowerCase() === data.trim().toLowerCase());
       if (destCol) {
         targetColId = destCol.id;
-        const destColCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+        const destColCards = allCards.filter(c => c.columnId == targetColId).sort((a,b) => a.order - b.order);
         newOrder = destColCards.length > 0 ? destColCards[destColCards.length - 1].order + 1000 : 0;
       }
     }
 
     if (isLocalBoard) {
-      let srcCol = columns.find(c => c.id === card.columnId);
+      let srcCol = columns.find(c => c.id == card.columnId);
       let dstCol = columns.find(c => c.id === targetColId);
       if (srcCol && dstCol) {
         const cObj = srcCol.cards.find(c => c.id === card.id);

@@ -1,0 +1,133 @@
+/* =====================================================================
+   Blocko Pro — общий слой интерфейса
+   Подключается на всех страницах после Tailwind. Здесь только то, что
+   нельзя удобно выразить утилитами: адаптив, доступность, мелкие правки.
+   ===================================================================== */
+
+/* Декоративные «свечения» не должны давать горизонтальную прокрутку на телефоне */
+html { overflow-x: clip !important; }
+body { overflow-x: clip; }
+
+/* Плавная прокрутка и аккуратный рендер шрифтов */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+
+/* Видимый фокус для клавиатуры, без рамок при клике мышью */
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+
+/* Пользователи с «уменьшить движение» не получают анимаций */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Аватар-заглушка: пока картинка не загрузилась — мягкий фон вместо «битой» иконки */
+img.rounded-full { background-color: rgba(148, 163, 184, .18); }
+
+/* ---------- Главная: карточки проектов ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .project-card .project-actions { opacity: 0; transition: opacity .15s ease; }
+  .project-card:hover .project-actions,
+  .project-card:focus-within .project-actions { opacity: 1; }
+}
+
+/* ---------- Доска ---------- */
+
+/* Колонки на телефоне: почти во всю ширину и «прилипают» при прокрутке */
+@media (max-width: 640px) {
+  #mainScroll { padding: 12px !important; scroll-snap-type: x mandatory; scroll-padding-left: 12px; }
+  #board { gap: 12px !important; }
+  #board > [data-id] { width: calc(100vw - 40px) !important; max-width: 360px; scroll-snap-align: start; }
+
+  /* Окна на телефоне — как нижний лист: во всю ширину и с прокруткой */
+  .glass-modal > div { max-width: 100% !important; }
+}
+
+/* Карточки задач: чуть легче тени и аккуратный ховер */
+.card-item { transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .card-item:hover { transform: translateY(-1px); }
+}
+
+/* Безопасные зоны iPhone для плавающих кнопок и нижних панелей */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Закрытые боковые панели доски: тень не должна «выглядывать» из-за правого края,
+   а содержимое — попадать в фокус с клавиатуры */
+aside.translate-x-full { box-shadow: none !important; visibility: hidden; transition: transform .3s ease, visibility 0s linear .3s !important; }
+aside:not(.translate-x-full) { visibility: visible; }
+
+/* =====================================================================
+   Минималистичный слой (дизайн-система v2)
+   Цвета и шрифт задаёт theme.js; здесь — то, что нельзя настроить конфигом:
+   произвольные скругления, декоративные эффекты, слишком мелкий текст.
+   ===================================================================== */
+
+:root {
+  --bp-radius-lg: 1rem;      /* карточки, окна */
+  --bp-radius-md: 0.75rem;   /* кнопки, поля */
+  --bp-accent: #2563eb;
+}
+body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; font-feature-settings: 'cv11', 'ss01'; letter-spacing: -0.006em; }
+
+/* Огромные скругления (2–3rem) делали интерфейс «мультяшным» — приводим к единой шкале */
+.rounded-\[3rem\], .rounded-\[2\.5rem\], .rounded-\[2rem\] { border-radius: var(--bp-radius-lg) !important; }
+.rounded-\[1\.5rem\], .rounded-\[1\.2rem\], .rounded-\[1\.25rem\] { border-radius: var(--bp-radius-lg) !important; }
+.rounded-tl-\[2rem\], .rounded-tr-\[2rem\] { border-radius: var(--bp-radius-lg) !important; }
+
+/* Декоративные световые пятна и сияния — убираем: шум и лишняя нагрузка на телефоны */
+.absolute[class*="blur-"]:not([class*="backdrop-blur"]):not(.glass-modal) { display: none !important; }
+[class*="animate-blob"], .glow, .glow2 { display: none !important; }
+
+/* Цветные тени (shadow-blue-500/25 и т. п.) → нейтральные */
+[class*="shadow-"][class*="-500/"], [class*="shadow-"][class*="-600/"], [class*="shadow-"][class*="-400/"] { --tw-shadow-color: rgb(0 0 0 / 0.06) !important; }
+
+/* Градиентный текст → сплошной цвет (читается лучше, особенно в тёмной теме) */
+.bg-clip-text.text-transparent { background-image: none !important; -webkit-text-fill-color: currentColor; color: var(--bp-accent) !important; }
+.dark .bg-clip-text.text-transparent { color: #60a5fa !important; }
+
+/* Ховер без «прыжков» карточек и кнопок: только мягкая смена фона/рамки */
+.hover\:scale-105:hover, .hover\:scale-110:hover, .hover\:scale-\[1\.02\]:hover, .group:hover .group-hover\:scale-110,
+.group\/btn:hover .group-hover\/btn\:scale-110 { --tw-scale-x: 1 !important; --tw-scale-y: 1 !important; }
+.hover\:-translate-y-1:hover, .hover\:-translate-y-0\.5:hover { --tw-translate-y: 0 !important; }
+
+/* Слишком мелкий текст (8–10px) нечитаем — минимум 11px */
+.text-\[8px\], .text-\[8\.5px\], .text-\[9px\], .text-\[10px\] { font-size: 11px !important; line-height: 1.35 !important; }
+.text-\[11px\] { font-size: 12px !important; }
+
+/* Капслок-подписи — спокойнее */
+.uppercase.tracking-widest, .uppercase.tracking-\[0\.2em\], .uppercase.tracking-\[0\.3em\], .uppercase.tracking-\[0\.4em\] { letter-spacing: 0.04em !important; }
+
+/* Поля ввода: единая высота фокуса и мягкая рамка */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus-visible,
+textarea:focus-visible, select:focus-visible { outline: none; box-shadow: 0 0 0 3px rgb(37 99 235 / 0.18); }
+
+/* Полосы прокрутки — тонкие и нейтральные */
+* { scrollbar-width: thin; scrollbar-color: rgb(161 161 170 / .45) transparent; }
+::-webkit-scrollbar-thumb { background: rgb(161 161 170 / .45) !important; border-radius: 8px; }
+.dark ::-webkit-scrollbar-thumb { background: rgb(82 82 91 / .6) !important; }
+
+/* Затемнение под окнами — без «размыто-фиолетового» */
+.dark .bg-black\/90, .dark .bg-black\/80 { background-color: rgb(0 0 0 / .7) !important; }
+
+/* ---------- Доска v2: единый спокойный вид карточек всех типов ---------- */
+.card-item {
+  background-color: #fff !important;
+  border-radius: 12px !important;
+  padding: 12px !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.04) !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+}
+.card-item:not([class*="border-red"]):not([class*="ring-red"]) { border: 1px solid #e4e4e7 !important; }
+.dark .card-item { background-color: #1c1c1f !important; }
+.dark .card-item:not([class*="border-red"]):not([class*="ring-red"]) { border-color: #2a2a2e !important; }
+@media (hover: hover) and (pointer: fine) {
+  .card-item:hover { box-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.08) !important; }
+  .card-item:not([class*="border-red"]):hover { border-color: #d4d4d8 !important; }
+  .dark .card-item:not([class*="border-red"]):hover { border-color: #3f3f46 !important; }
+}
+.card-item h3, .card-item .font-bold.text-sm { font-weight: 600 !important; }
+body.compact-mode .card-item { padding: 8px 10px !important; }
+
+/* Кнопки «добавить» в колонках и шапка колонок — без рамок */
+.board-column .col-handle { border: 0 !important; }

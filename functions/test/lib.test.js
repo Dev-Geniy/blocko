@@ -34,6 +34,12 @@ test('каталог: магазин выдаёт тариф pro за Company и
   assert.match(C.dayKey(Date.UTC(2026, 9, 22, 12)), /^\d{2}\.\d{2}\.\d{4}$/);
 });
 
+test('CPA: ставка растёт с рангом партнёра', () => {
+  assert.strictEqual(C.cpaRate(0), 0.3);
+  assert.strictEqual(C.cpaRate(10), 0.4);
+  assert.strictEqual(C.cpaRate(50), 0.5);
+});
+
 test('PayPal: принимается только завершённый захват', () => {
   const order = { status: 'COMPLETED', purchase_units: [{ reference_id: 'starter', custom_id: 'u1', payments: { captures: [{ id: 'C1', status: 'COMPLETED', amount: { value: '10.00', currency_code: 'USD' } }] } }] };
   assert.deepStrictEqual(completedCapture(order), { captureId: 'C1', amount: '10.00', currency: 'USD', customId: 'u1', referenceId: 'starter' });

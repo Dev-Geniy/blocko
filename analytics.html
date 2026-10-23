@@ -8,9 +8,11 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <!-- Подключаем Chart.js для графиков -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
@@ -18,10 +20,9 @@
   <script src="config.js"></script>
   <script src="security.js"></script>
 
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     .dark ::-webkit-scrollbar-thumb { background: #334155; }
@@ -46,10 +47,7 @@
     }
   </style>
 
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 750: '#2d3748', 850: '#1a202c', 900: '#0f172a', 950: '#0b0f19' } } } } }
-  </script>
-</head>
+  </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] w-full flex flex-col transition-colors duration-300">
   
 <!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ -->
@@ -383,6 +381,17 @@
       if (!priorityData || !typeData) return;
       cachedPriorityData = priorityData;
       cachedTypeData = typeData;
+      // Библиотека графиков не загрузилась (блокировщик, нет сети) — показываем остальную аналитику без графиков
+      if (typeof Chart === 'undefined') {
+          ['priorityChart', 'typesChart'].forEach(id => {
+              const c = document.getElementById(id);
+              if (c && c.parentElement && !c.parentElement.querySelector('.chart-fallback')) {
+                  c.insertAdjacentHTML('afterend', '<p class="chart-fallback text-xs text-gray-400 text-center py-8">График не загрузился. Обновите страницу.</p>');
+                  c.style.display = 'none';
+              }
+          });
+          return;
+      }
 
       const isDark = document.documentElement.classList.contains('dark');
       const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
@@ -414,8 +423,8 @@
               maintainAspectRatio: false,
               plugins: { legend: { display: false } },
               scales: {
-                  x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold' } } },
-                  y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif" }, stepSize: 1 }, beginAtZero: true }
+                  x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", weight: 'bold' } } },
+                  y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif" }, stepSize: 1 }, beginAtZero: true }
               }
           }
       });
@@ -472,7 +481,7 @@
               plugins: {
                   legend: {
                       position: 'bottom',
-                      labels: { color: textColor, font: { family: "'Plus Jakarta Sans', sans-serif", weight: 'bold', size: 11 }, usePointStyle: true, padding: 20 }
+                      labels: { color: textColor, font: { family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", weight: 'bold', size: 11 }, usePointStyle: true, padding: 20 }
                   }
               }
           }
