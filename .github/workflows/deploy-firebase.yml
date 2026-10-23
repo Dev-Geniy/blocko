@@ -1,0 +1,80 @@
+# Автоматический деплой серверной части (Cloud Functions + правила базы) в Firebase.
+# Запускается сам при изменениях в functions/ или firestore.rules в main,
+# а также вручную: Actions → «Деплой сервера (Firebase)» → Run workflow.
+#
+# Нужны секреты репозитория (Settings → Secrets and variables → Actions):
+#   FIREBASE_SERVICE_ACCOUNT — JSON-ключ сервисного аккаунта Firebase (обязательно)
+#   PAYPAL_CLIENT_ID, PAYPAL_SECRET — ключи PayPal (для приёма оплаты)
+name: Деплой сервера (Firebase)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - 'firestore.rules'
+      - 'firestore.indexes.json'
+      - 'firebase.json'
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: false
+
+env:
+  FIREBASE_PROJECT: blocko-pro
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Проверка ключа
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::Не задан секрет FIREBASE_SERVICE_ACCOUNT. Инструкция — в DEPLOY.md, раздел «Автодеплой через GitHub»."
+            exit 1
+          fi
+          printf '%s' "$SA" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Установка зависимостей
+        working-directory: functions
+        run: npm install --no-audit --no-fund
+
+      - name: Тесты
+        working-directory: functions
+        run: npm test
+
+      - name: Секреты PayPal
+        env:
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_SECRET: ${{ secrets.PAYPAL_SECRET }}
+        run: |
+          if [ -n "$PAYPAL_CLIENT_ID" ] && [ -n "$PAYPAL_SECRET" ]; then
+            printf '%s' "$PAYPAL_CLIENT_ID" | npx --yes firebase-tools@13 functions:secrets:set PAYPAL_CLIENT_ID --data-file=- --project "$FIREBASE_PROJECT" --force --non-interactive
+            printf '%s' "$PAYPAL_SECRET" | npx --yes firebase-tools@13 functions:secrets:set PAYPAL_SECRET --data-file=- --project "$FIREBASE_PROJECT" --force --non-interactive
+          else
+            echo "::warning::Секреты PayPal не заданы — оплата не заработает, пока вы не добавите PAYPAL_CLIENT_ID и PAYPAL_SECRET."
+            # Без секретов деплой функций упадёт, поэтому создаём заглушки (только если секрета ещё нет)
+            for NAME in PAYPAL_CLIENT_ID PAYPAL_SECRET; do
+              if ! npx --yes firebase-tools@13 functions:secrets:get "$NAME" --project "$FIREBASE_PROJECT" --non-interactive >/dev/null 2>&1; then
+                printf 'not-configured' | npx --yes firebase-tools@13 functions:secrets:set "$NAME" --data-file=- --project "$FIREBASE_PROJECT" --force --non-interactive
+              fi
+            done
+          fi
+
+      - name: Деплой функций и правил
+        run: npx --yes firebase-tools@13 deploy --only functions,firestore:rules --project "$FIREBASE_PROJECT" --force --non-interactive
+
+      - name: Удалить ключ
+        if: always()
+        run: rm -f "$RUNNER_TEMP/sa.json"
