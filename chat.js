@@ -837,7 +837,7 @@
     hideReplyBar();
     stopTyping();
     writeMessage(id, payload);
-    input.focus();
+    input.focus({ preventScroll: true });
   }
 
   function sendSticker(name) {
@@ -937,7 +937,7 @@
   function focusInput(toEnd) {
     const input = $('chatInput');
     if (!input) return;
-    input.focus();
+    input.focus({ preventScroll: true }); // без этого браузер сдвигает доску, пока панель выезжает
     if (toEnd) input.setSelectionRange(input.value.length, input.value.length);
   }
 
@@ -951,7 +951,7 @@
     input.setSelectionRange(pos, pos);
     autosize();
     updateComposerButtons();
-    input.focus();
+    input.focus({ preventScroll: true });
   }
 
   // ---------- упоминания ----------
@@ -991,7 +991,7 @@
     closeMention();
     autosize();
     updateComposerButtons();
-    input.focus();
+    input.focus({ preventScroll: true });
   }
 
   // ---------- эмодзи ----------
@@ -1110,10 +1110,18 @@
     if (typeof openConfirmModal === 'function') openConfirmModal('Удалить сообщение?', 'Сообщение исчезнет у всех участников.', 'Удалить', true, run);
     else run();
   }
+  // Прокрутка только ленты сообщений: scrollIntoView прокручивал бы и доску под чатом
+  function scrollBoxTo(el, align) {
+    const box = $('chatMessages');
+    if (!box || !el) return;
+    const top = el.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
+    box.scrollTo({ top: align === 'center' ? top - box.clientHeight / 2 + el.offsetHeight / 2 : top - 8, behavior: align === 'center' ? 'smooth' : 'auto' });
+  }
+
   function jumpTo(id) {
     const row = $(`msg_${id}`);
     if (!row) return showSystemToast('Сообщение не загружено', 'Нажмите «Показать предыдущие сообщения» вверху чата.', 'info', 'text-blue-500', 'bg-blue-50');
-    row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    scrollBoxTo(row, 'center');
     row.classList.remove('flash');
     void row.offsetWidth;
     row.classList.add('flash');
@@ -1177,9 +1185,10 @@
       S.unreadAnchor = unreadCount() ? S.lastReadTs : 0;
       render({ toBottom: true });
       const divider = box.querySelector('[data-key="unread_divider"]');
-      if (divider) divider.scrollIntoView({ block: 'start' });
+      if (divider) scrollBoxTo(divider, 'start');
     }
-    setTimeout(() => { markRead(); if (window.matchMedia('(pointer: fine)').matches) focusInput(); }, 60);
+    // Фокус — после того как панель доехала (анимация 300 мс)
+    setTimeout(() => { markRead(); if (window.matchMedia('(pointer: fine)').matches && isChatOpen()) focusInput(); }, 320);
   }
 
   // ---------- голосовой ввод ----------
@@ -1254,6 +1263,12 @@
         handleAttachment({ target: { files: [files[0]] } });
       }
     });
+
+    // Страховка: контейнер, в котором лежат доска и шторки, не должен прокручиваться
+    const holder = $('chatSidebar') && $('chatSidebar').parentElement;
+    if (holder && holder !== document.body) {
+      holder.addEventListener('scroll', () => { if (holder.scrollLeft || holder.scrollTop) { holder.scrollLeft = 0; holder.scrollTop = 0; } }, { passive: true });
+    }
 
     box.addEventListener('click', onMessagesClick);
     box.addEventListener('dblclick', (e) => {
