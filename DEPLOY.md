@@ -63,7 +63,12 @@ https://github.com/Dev-Geniy/blocko/actions → слева **«Деплой API 
 1. Откройте файл https://github.com/Dev-Geniy/blocko/blob/main/firestore.rules → кнопка **Copy raw file** (два квадратика справа сверху).
 2. Firebase Console → **Firestore Database** → вкладка **Rules** → выделите всё (Ctrl+A) → вставьте (Ctrl+V) → **Publish**.
 
-Другой способ — https://github.com/Dev-Geniy/blocko/actions → **«Деплой сервера (Firebase)»** → **Run workflow** (опубликует правила сам; если не хватит прав — сделайте вручную, как выше).
+Чтобы правила публиковались сами после каждого PR (по желанию, один раз):
+1. Откройте https://console.cloud.google.com/iam-admin/iam?project=blocko-pro
+2. Найдите строку `firebase-adminsdk-…@blocko-pro.iam.gserviceaccount.com` → значок ✏️ справа.
+3. **Add another role** → в поиске введите `Firebase Rules Admin` → выберите → **Save**.
+
+После этого «Деплой сервера (Firebase)» будет публиковать правила сам. Без этой роли он просто покажет жёлтое предупреждение — сайт при этом работает.
 
 Готово. Дальше сервер обновляется сам после каждого принятого PR, который меняет `worker/` или цены в `functions/lib/catalog.js`.
 
