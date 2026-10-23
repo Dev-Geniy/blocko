@@ -384,6 +384,17 @@
       if (!priorityData || !typeData) return;
       cachedPriorityData = priorityData;
       cachedTypeData = typeData;
+      // Библиотека графиков не загрузилась (блокировщик, нет сети) — показываем остальную аналитику без графиков
+      if (typeof Chart === 'undefined') {
+          ['priorityChart', 'typesChart'].forEach(id => {
+              const c = document.getElementById(id);
+              if (c && c.parentElement && !c.parentElement.querySelector('.chart-fallback')) {
+                  c.insertAdjacentHTML('afterend', '<p class="chart-fallback text-xs text-gray-400 text-center py-8">График не загрузился. Обновите страницу.</p>');
+                  c.style.display = 'none';
+              }
+          });
+          return;
+      }
 
       const isDark = document.documentElement.classList.contains('dark');
       const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';

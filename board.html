@@ -4114,6 +4114,8 @@ if (!window.blockoDelegationInited) {
 let renderRAF = null;
 
 function render() {
+  // Локальная доска: общий список карточек (нужен AI-командам и порядку новых карточек)
+  if (isLocalBoard) allCards = columns.flatMap(col => (col.cards || []).map(card => ({ ...card, columnId: card.columnId != null ? card.columnId : col.id })));
   if (renderRAF) cancelAnimationFrame(renderRAF);
 
   renderRAF = requestAnimationFrame(() => {
@@ -4572,8 +4574,10 @@ function render() {
         onEnd: async function (evt) {
           document.body.classList.remove('is-dragging-card');
           const cardId = evt.item.dataset.id;
-          const fromColId = evt.from.id.replace('cards-', '');
-          const toColId = evt.to.id.replace('cards-', '');
+          // id из DOM — строка, а в данных колонки могут иметь числовой id: берём исходный тип
+          const colIdOf = (raw) => { const col = columns.find(c => String(c.id) === raw); return col ? col.id : raw; };
+          const fromColId = colIdOf(evt.from.id.replace('cards-', ''));
+          const toColId = colIdOf(evt.to.id.replace('cards-', ''));
           
           // Получаем актуальный срез DOM-элементов для обеих колонок
           const toItems = Array.from(evt.to.querySelectorAll('.card-item'));
@@ -5077,10 +5081,10 @@ function activateGlobalVoiceAgent() {
     closeGlobalVoiceAgent();
     
     // ЭНТЕРПРАЙЗ: Голосовое подтверждение деструктивных действий (Если открыта модалка)
-    const confirmModal = document.getElementById('confirmModal');
+    const confirmModal = document.getElementById('customConfirmModal');
     if (confirmModal && !confirmModal.classList.contains('hidden')) {
         if (commandLower.includes('да') || commandLower.includes('подтверждаю') || commandLower.includes('удаляй') || commandLower.includes('согласен')) {
-            const confirmBtn = document.getElementById('confirmModalBtn');
+            const confirmBtn = document.getElementById('confirmBtnAction');
             if (confirmBtn) confirmBtn.click();
             return showSystemToast('Голос', 'Действие подтверждено', 'mic', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
         } else if (commandLower.includes('нет') || commandLower.includes('отмена') || commandLower.includes('стоп')) {
@@ -6044,60 +6048,7 @@ function openEditModalFromView() {
   }
 }
   
-function renderPollComments() {
-  const list = document.getElementById('pollCommentsList');
-  const poll = columns.find(c => c.id == activePollData.colId).cards.find(c => c.id == activePollData.cardId);
-  
-  if (!poll.comments || poll.comments.length === 0) {
-    list.innerHTML = '<div class="text-gray-400 text-center py-4 text-xs">Обсуждений пока нет. Будьте первыми!</div>';
-    return;
-  }
-
-  list.innerHTML = poll.comments.map(c => {
-    const actualUser = (c.user && boardData.users && boardData.users[c.user.id]) ? boardData.users[c.user.id] : c.user;
-    return `
-    <div class="flex gap-3 bg-gray-50/50 dark:bg-gray-900/40 p-3 rounded-2xl border border-gray-100 dark:border-gray-800">
-      ${getAvatarHTML(actualUser, "w-8 h-8")}
-      <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2 mb-0.5">
-          <span class="font-bold text-[11px] text-gray-900 dark:text-gray-200 truncate">${esc((actualUser||{}).name)}</span>
-          <span class="text-[9px] text-gray-400">${esc(c.time)}</span>
-        </div>
-        <div class="text-xs text-gray-700 dark:text-gray-300 leading-relaxed break-words">${esc(c.text)}</div>
-      </div>
-    </div>
-  `}).join('');
-  setTimeout(() => { list.scrollTop = list.scrollHeight; }, 50);
-}
-  
-function addCommentToPoll() {
-  const input = document.getElementById('pollCommentInput');
-  const text = input.value.trim();
-  if (!text || !activePollData) return;
-
-  columns = columns.map(col => {
-    if (col.id == activePollData.colId) {
-      col.cards = col.cards.map(c => {
-        if (c.id == activePollData.cardId) {
-          if (!c.comments) c.comments = [];
-          c.comments.push({
-            text,
-            user: currentUser,
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-          });
-        }
-        return c;
-      });
-    }
-    return col;
-  });
-
-  input.value = '';
-  persist();
-  renderPollComments();
-  lucide.createIcons();
-}
-
+// (комментарии в опросе ведутся через общее окно просмотра — renderContentComments)
 function closePollStatsModal() {
   const modal = document.getElementById('pollStatsModal');
   const content = document.getElementById('pollStatsContent');
@@ -6974,7 +6925,7 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
     const targetAction = data.trim().toUpperCase();
     let targetColId = card.columnId;
     let newOrder = card.order;
-    const colCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+    const colCards = allCards.filter(c => c.columnId == targetColId).sort((a,b) => a.order - b.order);
     const currIdx = colCards.findIndex(c => c.id === card.id);
 
     if (targetAction === 'UP' && currIdx > 0) newOrder = colCards[currIdx - 1].order - 1;
@@ -6985,13 +6936,13 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
       const destCol = columns.find(c => c.name.toLowerCase() === data.trim().toLowerCase());
       if (destCol) {
         targetColId = destCol.id;
-        const destColCards = allCards.filter(c => c.columnId === targetColId).sort((a,b) => a.order - b.order);
+        const destColCards = allCards.filter(c => c.columnId == targetColId).sort((a,b) => a.order - b.order);
         newOrder = destColCards.length > 0 ? destColCards[destColCards.length - 1].order + 1000 : 0;
       }
     }
 
     if (isLocalBoard) {
-      let srcCol = columns.find(c => c.id === card.columnId);
+      let srcCol = columns.find(c => c.id == card.columnId);
       let dstCol = columns.find(c => c.id === targetColId);
       if (srcCol && dstCol) {
         const cObj = srcCol.cards.find(c => c.id === card.id);

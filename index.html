@@ -1250,7 +1250,7 @@ window.addEventListener('pageshow', (event) => {
 // --- ТРЕКИНГ ПАРТНЕРСКОЙ ССЫЛКИ ---
 const urlParams = new URLSearchParams(window.location.search);
 const incomingRefId = urlParams.get('ref');
-if (incomingRefId) {
+if (incomingRefId && /^[A-Za-z0-9_-]{1,128}$/.test(incomingRefId)) {
   localStorage.setItem('blocko_ref_id', incomingRefId);
 }
 

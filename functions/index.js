@@ -141,13 +141,14 @@ exports.capturePaypalOrder = onCall({ secrets: [PAYPAL_CLIENT_ID, PAYPAL_SECRET]
         tx.set(db.collection('affiliates').doc(referrer), { paidSignups: FieldValue.increment(1) }, { merge: true });
       }
       if (cpaSnap && cpaSnap.exists && cpaSnap.data().isActive) {
-        const commission = Math.round(parseFloat(pack.usd) * C.CPA_COMMISSION * 100) / 100;
+        const rate = C.cpaRate(cpaSnap.data().sales);
+        const commission = Math.round(parseFloat(pack.usd) * rate * 100) / 100;
         tx.update(cpaRef, {
           balanceUSD: FieldValue.increment(commission),
           sales: FieldValue.increment(1),
           history: FieldValue.arrayUnion({
             id: `tx_sale_${orderId}`, amount: commission, status: 'completed',
-            description: `Комиссия ${Math.round(C.CPA_COMMISSION * 100)}% с оплаты реферала`, date: new Date().toISOString(),
+            description: `Комиссия ${Math.round(rate * 100)}% с оплаты реферала`, date: new Date().toISOString(),
           }),
         });
       }

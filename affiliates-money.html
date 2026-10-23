@@ -193,26 +193,10 @@
               <div>
                  <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Premium Лендинги (Ниши & Языки)</label>
                  <select id="landingSelect" onchange="updatePromoLink()" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-indigo-500 transition-colors appearance-none cursor-pointer">
-                    <optgroup label="Русский (RU)">
-                        <option value="ru/b2b.html">B2B & Команды (RU)</option>
-                        <option value="ru/pm.html">Управление проектами (RU)</option>
-                        <option value="ru/freelance.html">Фриланс & Удаленка (RU)</option>
-                    </optgroup>
-                    <optgroup label="English (EN)">
-                        <option value="en/b2b.html">B2B & Teams (EN)</option>
-                        <option value="en/pm.html">Project Management (EN)</option>
-                        <option value="en/freelance.html">Freelance & Remote (EN)</option>
-                    </optgroup>
-                    <optgroup label="Español (ES)">
-                        <option value="es/b2b.html">B2B y Equipos (ES)</option>
-                        <option value="es/pm.html">Gestión de Proyectos (ES)</option>
-                        <option value="es/freelance.html">Freelance y Remoto (ES)</option>
-                    </optgroup>
-                    <optgroup label="Технические страницы">
-                        <option value="index.html">Главная страница (Базовая)</option>
-                        <option value="store.html">Магазин (Монетизация)</option>
-                        <option value="index.html?modal=register">Прямая Регистрация</option>
-                    </optgroup>
+                    <option value="index.html">Главная страница</option>
+                    <option value="ru.html">Лендинг на русском</option>
+                    <option value="products.html">Возможности продукта</option>
+                    <option value="store.html">Магазин</option>
                  </select>
               </div>
               <div>
@@ -364,8 +348,8 @@
       currentUser = user;
       
       // Выводим аватарку в хедер
-      const avatarUrl = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}`;
-      document.getElementById('userAvatarWrap').innerHTML = `<img src="${avatarUrl}" class="w-full h-full object-cover" />`;
+      const avatarUrl = safeUrl(user.photoURL) || BlockoSec.initialsAvatar(user.displayName || 'P');
+      document.getElementById('userAvatarWrap').innerHTML = `<img src="${esc(avatarUrl)}" alt="" data-avatar title="${esc(user.displayName || '')}" referrerpolicy="no-referrer" class="w-full h-full object-cover" />`;
 
       await initCPAProfile();
 
@@ -631,6 +615,19 @@
               interaction: { mode: 'nearest', axis: 'x', intersect: false }
           }
       });
+  }
+
+  // Партнёрская ссылка: выбранная страница + ref (id партнёра) + sub (источник трафика)
+  function updatePromoLink() {
+      const input = document.getElementById('generatedCpaLink');
+      if (!input || !currentUser) return;
+      const page = document.getElementById('landingSelect').value || 'index.html';
+      const sub = (document.getElementById('subIdInput').value || '').trim().replace(/[^\w-]/g, '').slice(0, 40);
+      const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+      const url = new URL(page, base);
+      url.searchParams.set('ref', currentUser.uid);
+      if (sub) url.searchParams.set('sub', sub);
+      input.value = url.href;
   }
 
   async function saveAndCopyCpaLink() {
