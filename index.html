@@ -138,23 +138,47 @@
   </div>
 </div>
 
-<div id="authScreen" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
-  <div class="bg-white dark:bg-gray-900 p-10 rounded-[2.5rem] w-full max-w-md text-center shadow-2xl border border-gray-200 dark:border-gray-800 relative overflow-hidden">
-    <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-    <div class="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-xl text-white relative z-10">
-      <i data-lucide="layers" class="w-12 h-12"></i>
+<div id="authScreen" class="hidden fixed inset-0 z-[100] overflow-y-auto bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
+  <div class="min-h-full flex items-center justify-center px-4 py-10 sm:px-6">
+    <div class="w-full max-w-5xl grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+      <!-- Что это и зачем -->
+      <div class="order-2 lg:order-1 text-center lg:text-left">
+        <div class="hidden lg:inline-flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Канбан для себя и команды
+        </div>
+        <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-tight">Все задачи — на одной<br class="hidden sm:block"> простой доске</h2>
+        <p class="mt-4 text-gray-500 dark:text-gray-400 text-sm sm:text-base leading-relaxed max-w-md mx-auto lg:mx-0">Колонки, карточки и чек-листы без лишнего. Работает на телефоне и компьютере, даже без интернета.</p>
+        <ul class="mt-8 space-y-4 text-left max-w-sm mx-auto lg:mx-0">
+          <li class="flex items-start gap-3"><span class="mt-0.5 w-8 h-8 flex-shrink-0 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><i data-lucide="users" class="w-4 h-4"></i></span><span class="text-sm text-gray-600 dark:text-gray-300"><b class="text-gray-900 dark:text-white">Командная работа</b><br>Приглашайте по ссылке, общайтесь в чате доски</span></li>
+          <li class="flex items-start gap-3"><span class="mt-0.5 w-8 h-8 flex-shrink-0 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i data-lucide="wifi-off" class="w-4 h-4"></i></span><span class="text-sm text-gray-600 dark:text-gray-300"><b class="text-gray-900 dark:text-white">Офлайн-доски</b><br>Личные проекты хранятся прямо на устройстве</span></li>
+          <li class="flex items-start gap-3"><span class="mt-0.5 w-8 h-8 flex-shrink-0 rounded-xl bg-violet-50 dark:bg-violet-500/10 text-violet-600 dark:text-violet-400 flex items-center justify-center"><i data-lucide="sparkles" class="w-4 h-4"></i></span><span class="text-sm text-gray-600 dark:text-gray-300"><b class="text-gray-900 dark:text-white">AI-помощник</b><br>Описания, чек-листы и задачи по одной фразе</span></li>
+        </ul>
+      </div>
+
+      <!-- Вход -->
+      <div class="order-1 lg:order-2 w-full max-w-md mx-auto">
+        <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[2rem] text-center shadow-xl shadow-gray-200/60 dark:shadow-none border border-gray-200 dark:border-gray-800 relative overflow-hidden">
+          <div class="absolute -top-20 -right-20 w-40 h-40 bg-blue-500 rounded-full filter blur-3xl opacity-15 pointer-events-none"></div>
+          <div class="mx-auto w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-500/20 text-white relative z-10">
+            <i data-lucide="layers" class="w-8 h-8 sm:w-10 sm:h-10"></i>
+          </div>
+          <h1 class="text-3xl sm:text-4xl font-bold mb-2 tracking-tight relative z-10">Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span></h1>
+          <p class="text-gray-500 dark:text-gray-400 mb-8 text-sm relative z-10">Войдите, чтобы продолжить</p>
+          <button id="loginBtn" onclick="loginWithGoogle()" class="relative z-10 w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 px-6 py-4 rounded-2xl font-semibold flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-sm">
+            <span class="w-7 h-7 rounded-full bg-white flex items-center justify-center"><svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg></span>
+            Войти через Google
+          </button>
+          <p class="mt-6 text-[11px] leading-relaxed text-gray-400 relative z-10">Входя, вы принимаете <a href="terms.html" class="underline hover:text-gray-600 dark:hover:text-gray-300">условия</a> и <a href="privacy.html" class="underline hover:text-gray-600 dark:hover:text-gray-300">политику конфиденциальности</a></p>
+        </div>
+      </div>
+
     </div>
-    <h1 class="text-4xl font-bold mb-3 tracking-tight relative z-10">Blocko <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Pro</span></h1>
-    <p class="text-gray-500 dark:text-gray-400 mb-10 text-sm font-medium relative z-10">Рабочее пространство будущего</p>
-    <button id="loginBtn" onclick="loginWithGoogle()" class="relative z-10 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-400 px-6 py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-sm">
-      <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Войти через Google
-    </button>
   </div>
 </div>
 
 <div id="dashboardScreen" class="hidden flex-col flex-1 h-full w-full overflow-y-auto overflow-x-hidden relative scroll-smooth overscroll-contain">
-  <header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
+  <header class="px-4 sm:px-8 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex justify-between items-center gap-3 sticky top-0 z-20">
   <div class="flex items-center gap-3 select-none">
     <div onclick="openAboutModal()" class="cursor-pointer bg-gradient-to-br from-blue-500 to-indigo-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20 transition-transform hover:scale-105">
       <i data-lucide="layers" class="w-6 h-6"></i>
@@ -1524,6 +1548,23 @@ function renderBoardsGrid() {
       let tasksCount = 0;
       combinedBoards.forEach(b => b.columns?.forEach(c => tasksCount += (c.cards?.length || 0)));
       document.getElementById('statTotalTasks').innerText = tasksCount;
+  }
+
+  // Новый пользователь: ни одного проекта — показываем понятный первый шаг вместо «ничего не найдено»
+  if (combinedBoards.length === 0 && !query) {
+    grid.className = "grid grid-cols-1 pb-10";
+    grid.innerHTML = `
+      <div class="py-14 sm:py-20 px-6 flex flex-col items-center text-center rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-800">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-5"><i data-lucide="layout-dashboard" class="w-8 h-8"></i></div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Создайте первый проект</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm leading-relaxed mb-6">Проект — это доска с колонками «Бэклог», «В работе» и «Готово». Его можно держать на устройстве или в облаке вместе с командой.</p>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button onclick="openCreateModal()" class="px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i> Новый проект</button>
+          <button onclick="promptJoinById()" class="px-6 py-3 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 font-semibold text-sm hover:border-blue-300 active:scale-95 transition-all flex items-center justify-center gap-2"><i data-lucide="key" class="w-4 h-4"></i> У меня есть ID</button>
+        </div>
+      </div>`;
+    lucide.createIcons();
+    return;
   }
 
   if (filtered.length === 0) {
