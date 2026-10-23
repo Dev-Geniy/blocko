@@ -1,37 +1,91 @@
 # Blocko Pro — запуск серверной части
 
-Деньги, тарифы, промокоды, награды и пароли облачных досок теперь меняет только сервер.
-Firestore Rules запрещают клиенту писать эти поля напрямую. Поэтому порядок выкладки важен:
-**сначала функции, потом правила, потом фронтенд**.
+Деньги, тарифы, промокоды, награды и пароли облачных досок меняет только сервер.
+Правила базы (Firestore Rules) запрещают сайту писать эти поля напрямую.
 
+Есть два варианта сервера, код у них одинаковый по смыслу:
 
-## Самый простой способ: автодеплой через GitHub (без установки программ)
+| | Вариант А — Cloudflare (рекомендуется сейчас) | Вариант Б — Firebase Cloud Functions |
+|---|---|---|
+| Тариф Firebase | бесплатный Spark подходит | нужен Blaze (с картой) |
+| Банковская карта | не нужна | нужна |
+| Цена | бесплатно до 100 000 запросов в день | обычно $0 на старте |
+| Папка в репозитории | `worker/` | `functions/` |
 
-В репозитории есть готовый сценарий `.github/workflows/deploy-firebase.yml`. Он сам выкладывает серверную часть, когда меняются файлы сервера, и его можно запустить кнопкой.
+Сайт сам выбирает сервер: если в файле `api-endpoint.json` записан адрес — работает Cloudflare, иначе Cloud Functions.
 
-**1. Включите в Firebase тариф Blaze** (нужен для Cloud Functions; на старте обычно $0).
+## Вариант А: сервер на Cloudflare (без Blaze, без карты)
+
+Всё делается в браузере, программы ставить не нужно. Займёт 15–20 минут.
+
+**Шаг 1. Зарегистрируйтесь в Cloudflare.**
+Откройте https://dash.cloudflare.com/sign-up → введите email и пароль → подтвердите email из письма.
+Затем слева в меню откройте **Workers & Pages** (если Cloudflare попросит придумать имя поддомена — введите любое, например `blocko`).
+
+**Шаг 2. Скопируйте Account ID.**
+На странице **Workers & Pages** справа есть блок **Account details** → строка **Account ID** → нажмите «копировать».
+(Ещё он виден в адресной строке: `dash.cloudflare.com/`**`вот-этот-набор-букв-и-цифр`**`/...`.)
+
+**Шаг 3. Создайте токен для GitHub.**
+Откройте https://dash.cloudflare.com/profile/api-tokens → **Create Token** → напротив шаблона **Edit Cloudflare Workers** нажмите **Use template** →
+в **Account Resources** выберите свой аккаунт, остальное не трогайте → внизу **Continue to summary** → **Create Token** → **Copy**.
+Токен показывается один раз — сразу переходите к шагу 5.
+
+**Шаг 4. Скачайте ключ Firebase (работает на бесплатном тарифе).**
+Firebase Console → проект blocko-pro → ⚙️ **Project settings** → вкладка **Service accounts** → **Generate new private key** → **Generate key**.
+Скачается файл `.json`. Никому его не отправляйте и не загружайте в репозиторий.
+
+**Шаг 5. Добавьте ключи в GitHub.**
+Откройте https://github.com/Dev-Geniy/blocko/settings/secrets/actions → кнопка **New repository secret**. Создайте по очереди:
+
+| Name | Secret (что вставить) |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | токен из шага 3 |
+| `CLOUDFLARE_ACCOUNT_ID` | Account ID из шага 2 |
+| `FIREBASE_SERVICE_ACCOUNT` | всё содержимое файла `.json` из шага 4 (открыть блокнотом → Ctrl+A → Ctrl+C) |
+| `PAYPAL_CLIENT_ID` | если ещё нет: https://developer.paypal.com/dashboard/applications → приложение (**Live**) → Client ID |
+| `PAYPAL_SECRET` | там же → Secret |
+
+PayPal-ключи должны быть из того же приложения, чей `client-id` стоит на сайте (`index.html`, `store.html`).
+
+**Шаг 6. Запустите сервер.**
+https://github.com/Dev-Geniy/blocko/actions → слева **«Деплой API (Cloudflare)»** → справа **Run workflow** → зелёная кнопка **Run workflow**.
+Через 1–3 минуты появится зелёная галочка ✅. Робот сам запишет адрес сервера в `api-endpoint.json`
+(в истории коммитов появится «Адрес сервера оплаты: https://blocko-api….workers.dev»), и через 1–2 минуты сайт начнёт им пользоваться.
+
+Проверка: откройте адрес из этого коммита и допишите в конце `/health` — должно показать `{"ok":true,...}`.
+
+Если красный крестик ❌ — откройте запуск, нажмите на шаг с ошибкой: там написано по-русски, чего не хватает.
+
+**Шаг 7. Опубликуйте правила базы (обязательно, после шага 6).**
+Без них кто угодно может «нарисовать» себе монеты через консоль браузера. Правила работают на бесплатном тарифе.
+Самый простой способ — вручную:
+1. Откройте файл https://github.com/Dev-Geniy/blocko/blob/main/firestore.rules → кнопка **Copy raw file** (два квадратика справа сверху).
+2. Firebase Console → **Firestore Database** → вкладка **Rules** → выделите всё (Ctrl+A) → вставьте (Ctrl+V) → **Publish**.
+
+Другой способ — https://github.com/Dev-Geniy/blocko/actions → **«Деплой сервера (Firebase)»** → **Run workflow** (опубликует правила сам; если не хватит прав — сделайте вручную, как выше).
+
+Готово. Дальше сервер обновляется сам после каждого принятого PR, который меняет `worker/` или цены в `functions/lib/catalog.js`.
+
+## Вариант Б: Cloud Functions (когда получится включить Blaze)
+
+Если Firebase показывает ошибку **OR-CBAT-14** при переходе на Blaze — это ошибка платёжной системы Google, а не нашего кода.
+Иногда помогает другая карта (не виртуальная и не предоплаченная), разрешённые в банке платежи за рубеж, другой браузер
+или создание платёжного аккаунта напрямую на https://console.cloud.google.com/billing; если нет — только поддержка Google.
+Пока Blaze недоступен, используйте вариант А — он делает то же самое.
+
+**1. Включите в Firebase тариф Blaze.**
 Firebase Console → проект blocko-pro → внизу слева «Spark» → **Upgrade** → **Blaze** → привяжите карту. Можно сразу задать лимит бюджета, например $5.
 
-**2. Создайте ключ доступа.**
-Firebase Console → ⚙️ **Project settings** → вкладка **Service accounts** → **Generate new private key** → **Generate key**. Скачается файл `.json` — никому его не отправляйте.
+**2. Ключ доступа** — как в шаге 4 варианта А, и дайте ему права:
+https://console.cloud.google.com/iam-admin/iam?project=blocko-pro → строка `firebase-adminsdk-…@blocko-pro.iam.gserviceaccount.com` → ✏️ → **Add another role**: **Editor** и **Secret Manager Admin** → **Save**.
 
-**3. Дайте ключу права на деплой.**
-Откройте https://console.cloud.google.com/iam-admin/iam?project=blocko-pro → найдите строку `firebase-adminsdk-…@blocko-pro.iam.gserviceaccount.com` → ✏️ (карандаш) → **Add another role**:
-- **Editor** (Редактор);
-- **Secret Manager Admin** (Администратор Secret Manager).
+**3. Секреты GitHub:** `FIREBASE_SERVICE_ACCOUNT`, `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET` (как в шаге 5 варианта А).
 
-Затем нажмите **Save**.
+**4. Включите деплой функций:** https://github.com/Dev-Geniy/blocko/settings/variables/actions → **New repository variable** → Name `DEPLOY_FUNCTIONS`, Value `true`.
 
-**4. Положите ключи в GitHub.**
-https://github.com/Dev-Geniy/blocko/settings/secrets/actions → **New repository secret**:
-- Name: `FIREBASE_SERVICE_ACCOUNT`, Secret: всё содержимое скачанного `.json` (откройте файл блокнотом, Ctrl+A, Ctrl+C).
-- Name: `PAYPAL_CLIENT_ID` и `PAYPAL_SECRET` — из https://developer.paypal.com/dashboard/applications → ваше приложение (**Live**) → Client ID и Secret.
-
-**5. Запустите деплой.**
-https://github.com/Dev-Geniy/blocko/actions → слева **«Деплой сервера (Firebase)»** → справа **Run workflow** → **Run workflow**. Через 3–8 минут появится зелёная галочка ✅.
-Если красный крестик ❌ — откройте запуск, нажмите на шаг с ошибкой и пришлите текст разработчику. Первый запуск иногда падает, пока Google включает сервисы; подождите 5 минут и нажмите **Re-run jobs**.
-
-Дальше сервер обновляется сам после каждого принятого PR, который меняет `functions/` или `firestore.rules`.
+**5. Запустите:** Actions → **«Деплой сервера (Firebase)»** → **Run workflow**.
+Чтобы сайт перешёл с Cloudflare на Cloud Functions, очистите адрес в `api-endpoint.json` (`"url": ""`).
 
 ## Вручную через терминал (если удобнее)
 
@@ -87,7 +141,7 @@ GOOGLE_CLOUD_PROJECT=blocko-pro node scripts/migrate-board-passwords.js --apply 
 * Список `system/admins` может менять только владелец.
 * Если раньше кто-то получил `isAdmin: true` через ключ, этот флаг больше ничего не даёт. Его можно удалить из профилей.
 
-## Что делает сервер (functions/index.js)
+## Что делает сервер (worker/ и functions/ — одинаково)
 
 | Функция | Что делает |
 |---|---|
@@ -96,15 +150,16 @@ GOOGLE_CLOUD_PROJECT=blocko-pro node scripts/migrate-board-passwords.js --apply 
 | `storePurchase` | Товары магазина за монеты/кредиты, подарочные коды |
 | `redeemPromo` | Промокоды и подарки (срок, лимит, повтор — в транзакции) |
 | `claimDailyGift`, `claimDailyQuest` | Ежедневные награды раз в сутки |
-| `onUserCreated`, `claimReferralReward`, `listReferrals` | Реферальная программа |
+| `registerReferral` (Cloudflare) / `onUserCreated` (Functions), `claimReferralReward`, `listReferrals` | Реферальная программа: бонус пригласившему — один раз и только для нового аккаунта |
 | `cpaWithdraw`, `cpaTransferToCoins` | Заявка на вывод CPA (подтверждает админ) и перевод в монеты |
-| `enterBoard`, `setBoardPassword` | Вход на доску, лимит участников, пароли (scrypt), 5 попыток → пауза 10 минут |
-| `onBoardCreated`, `onBoardDeleted` | Лимит досок по тарифу; очистка карточек, чата и журнала при удалении |
+| `enterBoard`, `setBoardPassword` | Вход на доску, лимит участников, пароли (хэш PBKDF2 / scrypt — оба формата понимают оба сервера), 5 попыток → пауза 10 минут |
+| `onBoardCreated`, `onBoardDeleted` | Только Cloud Functions: лимит досок по тарифу на сервере; очистка карточек, чата и журнала при удалении |
 
 ## Проверки
 
 ```bash
 node --test tests/*.test.js                   # помощники экранирования (security.js)
 cd functions && npm test                      # каталог, пароли, разбор ответа PayPal
+cd worker && npm test                         # сервер Cloudflare: все операции на базе в памяти
 firebase emulators:start --only functions,firestore   # ручная проверка правил и функций
 ```

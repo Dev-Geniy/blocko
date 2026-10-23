@@ -349,32 +349,57 @@
     <div id="board" class="flex gap-6 h-full items-start pb-4 min-w-max"></div>
   </main>
   
-  <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-80 sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl">
-    <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-blue-50/50 dark:bg-blue-900/20 backdrop-blur-md">
-      <h3 class="font-bold flex items-center gap-2 text-gray-800 dark:text-white"><i data-lucide="message-circle" class="w-4 h-4 text-blue-500"></i> Чат проекта</h3>
-      <button onclick="toggleChat()" class="text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all active:scale-95 bg-gray-100/50 dark:bg-gray-800/50 p-1.5 rounded-lg"><i data-lucide="x" class="w-4 h-4"></i></button>
-    </div>
-    <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 p-4 space-y-4 text-sm flex flex-col"></div>
-    <div class="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 flex flex-col gap-2">
-      <!-- ЭНТЕРПРАЙЗ: Кастомные стикеры (Lucide) для быстрых ответов -->
-      <div class="flex justify-between items-center px-1">
-        <button onclick="sendChatSticker('thumbs-up')" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="thumbs-up" class="w-5 h-5"></i></button>
-        <button onclick="sendChatSticker('heart')" class="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="heart" class="w-5 h-5"></i></button>
-        <button onclick="sendChatSticker('flame')" class="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="flame" class="w-5 h-5"></i></button>
-        <button onclick="sendChatSticker('party-popper')" class="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="party-popper" class="w-5 h-5"></i></button>
-        <button onclick="sendChatSticker('zap')" class="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="zap" class="w-5 h-5"></i></button>
-        <button onclick="sendChatSticker('check-circle-2')" class="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg transition-colors active:scale-95"><i data-lucide="check-circle-2" class="w-5 h-5"></i></button>
+  <aside id="chatSidebar" class="absolute right-0 top-0 bottom-0 w-full sm:w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col transition-transform duration-300 transform translate-x-full z-40 shadow-2xl" aria-label="Чат проекта">
+    <div class="h-14 px-3 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2 flex-shrink-0">
+      <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0"><i data-lucide="message-circle" class="w-4 h-4"></i></div>
+      <div class="flex-1 min-w-0">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white leading-tight">Чат проекта</h3>
+        <p id="chatSubtitle" class="text-[11px] text-gray-500 dark:text-gray-400 truncate leading-tight mt-0.5">&nbsp;</p>
       </div>
-      <div class="flex gap-2 items-center">
-        <label class="cursor-pointer p-3 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors bg-gray-100 dark:bg-gray-800 rounded-xl flex-shrink-0" title="Прикрепить файл (<1MB)">
+      <button id="chatSoundBtn" onclick="BlockoChat.toggleSound()" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Звук"><i data-lucide="volume-2" class="w-4 h-4"></i></button>
+      <button id="chatNotifyBtn" onclick="BlockoChat.toggleNotifications()" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Уведомления"><i data-lucide="bell" class="w-4 h-4"></i></button>
+      <button onclick="toggleChat()" class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Закрыть" aria-label="Закрыть чат"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="chatNotifyBanner" class="hidden mx-3 mt-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 flex items-start gap-2.5 flex-shrink-0">
+      <i data-lucide="bell-ring" class="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0"></i>
+      <div class="flex-1 min-w-0 text-xs text-gray-700 dark:text-gray-300">Включите уведомления, чтобы не пропускать сообщения команды, даже когда вкладка свёрнута.
+        <div class="mt-2 flex gap-3"><button onclick="BlockoChat.toggleNotifications()" class="font-semibold text-blue-600 dark:text-blue-400 hover:underline">Включить</button><button onclick="BlockoChat.closeNotifyBanner()" class="text-gray-500 hover:underline">Не сейчас</button></div>
+      </div>
+    </div>
+    <div class="relative flex-1 min-h-0 flex flex-col">
+      <div id="chatMessages" class="flex-1 overflow-y-auto min-h-0 px-3 pt-2 pb-4 flex flex-col" aria-live="polite"></div>
+      <button id="chatScrollBtn" onclick="BlockoChat.scrollToBottom()" class="hidden absolute right-3 bottom-3 w-10 h-10 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg text-gray-600 dark:text-gray-300 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700" title="Вниз" aria-label="К последним сообщениям">
+        <i data-lucide="chevron-down" class="w-5 h-5"></i>
+        <span id="chatScrollCount" class="hidden absolute -top-1.5 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center"></span>
+      </button>
+    </div>
+    <div class="border-t border-gray-200 dark:border-gray-800 px-3 pt-1.5 pb-3 flex-shrink-0 relative" style="padding-bottom:max(.75rem, env(safe-area-inset-bottom))">
+      <div id="chatTyping" class="invisible h-5 text-[11px] text-gray-500 dark:text-gray-400 truncate">&nbsp;</div>
+      <div id="chatMentionBox" class="hidden absolute left-3 right-3 bottom-full mb-1 p-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-20 max-h-60 overflow-y-auto"></div>
+      <div id="chatEmojiPanel" class="hidden absolute left-3 right-3 bottom-full mb-1 p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl z-20"></div>
+      <div id="chatReplyBar" class="hidden mb-2 flex items-center gap-2 pl-2.5 pr-1 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800/60 border-l-2 border-blue-500">
+        <span id="chatReplyIcon" class="text-blue-600 dark:text-blue-400 flex-shrink-0"></span>
+        <div class="flex-1 min-w-0 leading-tight">
+          <div id="chatReplyTitle" class="text-xs font-semibold text-blue-600 dark:text-blue-400 truncate"></div>
+          <div id="chatReplyText" class="text-xs text-gray-500 dark:text-gray-400 truncate"></div>
+        </div>
+        <button onclick="BlockoChat.cancelCompose()" class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-gray-700" title="Отмена (Esc)" aria-label="Отменить"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="flex items-end gap-1.5">
+        <label id="chatAttachBtn" class="cursor-pointer w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Фото или файл (до 700 КБ)">
           <i data-lucide="paperclip" class="w-5 h-5"></i>
           <input type="file" class="hidden" onchange="handleChatAttachment(event)" />
         </label>
-        <button id="chatMicBtn" onclick="toggleChatVoiceInput()" class="p-3 bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-blue-500 rounded-xl transition-all flex-shrink-0 shadow-sm border border-gray-200 dark:border-gray-700 active:scale-95" title="Голосовой ввод">
-          <i data-lucide="mic" class="w-5 h-5"></i>
-        </button>
-        <input id="chatInput" onkeypress="if(event.key==='Enter') sendChatMessage()" placeholder="Написать..." class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-xl outline-none text-sm dark:text-white focus:ring-2 focus:ring-blue-500 transition-shadow" />
-        <button onclick="sendChatMessage()" class="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-colors flex-shrink-0 shadow-lg shadow-blue-500/25 active:scale-95"><i data-lucide="send" class="w-5 h-5"></i></button>
+        <div class="flex-1 min-w-0 flex items-end bg-gray-100 dark:bg-gray-800 rounded-2xl focus-within:ring-2 focus-within:ring-blue-500/60 transition-shadow">
+          <textarea id="chatInput" rows="1" maxlength="5200" placeholder="Сообщение…" aria-label="Сообщение" class="flex-1 min-w-0 bg-transparent px-3.5 py-2.5 outline-none text-[16px] sm:text-sm leading-5 text-gray-900 dark:text-white placeholder-gray-400"></textarea>
+          <button id="chatEmojiBtn" type="button" onclick="BlockoChat.toggleEmoji()" class="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-white flex-shrink-0" title="Эмодзи и стикеры"><i data-lucide="smile" class="w-5 h-5"></i></button>
+        </div>
+        <button id="chatMicBtn" onclick="toggleChatVoiceInput()" class="hidden w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0" title="Голосовой ввод"><i data-lucide="mic" class="w-5 h-5"></i></button>
+        <button id="chatSendBtn" onclick="sendChatMessage()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors flex-shrink-0 active:scale-95" title="Отправить (Enter)" aria-label="Отправить"><i data-lucide="send-horizontal" class="w-5 h-5"></i></button>
+      </div>
+      <div class="flex justify-between mt-1 px-1 text-[10px] text-gray-400">
+        <span class="hidden sm:inline">Enter — отправить · Shift+Enter — новая строка · @ — упомянуть</span>
+        <span id="chatCounter" class="hidden ml-auto"></span>
       </div>
     </div>
   </aside>
@@ -1421,7 +1446,6 @@ let currentColumn = null, editingCard = null, viewingCard = null, editingColId =
 let activeTags = [], pendingImageFile = null, activeChecklist = [];
 let selectedColColor = 'default';
 let boardData = {};
-let isFirstChatLoad = true; // ОДНА переменная чата
 let chatListenersStarted = false; // защита от двойной подписки до первого снапшота чата
 // Base64 раздувает файл на ~33%, а документ Firestore ограничен 1 МиБ — оставляем запас
 const MAX_CHAT_FILE_BYTES = 700 * 1024;
@@ -2116,174 +2140,11 @@ function syncAndRender() {
   });
 }
 
-const pendingChatTempIds = new Set();
-
-function getChatMessageTime(timestamp) {
-  if (!timestamp) return '';
-  const date = typeof timestamp.toDate === 'function' ? timestamp.toDate() : new Date(timestamp);
-  return Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
-
-function renderOptimisticChatMessage(docRef, msg) {
-  const chatBox = document.getElementById("chatMessages");
-  if (!chatBox) return;
-
-  document.getElementById('emptyChatMsg')?.remove();
-  const tempId = `pending_${docRef.id}`;
-  pendingChatTempIds.add(tempId);
-  renderSingleMessage({ ...msg, timestamp: Date.now(), isPending: true }, chatBox, tempId);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function initChatListener(docRef) {
-  docRef.collection("chat").orderBy("timestamp").limitToLast(50).onSnapshot((snapshot) => {
-    const chatBox = document.getElementById("chatMessages");
-    
-    if (isFirstChatLoad) {
-      chatBox.innerHTML = snapshot.empty ? '<div id="emptyChatMsg" class="text-center text-xs text-gray-400 mt-4">Чат пуст.</div>' : '';
-      snapshot.forEach(doc => renderSingleMessage(doc.data(), chatBox, doc.id));
-      isFirstChatLoad = false;
-      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-    } else {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          document.getElementById('emptyChatMsg')?.remove();
-          const tempId = `pending_${change.doc.id}`;
-          if (pendingChatTempIds.has(tempId)) {
-            document.getElementById('msg_' + tempId)?.remove();
-            pendingChatTempIds.delete(tempId);
-          }
-          const msg = change.doc.data();
-          renderSingleMessage(msg, chatBox, change.doc.id);
-          
-          const isMe = msg.user.id === currentUser.id;
-          const isChatOpen = !document.getElementById('chatSidebar').classList.contains('translate-x-full');
-          
-          if (!isMe && !isChatOpen) {
-            const badge = document.getElementById('chatBadge');
-            if(badge) {
-                let count = parseInt(badge.innerText) || 0; count++;
-                badge.innerText = count > 99 ? '99+' : count;
-                badge.classList.remove('hidden');
-            }
-            showSystemToast(`💬 Сообщение: ${msg.user.name || 'Команда'}`, msg.text ? (msg.text.length > 35 ? msg.text.substring(0, 35) + '...' : msg.text) : 'Вложение', 'message-square', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-          }
-          if (isChatOpen || isMe) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-        }
-        
-        // ЭНТЕРПРАЙЗ: Real-time обновление лайков
-        if (change.type === "modified") {
-          const msgDiv = document.getElementById('msg_' + change.doc.id);
-          if (msgDiv) {
-             const tempContainer = document.createElement('div');
-             renderSingleMessage(change.doc.data(), tempContainer, change.doc.id);
-             msgDiv.outerHTML = tempContainer.innerHTML;
-          }
-        }
-      });
-    }
-  });
-}
-
-// Функция скачивания и уничтожения файла (Burn)
-function downloadAndBurn(msgId, filename, base64url) {
-  // 1. Принудительно скачиваем
-  const el = document.createElement('a');
-  el.setAttribute("href", base64url);
-  el.setAttribute("download", filename);
-  document.body.appendChild(el);
-  el.click();
-  el.remove();
-
-  // 2. Удаляем из базы
-  db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId).delete();
-  
-  // 3. Скрываем в интерфейсе
-  const msgDiv = document.getElementById('msg_' + msgId);
-  if(msgDiv) msgDiv.innerHTML = `<div class="p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl text-xs italic"><i data-lucide="flame" class="w-4 h-4 inline mr-1"></i>Файл уничтожен навсегда</div>`;
-  lucide.createIcons();
-}
-
-let pendingChatFile = null;
-
+// Чат проекта — в chat.js (отправка, реакции, ответы, уведомления, «печатает…»)
 function closeFileTypeModal() {
   const el = document.getElementById('fileTypeModal');
   el.classList.add('opacity-0');
-  setTimeout(() => { el.classList.add('hidden'); pendingChatFile = null; }, 200);
-}
-
-// Конвертация в Base64 и сохранение с таймером/сжиганием
-async function confirmFileUpload(retentionType) {
-  // ПРОВЕРКА ТАРИФА (Добавлена поддержка Infinity)
-  if (retentionType === 'burn' && userPlan !== 'pro' && userPlan !== 'infinity') {
-     closeFileTypeModal();
-     return showSystemToast('Pro Функция', 'Сгорающие (шпионские) файлы доступны только на тарифах Company и выше.', 'lock', 'text-amber-500', 'bg-amber-50');
-  }
-
-  if (!pendingChatFile) return;
-  const file = pendingChatFile;
-  closeFileTypeModal();
-
-  const chatBox = document.getElementById("chatMessages");
-  const tempId = 'load_' + Date.now();
-  chatBox.innerHTML += `<div id="${esc(tempId)}" class="text-xs text-blue-500 text-center animate-pulse py-2">Шифрование и отправка...</div>`;
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  try {
-    const base64 = await new Promise((resolve, reject) => {
-         const reader = new FileReader();
-         reader.readAsDataURL(file);
-         reader.onload = () => resolve(reader.result);
-         reader.onerror = error => reject(error);
-    });
-
-    let expiresAt = null;
-    if (retentionType === '1day') expiresAt = Date.now() + (24 * 60 * 60 * 1000);
-    if (retentionType === '7days') expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
-
-    await db.collection("boards").doc(BOARD_ID).collection("chat").add({
-      text: "", 
-      attachment: { 
-          type: 'file', 
-          url: base64, 
-          name: file.name, 
-          size: (file.size/1024).toFixed(1)+' KB',
-          retention: retentionType,
-          expiresAt: expiresAt
-      },
-      user: currentUser, 
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  } catch (err) {
-    showSystemToast('Ошибка', 'Сбой обработки файла', 'alert-circle', 'text-red-500', 'bg-red-50');
-  } finally {
-    document.getElementById(tempId)?.remove();
-  }
-}
-
-async function uploadImageToImgbb(file) {
-  if (!navigator.onLine) {
-    return showSystemToast('Офлайн', 'Отправка картинок недоступна без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-  }
-  const chatBox = document.getElementById("chatMessages");
-  const tempId = 'load_' + Date.now();
-  chatBox.innerHTML += `<div id="${esc(tempId)}" class="text-xs text-blue-500 text-center animate-pulse py-2">Загрузка изображения...</div>`;
-  chatBox.scrollTop = chatBox.scrollHeight;
-  try {
-    const fd = new FormData(); fd.append('image', file);
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method:'POST', body: fd });
-    const data = await res.json();
-    if (data.success) {
-      await db.collection("boards").doc(BOARD_ID).collection("chat").add({
-        text: "", attachment: { type: 'image', url: data.data.url, name: file.name },
-        user: currentUser, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    } else throw new Error("Ошибка загрузки");
-  } catch (err) {
-    showSystemToast('Ошибка', err.message, 'alert-circle', 'text-red-500', 'bg-red-50');
-  } finally {
-    document.getElementById(tempId)?.remove();
-  }
+  setTimeout(() => { el.classList.add('hidden'); window.pendingChatFile = null; }, 200);
 }
 
 function processBoardData(data) {
@@ -2349,6 +2210,7 @@ function processBoardData(data) {
   
   // ЭНТЕРПРАЙЗ: Динамическое SEO & SMO (Social Media Optimization)
   document.title = `${data.title || 'Проект'} — Blocko Pro`;
+  if (window.BlockoChat) BlockoChat.refreshTitle(); // число непрочитанных в заголовке вкладки
   
   let ogTitle = document.querySelector('meta[property="og:title"]');
   if (!ogTitle) { ogTitle = document.createElement('meta'); ogTitle.setAttribute('property', 'og:title'); document.head.appendChild(ogTitle); }
@@ -2417,28 +2279,6 @@ function renameBoard() {
   if (newTitle && newTitle.trim() !== "" && newTitle !== currentTitle) {
     updateBoardData({ title: newTitle.trim() });
     showSystemToast('Название обновлено', 'Изменения синхронизированы с облаком.', 'edit-3', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-  }
-}
-
-function handleChatAttachment(e) {
-  if (isLocalBoard) {
-     showSystemToast('Ограничение', 'Вложения доступны только в Cloud-проектах.', 'shield-alert', 'text-amber-500', 'bg-amber-50');
-     e.target.value = ''; return;
-  }
-  const file = e.target.files[0];
-  if (!file) return;
-  e.target.value = ''; 
-  
-  if (file.type.startsWith('image/')) {
-     uploadImageToImgbb(file); 
-  } else {
-     if (file.size > MAX_CHAT_FILE_BYTES) {
-        return showSystemToast('Лимит превышен', 'Файл слишком большой! Максимум 700 КБ.', 'alert-circle', 'text-red-500', 'bg-red-50');
-     }
-     pendingChatFile = file; 
-     const el = document.getElementById('fileTypeModal');
-     el.classList.remove('hidden');
-     setTimeout(() => el.classList.remove('opacity-0'), 10);
   }
 }
 
@@ -2755,12 +2595,7 @@ window.toggleActivityLog = () => SidebarManager.toggle('activitySidebar', () => 
 window.toggleSettings = () => SidebarManager.toggle('settingsSidebar', () => { if (typeof renderSettingsTags === 'function') renderSettingsTags(); });
 // Список участников рисуем при открытии (раньше — только из облачного снапшота, и у локальных досок он был пуст)
 window.toggleMembers = () => SidebarManager.toggle('membersSidebar', () => { if (typeof renderMembersSidebar === 'function') renderMembersSidebar(); });
-window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => {
-  const chatBox = document.getElementById('chatMessages');
-  if (chatBox) setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 10);
-  const badge = document.getElementById('chatBadge');
-  if (badge) { badge.classList.add('hidden'); badge.innerText = ''; }
-});
+window.toggleChat = () => SidebarManager.toggle('chatSidebar', () => { if (window.BlockoChat) BlockoChat.onOpened(); });
 
 // Глухой перехватчик для старых вызовов
 window.closeOtherSidebars = () => SidebarManager.closeAll();
@@ -2970,228 +2805,6 @@ function removeMember(uid, name) {
   });
 }
   
-const CHAT_STICKERS = ['thumbs-up', 'heart', 'flame', 'party-popper', 'zap', 'check-circle-2'];
-
-function renderSingleMessage(msg, container, msgId) {
-  msg.user = msg.user || {};
-  const isMe = msg.user.id === currentUser.id;
-  const time = getChatMessageTime(msg.timestamp);
-  
-  let attachHtml = '';
-  if (msg.attachment) {
-    if (msg.attachment.type === 'image') {
-      const imgUrl = safeUrl(msg.attachment.url);
-      attachHtml = !imgUrl ? '' : `<img src="${esc(imgUrl)}" loading="lazy" class="rounded-xl mt-1.5 w-full cursor-pointer border border-black/10 dark:border-white/10 shadow-sm hover:opacity-90" onclick="window.open(${jsArg(imgUrl)}, '_blank', 'noopener')" />`;
-    } else {
-      const isExpired = msg.attachment.expiresAt && Date.now() > msg.attachment.expiresAt;
-      
-      if (isExpired) {
-         attachHtml = `<div class="mt-1.5 text-[10px] text-gray-500 italic p-2 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 w-full overflow-hidden">⏳ Срок хранения файла истек</div>`;
-      } else {
-          const isBurn = msg.attachment.retention === 'burn';
-          const fileUrl = safeUrl(msg.attachment.url, { allowData: true });
-          const fileName = String(msg.attachment.name || 'file');
-          const fileIcon = isBurn ? 'flame' : 'file';
-          const fileColor = isBurn ? 'text-orange-500' : (isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300');
-          const badgeHtml = isBurn ? `<span class="flex-shrink-0 text-[8px] uppercase tracking-wider bg-orange-500/20 text-orange-500 font-bold px-1.5 py-0.5 rounded">1 скачивание</span>` : '';
-          
-          const downloadBtn = isBurn 
-            ? `<button onclick="downloadAndBurn(${jsArg(msgId)}, ${jsArg(fileName)}, ${jsArg(fileUrl)})" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0" title="Скачать и уничтожить"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></button>`
-            : `<a href="${esc(fileUrl)}" download="${esc(fileName)}" class="p-1.5 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"><i data-lucide="download" class="w-4 h-4 ${isMe ? 'text-white' : 'text-gray-600 dark:text-gray-300'}"></i></a>`;
-
-          attachHtml = `
-            <div class="mt-1.5 flex items-center gap-3 bg-white/10 dark:bg-black/20 p-2.5 rounded-xl border ${isMe ? 'border-white/20' : 'border-gray-200 dark:border-gray-700'} w-full overflow-hidden">
-              <div class="p-2 bg-white/20 dark:bg-white/10 rounded-lg flex-shrink-0"><i data-lucide="${esc(fileIcon)}" class="w-4 h-4 ${fileColor}"></i></div>
-              <div class="flex-1 min-w-0 flex flex-col">
-                <div class="flex items-center gap-2 w-full">
-                  <span class="text-xs font-bold truncate flex-1 min-w-0 ${isMe ? 'text-white' : 'text-gray-800 dark:text-gray-200'}" title="${esc(fileName)}">${esc(fileName)}</span>
-                  ${badgeHtml}
-                </div>
-                <span class="text-[9px] ${isMe ? 'text-white/70' : 'text-gray-500'}">${esc(msg.attachment.size)}</span>
-              </div>
-              ${downloadBtn}
-            </div>`;
-      }
-    }
-  }
-
-  let stickerHtml = '';
-  if (msg.sticker && CHAT_STICKERS.includes(msg.sticker)) {
-      let colorClass = 'text-blue-500';
-      if(msg.sticker === 'heart') colorClass = 'text-rose-500';
-      if(msg.sticker === 'flame') colorClass = 'text-orange-500';
-      if(msg.sticker === 'party-popper') colorClass = 'text-purple-500';
-      if(msg.sticker === 'zap') colorClass = 'text-amber-500';
-      if(msg.sticker === 'check-circle-2') colorClass = 'text-emerald-500';
-      
-      stickerHtml = `<div class="mt-1 mb-1 p-3 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm w-fit ${isMe ? 'ml-auto' : ''}"><i data-lucide="${esc(msg.sticker)}" class="w-12 h-12 ${colorClass}"></i></div>`;
-  }
-
-  const textHtml = msg.text ? `<div class="${isMe ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 dark:bg-gray-800 border dark:border-gray-700'} px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words w-fit max-w-full ${isMe ? 'rounded-tr-sm ml-auto' : 'rounded-tl-sm'}">${esc(msg.text)}</div>` : '';
-  const actualUser = (msg.user && boardData.users && boardData.users[msg.user.id]) ? boardData.users[msg.user.id] : msg.user;
-
-  // ЭНТЕРПРАЙЗ UX: Телеграм-стиль лайков (В правом нижнем углу контента, без рамок)
-  const likesCount = msg.likes ? msg.likes.length : 0;
-  const hasLiked = msg.likes && msg.likes.includes(currentUser.id);
-  
-  // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Убраны рамки (ring), добавлены мягкие тени и ID для Optimistic UI
-  const likeBtnHtml = msg.isPending ? '' : `<button id="likeBtn_${esc(msgId)}" onclick="toggleMessageLike(${jsArg(msgId)})" class="absolute -bottom-3 -right-2 flex items-center justify-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full backdrop-blur-md transition-all duration-200 hover:scale-110 active:scale-95 z-10 ${hasLiked ? 'text-rose-500 bg-white/95 dark:bg-gray-800/95 shadow-md' : 'text-gray-400 opacity-0 group-hover/msg:opacity-100 hover:text-rose-500 hover:bg-white/95 dark:hover:bg-gray-800/95 shadow-sm'}" title="Нравится"><i data-lucide="heart" class="w-3.5 h-3.5 ${hasLiked ? 'fill-current' : ''}"></i> <span id="likeCount_${esc(msgId)}" class="${likesCount > 0 ? 'ml-0.5' : 'hidden'}">${likesCount > 0 ? likesCount : ''}</span></button>`;
-
-  // insertAdjacentHTML не перепарсивает весь чат (в отличие от innerHTML +=)
-  container.insertAdjacentHTML('beforeend', `
-    <div id="msg_${esc(msgId)}" class="flex gap-3 ${isMe ? 'flex-row-reverse' : 'animate-fade-in-up'} mt-3 mb-2 ${msg.isPending ? 'opacity-70' : ''}">
-      ${getAvatarHTML(actualUser, 'w-8 h-8 flex-shrink-0')}
-      <div class="flex flex-col w-full min-w-0">
-        <div class="flex items-baseline gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : ''}">
-          <span class="text-[10px] text-gray-500 font-bold truncate">${isMe ? 'Вы' : esc(actualUser.name)}</span>
-          <span class="text-[9px] text-gray-400">${time}</span>
-        </div>
-        <div class="relative w-fit max-w-full group/msg ${isMe ? 'ml-auto' : ''}">
-          ${stickerHtml}
-          ${textHtml}
-          ${attachHtml}
-          ${likeBtnHtml}
-        </div>
-      </div>
-    </div>
-  `);
-  // Иконки только внутри контейнера (работает и для отсоединённого временного контейнера)
-  lucide.createIcons({ root: container });
-}
-  
-function sendChatMessage() {
-  if (isLocalBoard) return;
-  const input = document.getElementById('chatInput');
-  const text = input.value.trim();
-  if (!text) return;
-
-  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
-  const msg = { text, user: currentUser, likes: [] };
-  input.value = '';
-  renderOptimisticChatMessage(docRef, msg);
-
-  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
-    document.getElementById('msg_pending_' + docRef.id)?.remove();
-    pendingChatTempIds.delete('pending_' + docRef.id);
-    showSystemToast('Ошибка', 'Не удалось отправить сообщение.', 'alert-circle', 'text-red-500', 'bg-red-50');
-    console.error('Chat send failed:', err);
-  });
-}
-
-function sendChatSticker(iconName) {
-  if (isLocalBoard) return showSystemToast('Офлайн', 'Стикеры недоступны без интернета.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-
-  const docRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc();
-  const msg = { text: "", sticker: iconName, user: currentUser, likes: [] };
-  renderOptimisticChatMessage(docRef, msg);
-
-  docRef.set({ ...msg, timestamp: firebase.firestore.FieldValue.serverTimestamp() }).catch(err => {
-    document.getElementById('msg_pending_' + docRef.id)?.remove();
-    pendingChatTempIds.delete('pending_' + docRef.id);
-    showSystemToast('Ошибка', 'Не удалось отправить реакцию.', 'alert-circle', 'text-red-500', 'bg-red-50');
-    console.error('Sticker send failed:', err);
-  });
-}
-
-function toggleMessageLike(msgId) {
-  if (isLocalBoard || !currentUser) return;
-  
-  const btn = document.getElementById(`likeBtn_${msgId}`);
-  const countSpan = document.getElementById(`likeCount_${msgId}`);
-  
-  // ЭНТЕРПРАЙЗ: Optimistic UI. Обновляем интерфейс мгновенно ДО ответа сервера для эффекта нулевой задержки.
-  if (btn && countSpan) {
-     const isCurrentlyLiked = btn.classList.contains('text-rose-500');
-     let currentCount = parseInt(countSpan.innerText) || 0;
-     
-     if (isCurrentlyLiked) {
-         // Снимаем лайк
-         btn.classList.remove('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
-         btn.classList.add('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         btn.querySelector('i').classList.remove('fill-current');
-         currentCount = Math.max(0, currentCount - 1);
-     } else {
-         // Ставим лайк
-         btn.classList.add('text-rose-500', 'bg-white/95', 'dark:bg-gray-800/95', 'shadow-md');
-         btn.classList.remove('text-gray-400', 'opacity-0', 'group-hover/msg:opacity-100', 'shadow-sm');
-         btn.querySelector('i').classList.add('fill-current');
-         currentCount++;
-         if(typeof fireConfetti === 'function') fireConfetti();
-     }
-     
-     countSpan.innerText = currentCount;
-     if (currentCount > 0) {
-         countSpan.classList.remove('hidden');
-         countSpan.classList.add('ml-0.5');
-     } else {
-         countSpan.classList.add('hidden');
-         countSpan.classList.remove('ml-0.5');
-     }
-  }
-
-  // Фоновая синхронизация с Firebase
-  const msgRef = db.collection("boards").doc(BOARD_ID).collection("chat").doc(msgId);
-  msgRef.get().then(doc => {
-    if (doc.exists) {
-      let likes = doc.data().likes || [];
-      if (likes.includes(currentUser.id)) {
-        likes = likes.filter(id => id !== currentUser.id);
-      } else {
-        likes.push(currentUser.id);
-      }
-      msgRef.update({ likes });
-    }
-  }).catch(err => console.error("Like sync failed:", err));
-}
-
-// ЭНТЕРПРАЙЗ: Voice-to-Text для командного чата
-let chatSpeechRecognition = null;
-let isChatListening = false;
-
-function toggleChatVoiceInput() {
-  if (isLocalBoard) return showSystemToast('Офлайн', 'Голосовой ввод недоступен в офлайн-досках.', 'wifi-off', 'text-amber-500', 'bg-amber-50');
-  const micBtn = document.getElementById('chatMicBtn');
-  const input = document.getElementById('chatInput');
-  
-  if (isChatListening && chatSpeechRecognition) {
-    chatSpeechRecognition.stop();
-    return;
-  }
-  
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    return showSystemToast('Ошибка', 'Голосовой ввод не поддерживается браузером.', 'mic-off', 'text-red-500', 'bg-red-50');
-  }
-  
-  chatSpeechRecognition = new SpeechRecognition();
-  chatSpeechRecognition.lang = 'ru-RU';
-  chatSpeechRecognition.interimResults = true;
-  
-  const initialText = input.value ? input.value + ' ' : '';
-  
-  chatSpeechRecognition.onstart = () => {
-    isChatListening = true;
-    micBtn.classList.remove('text-gray-500', 'bg-gray-100', 'dark:bg-gray-800');
-    micBtn.classList.add('text-red-500', 'bg-red-100', 'dark:bg-red-900/40', 'animate-pulse');
-  };
-  
-  chatSpeechRecognition.onresult = (event) => {
-    let transcript = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      transcript += event.results[i][0].transcript;
-    }
-    input.value = initialText + transcript;
-  };
-  
-  chatSpeechRecognition.onend = () => {
-    isChatListening = false;
-    micBtn.classList.add('text-gray-500', 'bg-gray-100', 'dark:bg-gray-800');
-    micBtn.classList.remove('text-red-500', 'bg-red-100', 'dark:bg-red-900/40', 'animate-pulse');
-  };
-  
-  try { chatSpeechRecognition.start(); } catch (e) { console.error(e); }
-}
-
 function toggleModal(modalId, show) {
   const el = document.getElementById(modalId);
   if (show) { el.classList.remove('hidden'); setTimeout(() => el.classList.remove('opacity-0'), 10); } 
@@ -5221,23 +4834,6 @@ async function generateAIQuickDescription() {
   }
 }
 
-function toggleChat() { 
-  if (window.event) window.event.stopPropagation();
-  closeOtherSidebars('chatSidebar'); 
-  const sidebar = document.getElementById('chatSidebar');
-  sidebar.classList.toggle('translate-x-full'); 
-  
-  if (!sidebar.classList.contains('translate-x-full')) {
-    const badge = document.getElementById('chatBadge');
-    if(badge) {
-        badge.classList.add('hidden');
-        badge.innerText = '0';
-    }
-    const chatBox = document.getElementById("chatMessages");
-    setTimeout(() => chatBox.scrollTop = chatBox.scrollHeight, 50);
-  }
-}
-
 // Закрытие модалок по клику на фон и умное скрытие боковых панелей
 window.addEventListener('click', (e) => {
   // КРИТИЧЕСКИЙ ФИКС: Игнорируем клики по элементам, которые были удалены из DOM (например, при замене иконок Lucide)
@@ -6987,5 +6583,6 @@ function aiExecuteAction(type, safeTitle, safeData, isAuto = false) {
   }
 }
 </script>
+<script src="chat.js"></script>
 </body>
 </html>
