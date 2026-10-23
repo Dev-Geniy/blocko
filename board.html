@@ -271,7 +271,7 @@
 
   <!-- ЭНТЕРПРАЙЗ: Интеллектуальная панель вкладок (Hover-режим) -->
   <div id="spacesSubHeaderWrapper" class="relative z-10 w-full overflow-hidden transition-all duration-300 ease-in-out max-h-[60px] opacity-100 group-[.is-collapsed]/header:max-h-0 group-[.is-collapsed]/header:opacity-0 md:group-[.is-collapsed]/header:group-hover/header:max-h-[60px] md:group-[.is-collapsed]/header:group-hover/header:opacity-100">
-    <div id="spacesSubHeader" onclick="toggleSpacesCollapse(event)" class="hidden px-3 sm:px-5 py-1.5 border-b border-gray-200/80 dark:border-gray-800 bg-white/70 dark:bg-gray-950/70 backdrop-blur-md flex items-center gap-1 overflow-x-auto hide-scroll" title="Нажмите на пустое место, чтобы скрыть панель">
+    <div id="spacesSubHeader" class="hidden px-3 sm:px-5 py-1.5 border-b border-gray-200/80 dark:border-gray-800 bg-white/70 dark:bg-gray-950/70 backdrop-blur-md flex items-center gap-1 overflow-x-auto hide-scroll" title="Нажмите на пустое место, чтобы скрыть панель">
       <div id="boardSpacesContainer" class="flex items-center gap-1.5 cursor-default" onclick="event.stopPropagation()">
          <!-- JS Injects Tabs Here -->
       </div>
@@ -283,7 +283,7 @@
   </div>
 
   <!-- Мобильный тогл (Кнопка-стрелка, смещенная в бок) -->
-  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="md:hidden absolute -bottom-5 right-6 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 shadow-lg text-gray-500 hover:text-blue-500 hover:scale-110 active:scale-95 transition-all">
+  <button onclick="forceToggleSpaces()" id="mobileSpacesToggle" class="hidden absolute -bottom-5 right-6 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full p-2 shadow-lg text-gray-500 hover:text-blue-500 hover:scale-110 active:scale-95 transition-all">
      <i data-lucide="chevron-up" id="mobileSpacesToggleIcon" class="w-4 h-4"></i>
   </button>
 </div>
