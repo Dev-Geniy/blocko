@@ -1318,13 +1318,13 @@ auth.onAuthStateChanged(async (user) => {
         else if (hour >= 12 && hour < 18) greeting = 'Добрый день';
         else if (hour >= 18 && hour < 23) greeting = 'Добрый вечер';
         
-        document.getElementById('dashUserName').innerText = `${greeting}, ${currentUser.name.split(' ')[0]}!`;
+        document.getElementById('dashUserName').innerText = `${greeting}, ${String(currentUser.name || 'друг').split(' ')[0]}!`;
         
         // Обновление нового Smart Welcome Дашборда
         const welcomeGreetingEl = document.getElementById('dashWelcomeGreeting');
         const welcomeNameEl = document.getElementById('dashWelcomeName');
         if (welcomeGreetingEl) welcomeGreetingEl.innerText = greeting;
-        if (welcomeNameEl) welcomeNameEl.innerText = currentUser.name.split(' ')[0];
+        if (welcomeNameEl) welcomeNameEl.innerText = String(currentUser.name || 'друг').split(' ')[0];
 
         subscribeToBoards(user.uid);
 
