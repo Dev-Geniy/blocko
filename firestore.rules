@@ -1,0 +1,274 @@
+rules_version = '2';
+
+// =====================================================================
+// BLOCKO PRO — Firestore Security Rules
+//
+// Принципы:
+//  * Деньги, тарифы, промокоды, бонусы и пароли досок меняет ТОЛЬКО сервер
+//    (Cloud Functions, Admin SDK обходит правила). Клиент их только читает.
+//  * Доска и её подколлекции доступны только участникам (members).
+//  * Для досок с паролем содержимое (cards/chat/activity) открыто
+//    не-владельцу только после проверки пароля на сервере (unlocks/{uid}).
+//  * Администраторы — владелец проекта или email из system/admins.
+// =====================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    function isMasterOwner() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'uajerryua@gmail.com';
+    }
+
+    function isAdmin() {
+      return isMasterOwner() || (
+        signedIn()
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/system/admins)
+        && request.auth.token.email.lower() in get(/databases/$(database)/documents/system/admins).data.get('emails', [])
+      );
+    }
+
+    function safeId(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,128}$'); }
+
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // Публичная карточка пользователя внутри доски (users.{uid})
+    function validUserEntry(entry) {
+      return entry is map
+        && entry.keys().hasOnly(['name', 'avatar', 'role', 'customAvatar', 'badgeStatus', 'badgeConfig'])
+        && (!('name' in entry) || entry.name == null || (entry.name is string && entry.name.size() <= 100))
+        && (!('avatar' in entry) || entry.avatar == null || (entry.avatar is string && entry.avatar.size() <= 2048))
+        && (!('customAvatar' in entry) || entry.customAvatar == null || (entry.customAvatar is string && entry.customAvatar.size() <= 2048));
+    }
+
+    // Участник меняет только свою запись users.{uid}, не трогая роль
+    function selfProfileOnly() {
+      let usersDiff = request.resource.data.users.diff(resource.data.users);
+      return usersDiff.affectedKeys().hasOnly([uid()])
+        && uid() in request.resource.data.users
+        && validUserEntry(request.resource.data.users[uid()])
+        && request.resource.data.users[uid()].get('role', null) == resource.data.users[uid()].get('role', null);
+    }
+
+    // ---------- boards ----------
+    function boardDoc(boardId) { return get(/databases/$(database)/documents/boards/$(boardId)).data; }
+    function isMemberOf(board) { return signedIn() && uid() in board.get('members', []); }
+    function roleIn(board) { return board.get('users', {}).get(uid(), {}).get('role', 'viewer'); }
+    function isOwnerOf(board) { return signedIn() && board.get('owner', '') == uid(); }
+    function canEditBoard(board) { return isOwnerOf(board) || (isMemberOf(board) && roleIn(board) in ['owner', 'editor']); }
+    function boardHasPassword(board) { return board.get('hasPassword', false) == true || board.get('password', null) != null; }
+
+    function unlocked(boardId) {
+      return exists(/databases/$(database)/documents/boards/$(boardId)/unlocks/$(uid()))
+        && get(/databases/$(database)/documents/boards/$(boardId)/unlocks/$(uid())).data.expiresAt > request.time;
+    }
+
+    // Доступ к содержимому доски (карточки, чат, журнал)
+    function canReadContent(boardId) {
+      let board = boardDoc(boardId);
+      return isMemberOf(board) && (isOwnerOf(board) || !boardHasPassword(board) || unlocked(boardId));
+    }
+    function canWriteContent(boardId) {
+      let board = boardDoc(boardId);
+      return canEditBoard(board) && (isOwnerOf(board) || !boardHasPassword(board) || unlocked(boardId));
+    }
+
+    match /boards/{boardId} {
+      // Прямое обращение к полю members — так правило проходит для запроса where('members', 'array-contains', uid)
+      allow read: if (signedIn() && uid() in resource.data.members) || isAdmin();
+
+      // Создание: только своя доска, пароль в документе запрещён (его ставит сервер)
+      allow create: if signedIn()
+        && request.resource.data.owner == uid()
+        && request.resource.data.members == [uid()]
+        && request.resource.data.users.keys().hasOnly([uid()])
+        && request.resource.data.users[uid()].role == 'owner'
+        && validUserEntry(request.resource.data.users[uid()])
+        && !('password' in request.resource.data)
+        && request.resource.data.get('hasPassword', false) == false
+        && request.resource.data.title is string && request.resource.data.title.size() <= 200;
+
+      // Владелец: всё, кроме смены владельца и флага пароля
+      allow update: if isOwnerOf(resource.data)
+        && request.resource.data.owner == resource.data.owner
+        && !changed().hasAny(['hasPassword', 'password'])
+        && request.resource.data.members.hasAll([uid()]);
+
+      // Редактор: контент доски, без управления составом команды и ролями
+      allow update: if !isOwnerOf(resource.data)
+        && isMemberOf(resource.data)
+        && roleIn(resource.data) == 'editor'
+        && changed().hasOnly(['title', 'company', 'columns', 'tags', 'spaces', 'background', 'logRetention', 'description', 'updatedAt', 'users'])
+        && (!changed().hasAny(['users']) || selfProfileOnly());
+
+      // Любой участник: обновить свою карточку профиля или покинуть доску
+      allow update: if !isOwnerOf(resource.data)
+        && isMemberOf(resource.data)
+        && changed().hasOnly(['users'])
+        && selfProfileOnly();
+      allow update: if !isOwnerOf(resource.data)
+        && isMemberOf(resource.data)
+        && changed().hasOnly(['users', 'members'])
+        && request.resource.data.members.toSet() == resource.data.members.toSet().difference([uid()].toSet())
+        && !(uid() in request.resource.data.users)
+        && request.resource.data.users.diff(resource.data.users).affectedKeys().hasOnly([uid()]);
+
+      allow delete: if isOwnerOf(resource.data) || isAdmin();
+
+
+      // Отметка о вводе пароля — пишет только сервер, читает сам пользователь
+      match /unlocks/{userId} {
+        allow read: if signedIn() && userId == uid();
+        allow write: if false;
+      }
+
+      match /cards/{cardId} {
+        allow read: if canReadContent(boardId) || isAdmin();
+        allow create, delete: if safeId(cardId) && canWriteContent(boardId);
+        allow update: if canWriteContent(boardId);
+        // Читатель может голосовать в опросах и комментировать
+        allow update: if canReadContent(boardId)
+          && changed().hasOnly(['options', 'comments', 'updatedAt']);
+      }
+
+      match /chat/{msgId} {
+        allow read: if canReadContent(boardId) || isAdmin();
+        allow create: if canReadContent(boardId)
+          && request.resource.data.user.id == uid()
+          && request.resource.data.get('text', '') is string
+          && request.resource.data.get('text', '').size() <= 5000;
+        // Лайки ставит любой участник, остальное — только автор
+        allow update: if canReadContent(boardId)
+          && (changed().hasOnly(['likes']) || resource.data.user.id == uid());
+        allow delete: if canReadContent(boardId)
+          && (resource.data.user.id == uid() || isOwnerOf(boardDoc(boardId)));
+      }
+
+      match /activity/{logId} {
+        allow read: if canReadContent(boardId) || isAdmin();
+        allow create: if canReadContent(boardId) && request.resource.data.user.id == uid();
+        // Сборка мусора журнала: записи старше суток может удалить любой участник
+        allow delete: if canReadContent(boardId)
+          && (isOwnerOf(boardDoc(boardId)) || resource.data.timestamp < request.time - duration.value(1, 'd'));
+        allow update: if false;
+      }
+    }
+
+    // Хэши паролей досок — только сервер
+    match /board_secrets/{boardId} {
+      allow read, write: if false;
+    }
+
+    // ---------- users ----------
+    match /users/{userId} {
+      allow read: if (signedIn() && userId == uid()) || isAdmin();
+
+      // Регистрация: только бесплатный тариф и без денег/прав
+      allow create: if signedIn() && userId == uid()
+        && request.resource.data.keys().hasOnly(['name', 'email', 'avatar', 'plan', 'referredBy', 'createdAt', 'badgeConfig', 'rewardsClaimed'])
+        && request.resource.data.get('plan', 'free') == 'free'
+        && request.resource.data.get('rewardsClaimed', []) == []
+        && (request.resource.data.get('referredBy', null) == null
+            || (safeId(request.resource.data.referredBy) && request.resource.data.referredBy != uid()));
+
+      // Пользователь меняет только косметику и служебные отметки
+      allow update: if signedIn() && userId == uid()
+        && changed().hasOnly(['name', 'avatar', 'customAvatar', 'badgeConfig', 'badgeStatus', 'theme', 'lastSeen', 'plan', 'planExpiresAt', 'scheduleFolders'])
+        // бейдж — только из заработанных
+        && (!changed().hasAny(['badgeStatus'])
+            || request.resource.data.badgeStatus in ['none']
+            || request.resource.data.badgeStatus in resource.data.get('rewardsClaimed', []))
+        // тариф можно только понизить до free (истёк срок)
+        && (!changed().hasAny(['plan']) || request.resource.data.plan == 'free')
+        && (!changed().hasAny(['planExpiresAt']) || !('planExpiresAt' in request.resource.data));
+
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- графики (schedule.html) ----------
+    // Читать может любой вошедший по ключу (id документа) — так работает «Live-ключ»; менять — только владелец
+    match /schedules_v2/{scheduleId} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.owner == uid();
+      allow update: if signedIn() && resource.data.get('owner', '') == uid()
+        && request.resource.data.get('owner', uid()) == uid();
+      allow delete: if signedIn() && resource.data.get('owner', '') == uid();
+    }
+
+    // ---------- партнёрские программы ----------
+    match /affiliates/{userId} {
+      allow read: if (signedIn() && userId == uid()) || isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /affiliates_cpa/{userId} {
+      allow read: if (signedIn() && userId == uid()) || isAdmin();
+      // Открытие кабинета с нулевым балансом
+      allow create: if signedIn() && userId == uid()
+        && request.resource.data.balanceUSD == 0
+        && request.resource.data.get('signups', 0) == 0
+        && request.resource.data.get('sales', 0) == 0
+        && request.resource.data.get('history', []) == [];
+      // Пользователь сохраняет только свои трекинговые ссылки
+      allow update: if signedIn() && userId == uid() && changed().hasOnly(['savedLinks']);
+      allow write: if isAdmin();
+    }
+
+    // ---------- промокоды и платежи ----------
+    match /promocodes/{code} {
+      // Список кодов не раскрываем; конкретный код читается по ссылке (превью подарка — и до входа)
+      allow get: if signedIn() || resource.data.get('isGiftBox', false) == true;
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /payments/{orderId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == uid());
+      allow write: if false;
+    }
+
+    // ---------- поддержка и квесты ----------
+    match /support_tickets/{ticketId} {
+      allow create: if signedIn() && request.resource.data.user.id == uid()
+        && request.resource.data.status == 'open'
+        && request.resource.data.message is string && request.resource.data.message.size() <= 5000;
+      allow read: if isAdmin() || (signedIn() && resource.data.user.id == uid());
+      allow update, delete: if isAdmin();
+    }
+
+    match /quest_submissions/{subId} {
+      allow create: if signedIn()
+        && request.resource.data.userId == uid()
+        && request.resource.data.status == 'pending';
+      allow read: if isAdmin() || (signedIn() && resource.data.userId == uid());
+      allow update, delete: if isAdmin();
+    }
+
+    // ---------- система ----------
+    match /system/admins {
+      allow read: if isAdmin();
+      allow write: if isMasterOwner();
+    }
+    match /system/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /system_logs/{logId} {
+      // Попытки входа в админку пишет любой вошедший, читают только админы
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Всё остальное закрыто
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

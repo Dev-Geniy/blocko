@@ -7,16 +7,20 @@
 
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <!-- ЭНТЕРПРАЙЗ: Ядро для генерации QR-кодов на стороне клиента (Zero-latency) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
   <!-- Client ID -->
   <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="security.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -596,44 +600,25 @@
       
       const todayStr = new Date().toLocaleDateString('ru-RU');
       
-      // Сценарий 1: Генерация нового подарка
+      // Сценарий 1: Генерация нового подарка (на сервере — раз в сутки)
       if (currentUserData.lastDailyGiftDate !== todayStr) {
-          const code = 'DGIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-          
           try {
-              const batch = db.batch();
-              batch.set(db.collection('promocodes').doc(code), {
-                  type: 'coins',
-                  rewardCoins: 50,
-                  maxUses: 1,
-                  uses: 0,
-                  expiresAt: null,
-                  isGiftBox: true,
-                  createdAt: new Date().toISOString(),
-                  createdBy: currentUser.uid
-              });
-              
-              batch.update(db.collection('users').doc(currentUser.uid), {
-                  lastDailyGiftDate: todayStr,
-                  lastDailyGiftCode: code
-              });
-              
-              await batch.commit();
-              
+              const res = await BlockoAPI.call('claimDailyGift');
               currentUserData.lastDailyGiftDate = todayStr;
-              currentUserData.lastDailyGiftCode = code;
-              
+              currentUserData.lastDailyGiftCode = res.code;
               checkDailyGiftState();
-              openDailyGiftModal(code, 'ready');
-              
-              confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+              if (!res.alreadyClaimed) {
+                  openDailyGiftModal(res.code, 'ready');
+                  if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
+                  return;
+              }
           } catch(e) {
               console.error(e);
-              showSystemToast('Ошибка', 'Не удалось сгенерировать подарок', 'x-circle', 'text-red-500', 'bg-red-50');
+              return showSystemToast('Ошибка', 'Не удалось сгенерировать подарок', 'x-circle', 'text-red-500', 'bg-red-50');
           }
-      } 
+      }
       // Сценарий 2: Проверка статуса уже созданного подарка
-      else {
+      {
           const code = currentUserData.lastDailyGiftCode;
           if (!code) return;
           
@@ -642,16 +627,12 @@
               if (pDoc.exists) {
                   const pData = pDoc.data();
                   if (pData.uses > 0) {
-                      // Кто-то забрал
-                      const usersSnap = await db.collection('users').where('usedPromos', 'array-contains', code).limit(1).get();
-                      let claimer = { name: 'Неизвестный', avatar: 'https://ui-avatars.com/api/?name=U' };
-                      if (!usersSnap.empty) {
-                          const cData = usersSnap.docs[0].data();
-                          claimer = { 
-                              name: cData.name || 'Секретный Агент', 
-                              avatar: cData.customAvatar || cData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(cData.name || 'U')}`
-                          };
-                      }
+                      // Кто-то забрал — сервер сохраняет публичный профиль получателя в коде
+                      const cData = pData.claimedBy || {};
+                      const claimer = {
+                          name: cData.name || 'Секретный Агент',
+                          avatar: safeUrl(cData.customAvatar) || safeUrl(cData.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(cData.name || 'U')}`
+                      };
                       openDailyGiftModal(code, 'claimed', claimer);
                   } else {
                       // Ещё не забрали
@@ -897,42 +878,10 @@
     // Вызываем нашу премиальную модалку вместо системного confirm
     openConfirmModal('Подтверждение покупки', `Вы собираетесь приобрести этот товар за ${price} ${currencyName}. Списать средства с баланса?`, 'Оплатить', false, async () => {
       try {
-        const batch = db.batch();
-        const userRef = db.collection('users').doc(currentUser.uid);
-        const affRef = db.collection('affiliates').doc(currentUser.uid);
+        // Списание и выдачу товара выполняет сервер (цены — из серверного каталога)
+        const res = await BlockoAPI.call('storePurchase', { productId: prodId, currency });
+        const generatedCode = res.giftCode || null;
 
-        // Списание
-        if (currency === 'coins') batch.update(userRef, { coins: firebase.firestore.FieldValue.increment(-price) });
-        else batch.update(affRef, { earnedCredits: firebase.firestore.FieldValue.increment(-price) });
-
-        // Логика выдачи
-        if (prodId.startsWith('ai_')) {
-          if (prodId === 'ai_50') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(50) }, { merge: true });
-          if (prodId === 'ai_200') batch.set(userRef, { bonusAiLimit: firebase.firestore.FieldValue.increment(200) }, { merge: true });
-          if (prodId === 'ai_daily_sub') batch.set(userRef, { aiDailySub: true, aiSubExpires: Date.now() + (30*24*60*60*1000) }, { merge: true });
-        }
-        
-        if (prodId.startsWith('plan_')) batch.update(userRef, { plan: prodId.replace('plan_', '') });
-
-        let generatedCode = null;
-        if (prodId.startsWith('gift_')) {
-          const amount = parseInt(prodId.replace('gift_', '')) * 100;
-          generatedCode = 'GIFT-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-          
-          batch.set(db.collection('promocodes').doc(generatedCode), { 
-            type: 'coins', 
-            rewardCoins: amount,
-            maxUses: 1,
-            uses: 0,
-            expiresAt: null,
-            isGiftBox: true,
-            createdAt: new Date().toISOString(),
-            createdBy: currentUser.uid 
-          });
-        }
-
-        await batch.commit();
-        
         if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
         
         if (generatedCode) {
@@ -946,6 +895,9 @@
         loadBalances();
       } catch (e) { 
         console.error(e); 
+        const reason = BlockoAPI.errorMessage(e);
+        if (reason === 'not_enough_coins') { openTopUpModal(); return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50'); }
+        if (reason === 'not_enough_credits') return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
         showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
       }
     });
@@ -976,6 +928,8 @@
   }
 
   function preparePayPalPayment(amountCoins, usdPrice, itemName) {
+     const packId = ({ 1000: 'starter', 5000: 'popular', 12000: 'max' })[amountCoins];
+     if (!packId) return showSystemToast('Ошибка', 'Неизвестный пакет монет.', 'x-circle', 'text-red-500', 'bg-red-50');
      document.getElementById('packsContainer').classList.add('hidden');
      document.getElementById('paypalPaymentContainer').classList.remove('hidden');
      document.getElementById('paypalPaymentContainer').classList.add('flex');
@@ -1003,42 +957,25 @@
                 label:  'paypal',
                 height: 45
             },
-            // 1. Создаем ордер
-            createOrder: function(data, actions) {
-              return actions.order.create({
-                purchase_units: [{
-                  description: `Blocko Pro: ${itemName} (${amountCoins} Coins)`,
-                  amount: {
-                    currency_code: "USD",
-                    value: usdPrice.toString()
-                  }
-                }]
-              });
+            // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
+            createOrder: async function() {
+              const res = await BlockoAPI.call('createPaypalOrder', { packId });
+              return res.orderId;
             },
-            // 2. Обработка успешного подтверждения от PayPal
-            onApprove: function(data, actions) {
-              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-400">Транзакция подтверждена. Начисляем монеты...</p></div>';
+            // Оплату захватывает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
+            onApprove: async function(data) {
+              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-300">Подтверждаем оплату...</p></div>';
               lucide.createIcons({ root: container });
-
-              // Вызов capture() - это финальная фиксация оплаты. Она пройдет ТОЛЬКО если деньги списаны.
-              return actions.order.capture().then(async function(details) {
-                console.log('Оплата успешна:', details);
-                try {
-                  // Начисляем монеты в Firebase
-                  const userRef = db.collection('users').doc(currentUser.uid);
-                  await userRef.set({ coins: firebase.firestore.FieldValue.increment(amountCoins) }, { merge: true });
-                  
-                  closeTopUpModal();
-                  
-                  if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
-                  showSystemToast('Оплата прошла успешно!', `Вам начислено ${amountCoins} B-Coins. Спасибо за покупку!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-                  
-                  loadBalances();
-                } catch(e) {
-                  console.error("DB Error:", e);
-                  showSystemToast('Сбой зачисления', 'Оплата прошла, но база данных не ответила. Напишите в поддержку.', 'alert-triangle', 'text-red-500', 'bg-red-50');
-                }
-              });
+              try {
+                const res = await BlockoAPI.call('capturePaypalOrder', { orderId: data.orderID });
+                closeTopUpModal();
+                if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
+                showSystemToast('Оплата прошла успешно!', `Вам начислено ${res.coins} B-Coins. Спасибо за покупку!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
+                loadBalances();
+              } catch (e) {
+                console.error('capturePaypalOrder', e);
+                showSystemToast('Сбой зачисления', 'Не удалось подтвердить оплату. Если деньги списались, напишите в поддержку и укажите номер заказа: ' + data.orderID, 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+              }
             },
             // 3. Если пользователь закрыл окно оплаты
             onCancel: function (data) {
@@ -1144,43 +1081,21 @@
       lucide.createIcons({ root: btn.parentNode });
 
       try {
-          const userRef = db.collection('users').doc(currentUser.uid);
-          const affRef = db.collection('affiliates').doc(currentUser.uid);
-          const todayStr = new Date().toLocaleDateString('ru-RU');
-
-          let completedToday = [];
-          if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
-              completedToday = currentUserData.dailyQuests;
-          }
-
-          if (completedToday.includes(type)) {
-              throw new Error('Вы уже выполнили это задание сегодня.');
-          }
-
-          // Выполняем транзакцию
-          const batch = db.batch();
-          batch.set(userRef, {
-              dailyQuestsDate: todayStr,
-              dailyQuests: firebase.firestore.FieldValue.arrayUnion(type)
-          }, { merge: true });
-
-          batch.set(affRef, {
-              earnedCredits: firebase.firestore.FieldValue.increment(amount)
-          }, { merge: true });
-
-          await batch.commit();
-
-          // Логика конкретных заданий (Шаринг)
+          // Шаринг открываем сразу по клику (иначе браузер заблокирует всплывающее окно)
           if (type === 'telegram') {
               const url = encodeURIComponent(window.location.origin + window.location.pathname.replace('store.html', ''));
               const text = encodeURIComponent("Присоединяйтесь ко мне в Blocko Pro!");
-              window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'width=600,height=400');
+              window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener,width=600,height=400');
           }
+
+          // Начисление и проверку «раз в день» делает сервер
+          const res = await BlockoAPI.call('claimDailyQuest', { type });
+          amount = res.amount;
+          const todayStr = new Date().toLocaleDateString('ru-RU');
 
           // Обновляем локальные данные, чтобы не тянуть из базы снова
           currentUserData.dailyQuestsDate = todayStr;
-          if(!currentUserData.dailyQuests) currentUserData.dailyQuests = [];
-          currentUserData.dailyQuests.push(type);
+          currentUserData.dailyQuests = res.dailyQuests || [type];
 
           if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 }, zIndex: 9999 });
           showSystemToast('Квест выполнен!', `Вам начислено ${amount} кредитов.`, 'check-square', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
@@ -1192,7 +1107,7 @@
           btn.disabled = false;
           btn.innerHTML = ogHtml;
           lucide.createIcons({ root: btn.parentNode });
-          showSystemToast('Внимание', e.message, 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+          showSystemToast('Внимание', BlockoAPI.errorMessage(e) || 'Не удалось засчитать задание.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
       }
   }
 
@@ -1338,54 +1253,12 @@
     lucide.createIcons({ root: btn.parentElement });
 
     try {
-       const promoRef = db.collection('promocodes').doc(code);
-       const promoDoc = await promoRef.get();
-       
-       if (!promoDoc.exists) throw new Error('not_found');
-       
-       const promo = promoDoc.data();
-       const now = Date.now();
-       
-       if (promo.expiresAt && new Date(promo.expiresAt).getTime() < now) throw new Error('expired');
-       if (promo.maxUses > 0 && (promo.uses || 0) >= promo.maxUses) throw new Error('limit');
-
-       const userRef = db.collection('users').doc(currentUser.uid);
-       const userDoc = await userRef.get();
-       const usedPromos = userDoc.data().usedPromos || [];
-       
-       if (usedPromos.includes(code)) throw new Error('already_used');
-
-       const batch = db.batch();
-       const updates = { usedPromos: firebase.firestore.FieldValue.arrayUnion(code) };
-       
-       let successMsg = '';
-       
-       if (promo.type === 'plan' || promo.type === 'plan_pro_2m' || promo.type === 'plan_fl_1m') {
-           let planToSet = promo.rewardPlan || (promo.type === 'plan_pro_2m' ? 'pro' : 'freelancer');
-           let durMonths = promo.rewardPlanDuration || (promo.type === 'plan_pro_2m' ? 2 : 1);
-           
-           updates.plan = planToSet;
-           if (durMonths === 999) {
-               updates.planExpiresAt = firebase.firestore.FieldValue.delete();
-           } else {
-               const currentExpiry = userDoc.data().planExpiresAt || now;
-               updates.planExpiresAt = Math.max(currentExpiry, now) + (durMonths * 30 * 24 * 60 * 60 * 1000);
-           }
-           successMsg = `Активирован тариф ${planToSet.toUpperCase()}`;
-           localStorage.setItem('blocko_user_plan', planToSet);
-       } else if (promo.type === 'coins' || promo.type === 'coins_1000') {
-           let coinsToAdd = promo.rewardCoins || 1000;
-           updates.coins = firebase.firestore.FieldValue.increment(coinsToAdd);
-           successMsg = `Начислено ${coinsToAdd} B-Coins!`;
-       } else if (promo.type === 'discount' || promo.type === 'discount_50') {
-           updates.activeDiscount = promo.rewardDiscount || 50;
-           successMsg = `Получена скидка ${updates.activeDiscount}% на следующую покупку!`;
-       }
-
-       batch.update(userRef, updates);
-       batch.update(promoRef, { uses: firebase.firestore.FieldValue.increment(1) });
-       
-       await batch.commit();
+       // Проверки (срок, лимит, повтор) и начисление — на сервере
+       const reward = await BlockoAPI.call('redeemPromo', { code });
+       let successMsg = 'Промокод применён.';
+       if (reward.type === 'plan') successMsg = `Активирован тариф ${reward.plan.toUpperCase()}`;
+       else if (reward.type === 'coins') successMsg = `Начислено ${reward.coins} B-Coins!`;
+       else if (reward.type === 'discount') successMsg = `Получена скидка ${reward.discount}% на следующую покупку!`;
        
        if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
        showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');

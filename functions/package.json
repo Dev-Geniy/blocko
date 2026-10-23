@@ -1,0 +1,19 @@
+{
+  "name": "blocko-functions",
+  "private": true,
+  "description": "Blocko Pro — серверная логика: платежи, тарифы, промокоды, пароли досок",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "lint": "node --check index.js && node --check lib/catalog.js && node --check lib/passwords.js && node --check lib/paypal.js",
+    "test": "node --test test/*.test.js",
+    "serve": "firebase emulators:start --only functions,firestore",
+    "deploy": "firebase deploy --only functions,firestore:rules"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.0"
+  }
+}
