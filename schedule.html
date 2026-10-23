@@ -605,7 +605,8 @@
           unsubSharedStream = null;
       }
 
-      if (window.innerWidth < 768) toggleSidebar(); 
+      // На телефоне после выбора файла закрываем панель (раньше она открывалась сама при загрузке страницы)
+      if (window.innerWidth < 768 && !document.getElementById('mainSidebar').classList.contains('-translate-x-full')) toggleSidebar();
 
       let fileMeta = null;
       Object.keys(folders).forEach(fol => {

@@ -51,17 +51,13 @@
       transform: translateY(0);
     }
 
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-    }
+    /* Обычная прокрутка страницы: шапка липкая (sticky), контент листается целиком.
+       Раньше body был фиксированной высоты с overflow:hidden — низ страницы был недоступен. */
+    html, body { width: 100%; min-height: 100dvh; }
   </style>
   <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 h-[100dvh] max-h-[100dvh] flex flex-col overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col transition-colors duration-300">
   <!-- ЭНТЕРПРАЙЗ АБСТРАКЦИЯ: Инновационный живой фон -->
   <div class="fixed inset-0 z-[0] pointer-events-none overflow-hidden">
     <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-400/5 dark:bg-indigo-600/10 blur-[120px] animate-[pulse_8s_ease-in-out_infinite]"></div>
