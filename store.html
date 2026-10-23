@@ -614,7 +614,7 @@
               }
           } catch(e) {
               console.error(e);
-              return showSystemToast('Ошибка', 'Не удалось сгенерировать подарок', 'x-circle', 'text-red-500', 'bg-red-50');
+              return showSystemToast('Ошибка', (BlockoAPI.errorCode(e) === 'backend-unavailable' ? BlockoAPI.errorMessage(e) : 'Не удалось сгенерировать подарок'), 'x-circle', 'text-red-500', 'bg-red-50');
           }
       }
       // Сценарий 2: Проверка статуса уже созданного подарка
@@ -898,7 +898,7 @@
         const reason = BlockoAPI.errorMessage(e);
         if (reason === 'not_enough_coins') { openTopUpModal(); return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50'); }
         if (reason === 'not_enough_credits') return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
-        showSystemToast('Ошибка', 'Сбой транзакции. Баланс не списан.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+        showSystemToast('Ошибка', (BlockoAPI.errorCode(e) === 'backend-unavailable' ? BlockoAPI.errorMessage(e) : 'Сбой транзакции. Баланс не списан.'), 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
       }
     });
   }
@@ -959,8 +959,13 @@
             },
             // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
             createOrder: async function() {
-              const res = await BlockoAPI.call('createPaypalOrder', { packId });
-              return res.orderId;
+              try {
+                const res = await BlockoAPI.call('createPaypalOrder', { packId });
+                return res.orderId;
+              } catch (e) {
+                showSystemToast('Оплата недоступна', BlockoAPI.errorMessage(e) || 'Не удалось создать платёж.', 'cloud-off', 'text-amber-500', 'bg-amber-50');
+                throw e;
+              }
             },
             // Оплату захватывает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
             onApprove: async function(data) {
@@ -1268,7 +1273,7 @@
        loadBalances();
 
     } catch (err) {
-       let errMsg = 'Произошла ошибка базы данных.';
+       let errMsg = (BlockoAPI.errorCode(err) === 'backend-unavailable' ? BlockoAPI.errorMessage(err) : 'Не удалось активировать промокод.');
        if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
        else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
        else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
