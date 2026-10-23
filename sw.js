@@ -1,5 +1,6 @@
 // ЭНТЕРПРАЙЗ: Интегрированный Service Worker ядра и медиа Blocko Pro
-const CORE_CACHE_NAME = 'blocko-pro-core-v2';
+// Версию повышаем при каждом релизе: так устаревший кэш удаляется при активации
+const CORE_CACHE_NAME = 'blocko-pro-core-v3';
 const MEDIA_CACHE_NAME = 'blocko-media-cache-v2';
 
 const CORE_ASSETS = [
@@ -12,6 +13,8 @@ const CORE_ASSETS = [
   './products.html',
   './updates.html',
   './config.js',
+  './security.js',
+  './api.js',
   './manifest.json'
 ];
 

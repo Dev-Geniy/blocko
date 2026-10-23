@@ -1,0 +1,29 @@
+/* Blocko Pro — стили index.html (вынесены из inline <style>) */
+body { font-family: 'Plus Jakarta Sans', sans-serif; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+.hide-scroll::-webkit-scrollbar { display: none; }
+.hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Premium Blocko Loader */
+@keyframes block-stretch {
+  0%, 100% { transform: scaleX(1); opacity: 0.5; }
+  50% { transform: scaleX(2.5); opacity: 1; }
+}
+.loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-400 { animation-delay: 0.4s; }
+
+.glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.sortable-ghost { opacity: 0.4; transform: scale(0.95); }
+.sortable-drag { cursor: grabbing !important; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+
+/* ENTERPRISE: Архитектура PWA-вьюпорта */
+    html, body {
+      height: 100dvh;
+      width: 100%;
+      overflow: hidden; /* Запрет глобального скролла для предотвращения баунса на iOS */
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
+    }
