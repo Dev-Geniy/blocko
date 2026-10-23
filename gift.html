@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f43f5e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 12 20 22 4 22 4 12'/><rect width='20' height='5' x='2' y='7'/><line x1='12' x2='12' y1='22' y2='7'/><path d='M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z'/><path d='M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z'/></svg>" />
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -22,10 +23,9 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="security.js"></script>
   
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
   
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; }
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; background-color: #0b0f19; }
     .glass-panel { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
     
     @keyframes float {
@@ -56,10 +56,7 @@
     }
   </style>
 
-  <script>
-    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 950: '#0b0f19' } } } } }
-  </script>
-</head>
+  </head>
 <body class="text-white min-h-screen flex flex-col relative overflow-x-hidden overflow-y-auto px-4 py-12">
 
   <!-- Particles Background Container -->
