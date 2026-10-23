@@ -1864,6 +1864,10 @@ function loadBoard() {
       }
 
       // ЭНТЕРПРАЙЗ: Маршрутизация на ввод пароля с сохранением Deep Link
+      // Старая доска с паролем в документе (до миграции) — пароль уже проверен на главной в этой сессии
+      if (!isOwner && boardData.password && !boardData.hasPassword && sessionStorage.getItem('blocko_auth_' + BOARD_ID) === boardData.password) {
+        unlockState = 'ok';
+      }
       if (!isOwner && (boardData.hasPassword || boardData.password) && unlockState !== 'ok') {
         if (unlockState === 'checking') return;
         unlockState = 'checking';

@@ -290,6 +290,7 @@
         if (m === 'limit') return 'Подарок только что был открыт кем-то другим.';
         if (m === 'expired') return 'Срок действия подарка истёк.';
         if (m === 'not_found') return 'Такой подарок не найден.';
+        if (BlockoAPI.errorCode(err) === 'backend-unavailable') return m;
         return 'Не удалось распаковать подарок. Попробуйте ещё раз.';
     }
 

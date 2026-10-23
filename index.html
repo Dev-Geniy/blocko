@@ -1479,7 +1479,11 @@ async function loadReferralsList() {
   listEl.innerHTML = '<div class="w-full text-center py-6 text-blue-500 font-bold text-xs animate-pulse">Синхронизация сети...</div>';
   
   try {
-    const res = await BlockoAPI.call('listReferrals');
+    const res = await BlockoAPI.call('listReferrals', {}, async () => {
+      // Запасной путь до деплоя функций (старые правила базы)
+      const snap = await db.collection('users').where('referredBy', '==', currentUser.id).limit(100).get();
+      return { referrals: snap.docs.map(d => { const u = d.data(); return { name: u.name, avatar: u.avatar, customAvatar: u.customAvatar, badgeStatus: u.badgeStatus, badgeConfig: u.badgeConfig }; }) };
+    });
     const referrals = (res && Array.isArray(res.referrals)) ? res.referrals : [];
     document.getElementById('referralsCountBadge').innerText = referrals.length;
     
@@ -1722,7 +1726,7 @@ async function upgradeTo(planId) {
         return showSystemToast('Недостаточно монет', 'Пополните баланс, чтобы активировать тариф.', 'coins', 'text-amber-500', 'bg-amber-50');
       }
       console.error("Ошибка активации:", error);
-      showSystemToast('Сбой', 'Не удалось провести оплату.', 'alert-circle', 'text-red-500', 'bg-red-50');
+      showSystemToast('Сбой', (BlockoAPI.errorCode(error) === 'backend-unavailable' ? BlockoAPI.errorMessage(error) : 'Не удалось провести оплату.'), 'alert-circle', 'text-red-500', 'bg-red-50');
     }
   });
 }
@@ -1783,8 +1787,13 @@ async function upgradeTo(planId) {
             },
             // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
             createOrder: async function() {
-              const res = await BlockoAPI.call('createPaypalOrder', { packId });
-              return res.orderId;
+              try {
+                const res = await BlockoAPI.call('createPaypalOrder', { packId });
+                return res.orderId;
+              } catch (e) {
+                showSystemToast('Оплата недоступна', BlockoAPI.errorMessage(e) || 'Не удалось создать платёж.', 'cloud-off', 'text-amber-500', 'bg-amber-50');
+                throw e;
+              }
             },
             // Оплату захватывает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
             onApprove: async function(data) {
@@ -1850,7 +1859,7 @@ async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePr
      }, 1500);
 
   } catch (err) {
-     let errMsg = 'Не удалось активировать промокод.';
+     let errMsg = (BlockoAPI.errorCode(err) === 'backend-unavailable' ? BlockoAPI.errorMessage(err) : 'Не удалось активировать промокод.');
      if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
      else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
      else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
@@ -2019,7 +2028,7 @@ async function confirmCreateBoard() {
     try {
       const docRef = await db.collection("boards").add(newBoard);
       // Пароль облачной доски хранится на сервере в виде хэша
-      if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password });
+      if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password }, () => docRef.update({ password }));
       window.location.href = `board.html?b=${docRef.id}`;
     } catch (e) { 
       if (submitBtn) { 
@@ -2264,7 +2273,7 @@ async function processBoardImport() {
          imported.id = docRef.id;
 
          await docRef.set(imported);
-         if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password });
+         if (password) await BlockoAPI.call('setBoardPassword', { boardId: docRef.id, password }, () => docRef.update({ password }));
 
          // ЭНТЕРПРАЙЗ: Пакетная запись (Chunking) для обхода лимита Firestore в 500 операций
          if (cardsToImport.length > 0) {
@@ -2327,7 +2336,7 @@ async function joinBoardById(id, requestedRole = 'editor') {
   if (!/^[A-Za-z0-9_-]{1,128}$/.test(id)) return showSystemToast('Не найдено', 'Проект с таким ID не существует.', 'alert-circle', 'text-red-500', 'bg-red-50');
   try {
     // Сервер проверяет лимит участников тарифа владельца и пароль
-    const res = await BlockoAPI.call('enterBoard', { boardId: id, role: requestedRole === 'viewer' ? 'viewer' : 'editor' });
+    const res = await BlockoAPI.call('enterBoard', { boardId: id, role: requestedRole === 'viewer' ? 'viewer' : 'editor' }, legacyEnterBoard);
     if (res.status === 'password_required') {
       openBoardPasswordPrompt(id, 'board', res.preview, requestedRole);
       return;
@@ -2339,6 +2348,41 @@ async function joinBoardById(id, requestedRole = 'editor') {
   }
 }
 
+// Запасной вход на доску напрямую через Firestore — пока Cloud Functions не задеплоены.
+// Работает только со старыми правилами базы; после деплоя функций и правил не используется.
+async function legacyEnterBoard({ boardId, password, role }) {
+  const docRef = db.collection('boards').doc(boardId);
+  const doc = await docRef.get();
+  if (!doc.exists) { const e = new Error('Проект не найден.'); e.code = 'not-found'; throw e; }
+  const board = doc.data();
+  const isOwner = board.owner === currentUser.id;
+  const isMember = (board.members || []).includes(currentUser.id);
+  const ownerInfo = (board.users || {})[board.owner] || {};
+  const preview = { title: board.title || 'Без названия', owner: ownerInfo, hasPassword: !!board.password };
+
+  if (board.password && !isOwner) {
+    if (!password) return { status: 'password_required', preview };
+    if (password !== board.password) { const e = new Error('wrong_password'); e.code = 'permission-denied'; throw e; }
+    sessionStorage.setItem('blocko_auth_' + boardId, password);
+  }
+
+  if (!isMember && !isOwner) {
+    const ownerDoc = await db.collection('users').doc(board.owner).get().catch(() => null);
+    const ownerPlan = ownerDoc && ownerDoc.exists ? (ownerDoc.data().plan || 'free') : 'free';
+    const maxMembers = ownerPlan === 'freelancer' ? 10 : (ownerPlan === 'pro' || ownerPlan === 'infinity') ? 9999 : 3;
+    if ((board.members || []).length >= maxMembers) { const e = new Error('member_limit'); e.code = 'resource-exhausted'; throw e; }
+    await docRef.update({
+      members: firebase.firestore.FieldValue.arrayUnion(currentUser.id),
+      [`users.${currentUser.id}`]: {
+        name: currentUser.name || 'User', avatar: currentUser.avatar || null, role: role === 'viewer' ? 'viewer' : 'editor',
+        customAvatar: currentUser.customAvatar || null, badgeStatus: currentUser.badgeStatus || null, badgeConfig: currentUser.badgeConfig || null
+      }
+    });
+    return { status: 'joined', preview };
+  }
+  return { status: 'ok', preview };
+}
+
 function handleEnterBoardError(e) {
   const code = BlockoAPI.errorCode(e);
   const msg = BlockoAPI.errorMessage(e);
@@ -2346,6 +2390,7 @@ function handleEnterBoardError(e) {
   if (msg === 'member_limit') return showSystemToast('Лимит достигнут', 'Владелец доски исчерпал лимит участников для своего тарифа.', 'users', 'text-red-500', 'bg-red-50');
   if (msg === 'wrong_password') return showSystemToast('Ошибка доступа', 'Неверный пароль. Попробуйте еще раз.', 'shield-alert', 'text-red-500', 'bg-red-50');
   if (code === 'resource-exhausted') return showSystemToast('Подождите', msg || 'Слишком много попыток.', 'clock', 'text-amber-500', 'bg-amber-50');
+  if (code === 'backend-unavailable') return showSystemToast('Сервер обновляется', msg, 'cloud-off', 'text-amber-500', 'bg-amber-50');
   console.error('enterBoard', e);
   showSystemToast('Ошибка', 'Нет доступа или неверный ID.', 'alert-triangle', 'text-red-500', 'bg-red-50');
 }
@@ -2766,7 +2811,7 @@ async function tryEnterBoard(id, hasPassword, target = 'board') {
   } catch (e) { /* нет доступа — спросим сервер */ }
 
   try {
-    const res = await BlockoAPI.call('enterBoard', { boardId: id });
+    const res = await BlockoAPI.call('enterBoard', { boardId: id }, legacyEnterBoard);
     if (res.status === 'password_required') openBoardPasswordPrompt(id, target, res.preview);
     else window.location.href = targetUrl;
   } catch (e) {
@@ -2853,7 +2898,7 @@ async function submitBoardPassword() {
 
   // Облачные доски: пароль проверяет сервер
   try {
-    await BlockoAPI.call('enterBoard', { boardId, password: entered, role: pendingRole });
+    await BlockoAPI.call('enterBoard', { boardId, password: entered, role: pendingRole }, legacyEnterBoard);
     window.location.href = targetUrl;
   } catch (e) {
     document.getElementById('boardEntryPassword').value = '';
