@@ -13,10 +13,21 @@ function hashPassword(password) {
 
 function verifyPassword(password, stored) {
   if (typeof stored !== 'string') return false;
+  if (stored.startsWith('pbkdf2$')) return verifyPbkdf2(password, stored);
   const [algo, saltB64, hashB64] = stored.split('$');
   if (algo !== 'scrypt' || !saltB64 || !hashB64) return false;
   const expected = Buffer.from(hashB64, 'base64');
   const actual = crypto.scryptSync(String(password), Buffer.from(saltB64, 'base64'), expected.length, PARAMS);
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+}
+
+// Хэши от сервера на Cloudflare (worker/src/passwords.js): pbkdf2$итерации$соль$хэш, SHA-256
+function verifyPbkdf2(password, stored) {
+  const [, iterStr, saltB64, hashB64] = stored.split('$');
+  const iterations = Number(iterStr);
+  if (!Number.isInteger(iterations) || iterations < 1 || iterations > 1000000 || !saltB64 || !hashB64) return false;
+  const expected = Buffer.from(hashB64, 'base64');
+  const actual = crypto.pbkdf2Sync(String(password), Buffer.from(saltB64, 'base64'), iterations, expected.length, 'sha256');
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 

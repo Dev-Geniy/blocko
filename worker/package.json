@@ -1,0 +1,10 @@
+{
+  "name": "blocko-api",
+  "private": true,
+  "type": "module",
+  "description": "Серверные операции Blocko Pro на Cloudflare Workers (работает без тарифа Firebase Blaze)",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "deploy": "wrangler deploy"
+  }
+}

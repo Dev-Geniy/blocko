@@ -1,0 +1,15 @@
+# Blocko API — Cloudflare Worker (бесплатный тариф Cloudflare, банковская карта не нужна).
+# Деплой делает GitHub Action «Деплой API (Cloudflare)». Секреты (ключи) туда передаются
+# из Secrets репозитория и в этом файле НЕ хранятся.
+name = "blocko-api"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+workers_dev = true
+
+[vars]
+FIREBASE_PROJECT_ID = "blocko-pro"
+PAYPAL_ENV = "live"
+ALLOWED_ORIGINS = "https://blocko.cloud,https://www.blocko.cloud,https://dev-geniy.github.io"
+
+[observability]
+enabled = true
