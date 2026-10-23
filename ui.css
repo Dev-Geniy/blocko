@@ -1,0 +1,58 @@
+/* =====================================================================
+   Blocko Pro — общий слой интерфейса
+   Подключается на всех страницах после Tailwind. Здесь только то, что
+   нельзя удобно выразить утилитами: адаптив, доступность, мелкие правки.
+   ===================================================================== */
+
+/* Декоративные «свечения» не должны давать горизонтальную прокрутку на телефоне */
+html { overflow-x: clip !important; }
+body { overflow-x: clip; }
+
+/* Плавная прокрутка и аккуратный рендер шрифтов */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+
+/* Видимый фокус для клавиатуры, без рамок при клике мышью */
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 2px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+
+/* Пользователи с «уменьшить движение» не получают анимаций */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Аватар-заглушка: пока картинка не загрузилась — мягкий фон вместо «битой» иконки */
+img.rounded-full { background-color: rgba(148, 163, 184, .18); }
+
+/* ---------- Главная: карточки проектов ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .project-card .project-actions { opacity: 0; transition: opacity .15s ease; }
+  .project-card:hover .project-actions,
+  .project-card:focus-within .project-actions { opacity: 1; }
+}
+
+/* ---------- Доска ---------- */
+
+/* Колонки на телефоне: почти во всю ширину и «прилипают» при прокрутке */
+@media (max-width: 640px) {
+  #mainScroll { padding: 12px !important; scroll-snap-type: x mandatory; scroll-padding-left: 12px; }
+  #board { gap: 12px !important; }
+  #board > [data-id] { width: calc(100vw - 40px) !important; max-width: 360px; scroll-snap-align: start; }
+
+  /* Окна на телефоне — как нижний лист: во всю ширину и с прокруткой */
+  .glass-modal > div { max-width: 100% !important; }
+}
+
+/* Карточки задач: чуть легче тени и аккуратный ховер */
+.card-item { transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+@media (hover: hover) and (pointer: fine) {
+  .card-item:hover { transform: translateY(-1px); }
+}
+
+/* Безопасные зоны iPhone для плавающих кнопок и нижних панелей */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Закрытые боковые панели доски: тень не должна «выглядывать» из-за правого края,
+   а содержимое — попадать в фокус с клавиатуры */
+aside.translate-x-full { box-shadow: none !important; visibility: hidden; transition: transform .3s ease, visibility 0s linear .3s !important; }
+aside:not(.translate-x-full) { visibility: visible; }

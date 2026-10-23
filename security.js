@@ -91,12 +91,41 @@
     return m ? 'https://www.youtube-nocookie.com/embed/' + m[1] : '';
   }
 
+  /**
+   * Аватар с инициалами (SVG data-URI) — без внешних сервисов.
+   * Цвет стабилен для одного и того же имени.
+   */
+  const AVATAR_COLORS = ['#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f97316', '#10b981', '#06b6d4', '#64748b'];
+  function initialsAvatar(name) {
+    const clean = String(name || '').replace(/[<>&"'`]/g, '').trim();
+    const parts = clean.split(/\s+/).filter(Boolean);
+    const letters = ((parts[0] || '?')[0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+    let hash = 0;
+    for (let i = 0; i < clean.length; i++) hash = (hash * 31 + clean.charCodeAt(i)) >>> 0;
+    const bg = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${bg}"/>` +
+      `<text x="50%" y="50%" dy=".35em" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,sans-serif" font-size="26" font-weight="600" fill="#fff">${letters}</text></svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+
+  // Битые картинки аватаров (пустой src, недоступный сервис) заменяем инициалами
+  if (global.document) {
+    global.document.addEventListener('error', function (e) {
+      const img = e.target;
+      if (!img || img.tagName !== 'IMG' || img.dataset.avatarFallback) return;
+      const isAvatar = img.classList.contains('rounded-full') || img.dataset.avatar !== undefined;
+      if (!isAvatar) return;
+      img.dataset.avatarFallback = '1';
+      img.src = initialsAvatar(img.getAttribute('title') || img.getAttribute('alt') || '');
+    }, true);
+  }
+
   /** Безопасный идентификатор (id карточек/колонок/досок) для data-атрибутов и путей. */
   function isSafeId(value) {
     return /^[A-Za-z0-9_.:-]{1,128}$/.test(String(value));
   }
 
-  global.BlockoSec = { esc, jsArg, safeUrl, safeColor, sanitizeHTML, escRegExp, highlight, isSafeId, safeYoutubeEmbed };
+  global.BlockoSec = { esc, jsArg, safeUrl, safeColor, sanitizeHTML, escRegExp, highlight, isSafeId, safeYoutubeEmbed, initialsAvatar };
   // Короткие глобальные алиасы для шаблонов
   global.esc = esc;
   global.jsArg = jsArg;
@@ -104,4 +133,5 @@
   global.safeColor = safeColor;
   global.sanitizeHTML = sanitizeHTML;
   global.safeYoutubeEmbed = safeYoutubeEmbed;
+  global.initialsAvatar = initialsAvatar;
 })(window);

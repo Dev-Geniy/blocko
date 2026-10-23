@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FlowBoard - Рабочая область</title>
+  <title>Доска — Blocko Pro</title>
 
   <!-- Фавикон -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
@@ -14,6 +14,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <!-- ЭНТЕРПРАЙЗ: Жесткая фиксация версий библиотек (Dependency Pinning) для защиты от поломок API -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -164,17 +165,17 @@
 </div>
 
 <div id="headerWrapper" class="group/header w-full relative z-[60] flex flex-col shadow-sm transition-all duration-300">
-  <header class="px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center z-[60] relative">
-    <div class="flex items-center gap-3">
-      <a href="index.html" class="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
+  <header class="px-3 sm:px-6 py-2.5 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl flex justify-between items-center gap-2 z-[60] relative">
+    <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 md:flex-none">
+      <a href="index.html" class="flex-shrink-0 p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400" title="На главную">
         <i data-lucide="arrow-left" class="w-5 h-5"></i>
       </a>
       <!-- ЭНТЕРПРАЙЗ: Кнопка переключения лейаута Пространств -->
       <button onclick="toggleSpacesLayout()" class="hidden md:flex p-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-gray-500 dark:text-gray-400 hover:text-indigo-500 transition-colors active:scale-95" title="Переключить вид панели досок (Сверху / Сбоку)">
         <i data-lucide="sidebar-open" class="w-5 h-5 pointer-events-none"></i>
       </button>
-      <div class="flex items-center gap-3">
-        <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 hover:underline transition-all truncate max-w-[150px] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <h1 id="boardTitleHeader" onclick="renameBoard()" class="text-lg sm:text-xl font-bold tracking-tight cursor-pointer hover:text-blue-500 transition-colors truncate min-w-0 max-w-[40vw] sm:max-w-xs" title="Нажмите, чтобы переименовать">Загрузка...</h1>
         
         <!-- ПРЕМИАЛЬНЫЙ ИНДИКАТОР ПОДКЛЮЧЕНИЯ (Control Panel Style) -->
         <div id="boardStatusBadge" class="hidden flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all select-none cursor-help hover:scale-105 active:scale-95" title="Индикатор сети">
@@ -246,7 +247,7 @@
       </div>
     </div>
 
-    <div class="flex gap-2 items-center">
+    <div class="flex gap-1.5 sm:gap-2 items-center flex-shrink-0">
       <button onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 transition-colors shadow-sm">
         <i data-lucide="menu" class="w-4 h-4"></i>
       </button>
@@ -679,25 +680,25 @@
     </div>
     
     <!-- Footer Actions (Compact Square Buttons) -->
-    <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
-      <div class="flex gap-2">
-        <button onclick="deleteCard()" class="w-12 h-12 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
+    <div class="flex justify-between items-center gap-2 mt-6 pt-5 border-t border-gray-100 dark:border-gray-700/50">
+      <div class="flex gap-1.5 sm:gap-2 min-w-0">
+        <button onclick="deleteCard()" class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-xl transition-colors border border-red-100 dark:border-red-900/30" title="Удалить навсегда">
           <i data-lucide="trash-2" class="w-5 h-5"></i>
         </button>
-        <button onclick="archiveCard()" class="w-12 h-12 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
+        <button onclick="archiveCard()" class="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-amber-50 dark:bg-amber-900/20 text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl transition-colors border border-amber-100 dark:border-amber-900/30" title="В архив">
           <i data-lucide="archive" class="w-5 h-5"></i>
         </button>
-        <button onclick="duplicateCard()" id="btnDuplicateCard" class="hidden w-12 h-12 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-900/30" title="Дублировать (Копия)">
+        <button onclick="duplicateCard()" id="btnDuplicateCard" class="hidden w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 rounded-xl transition-colors border border-indigo-100 dark:border-indigo-900/30" title="Дублировать (Копия)">
           <i data-lucide="copy" class="w-5 h-5"></i>
         </button>
-        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" class="hidden w-12 h-12 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на задачу">
+        <button onclick="copyCardDeepLink()" id="btnCopyDeepLink" class="hidden w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-xl transition-colors border border-emerald-100 dark:border-emerald-900/30" title="Скопировать ссылку на задачу">
           <i data-lucide="link" class="w-5 h-5"></i>
         </button>
       </div>
-      <div class="flex items-center gap-4">
-        <button onclick="closeEditModal()" class="px-2 font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">Отмена</button>
-        <button onclick="saveCard()" class="w-12 h-12 flex items-center justify-center bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
-          <i data-lucide="check" class="w-6 h-6"></i>
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <button onclick="closeEditModal()" class="hidden sm:block px-2 font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors text-sm">Отмена</button>
+        <button onclick="saveCard()" class="h-10 sm:h-12 px-4 sm:px-5 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-blue-500/25 active:scale-95 transition-all">
+          <i data-lucide="check" class="w-5 h-5"></i><span>Сохранить</span>
         </button>
       </div>
     </div>
@@ -1661,7 +1662,7 @@ function deleteSpace(spaceId) {
 auth.onAuthStateChanged(async (user) => {
   const loader = document.getElementById('globalLoader');
   if (user) {
-    const safeAvatar = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=3b82f6&color=fff`;
+    const safeAvatar = user.photoURL || ''; // пусто → при отрисовке подставятся инициалы
     
     let badgeStatus = 'none';
     let customAvatar = null;
@@ -1727,7 +1728,7 @@ function getAvatarHTML(userObj, sizeClass, idAttr = '') {
   const config = userObj.badgeConfig || { frameColor: 'transparent', glowColor: 'transparent', animation: 'none' };
   const frameColor = safeColor(config.frameColor);
   const glowColor = safeColor(config.glowColor);
-  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userObj.name || 'User')}`;
+  const fallbackAvatar = initialsAvatar(userObj.name || 'User');
   const avatarUrl = esc(safeUrl(userObj.customAvatar) || safeUrl(userObj.avatar) || fallbackAvatar);
   const safeName = esc(userObj.name || 'User');
   const badge = userObj.badgeStatus || userObj.badge || 'none'; // Поддержка старого формата
@@ -4214,7 +4215,7 @@ function render() {
         const actualAuthor = (c.author && boardData.users && boardData.users[c.author.id]) ? boardData.users[c.author.id] : c.author;
         const authorAvatar = actualAuthor ? getAvatarHTML(actualAuthor, 'w-5 h-5 pointer-events-none') : '';
         const commentsCountText = c.comments && c.comments.length > 0 
-            ? `<span class="flex items-center gap-1 pointer-events-none"><i data-lucide="message-square" class="w-3 h-3"></i> ${c.comments.length}</span>` 
+            ? `<span class="flex items-center gap-1 pointer-events-none"><i data-lucide="message-square" class="w-3 h-3"></i> ${(c.comments || []).length}</span>` 
             : '';
         
         if (c.type === 'table') {
@@ -4228,12 +4229,11 @@ function render() {
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <div class="flex items-center gap-1.5 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-2 border border-blue-100/50 dark:border-blue-800/30 pointer-events-none">
                  <i data-lucide="layout" class="w-4 h-4 text-blue-400"></i>
-                 <span class="text-[10px] font-bold text-gray-500">${c.cols} x ${c.rows} ячеек</span>
+                 <span class="text-[10px] font-bold text-gray-500">${Number(c.cols) || 0} x ${Number(c.rows) || 0} ячеек</span>
               </div>
-              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  <span>Excel</span>
-                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                                    ${commentsCountText || ''}
                 </div>
                 ${authorAvatar}
               </div>
@@ -4242,6 +4242,8 @@ function render() {
         }
 
         if (c.type === 'poll') {
+          c.options = Array.isArray(c.options) ? c.options : [];
+          c.options.forEach(o => { if (!Array.isArray(o.votes)) o.votes = []; });
           const totalVotes = c.options.reduce((sum, o) => sum + o.votes.length, 0);
           const optionsHtml = c.options.map((opt, i) => {
             const percent = totalVotes === 0 ? 0 : Math.round((opt.votes.length / totalVotes) * 100);
@@ -4268,7 +4270,7 @@ function render() {
               </div>
               <div class="font-bold text-sm leading-tight mb-3 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <div class="space-y-1 mb-2 relative z-20 pointer-events-auto">${optionsHtml}</div>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                 <div class="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-widest">
                   <span><i data-lucide="users" class="w-3 h-3 inline pb-0.5 mr-0.5"></i> ${totalVotes}</span>
                   <span class="opacity-50">|</span>
@@ -4297,10 +4299,9 @@ function render() {
                   <div class="audio-progress bg-emerald-500 h-full w-0 transition-all duration-100"></div>
                 </div>
               </div>
-              <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                 <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                  <span>Аудио</span>
-                  ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                                    ${commentsCountText || ''}
                 </div>
                 ${authorAvatar}
               </div>
@@ -4332,10 +4333,9 @@ function render() {
                <div class="p-3 bg-rose-50/50 dark:bg-rose-900/10 rounded-xl text-center border border-rose-100/50 dark:border-rose-800/30 pointer-events-none">
                  ${timeHtml}
                </div>
-               <div class="flex justify-between items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+               <div class="flex justify-between items-center mt-3 pointer-events-none">
                  <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Ожидание</span>
-                   ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                                      ${commentsCountText || ''}
                  </div>
                  ${authorAvatar}
                </div>
@@ -4369,10 +4369,9 @@ function render() {
                 <div class="bg-cyan-500 h-full transition-all" style="width: ${percent}%"></div>
               </div>
               <div class="space-y-1">${itemsHtml}</div>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                  <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Задачи</span>
-                   ${commentsCountText ? `<span class="opacity-30">|</span> ${commentsCountText}` : ''}
+                                      ${commentsCountText || ''}
                  </div>
                  ${authorAvatar}
                </div>
@@ -4389,13 +4388,12 @@ function render() {
               </div>
               <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 pointer-events-none">${displayTitle}</div>
               <a href="${esc(safeUrl(c.url) || '#')}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="flex items-center justify-between gap-2 text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 px-4 py-3 rounded-xl hover:bg-white dark:hover:bg-gray-800 relative z-20 pointer-events-auto transition-colors mt-3 shadow-sm">
-                <span class="truncate">${c.url.replace(/^https?:\/\//, '')}</span>
+                <span class="truncate">${esc(String(c.url || '').replace(/^https?:\/\//, ''))}</span>
                 <i data-lucide="external-link" class="w-4 h-4 flex-shrink-0 text-blue-500"></i>
               </a>
-              <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
+              <div class="flex justify-between items-center mt-3 pointer-events-none">
                  <div class="flex items-center gap-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                   <span>Web</span>
-                 </div>
+                                    </div>
                  ${authorAvatar}
                </div>
             </div>`;
@@ -4408,8 +4406,8 @@ function render() {
           const done = c.checklist.filter(i => i.isCompleted).length;
           const percent = Math.round((done / c.checklist.length) * 100);
           checklistHtml = `
-            <div class="mt-3 mb-1 pointer-events-none">
-              <div class="flex justify-between items-center text-[10px] font-bold text-gray-400 mb-1.5">
+            <div class="pointer-events-none">
+              <div class="flex justify-between items-center gap-3 text-[10px] font-bold text-gray-400 mb-1 min-w-[96px]">
                 <span class="flex items-center gap-1"><i data-lucide="check-square" class="w-3 h-3"></i> ${done}/${c.checklist.length}</span>
                 <span>${percent}%</span>
               </div>
@@ -4421,8 +4419,8 @@ function render() {
         let dueDateHtml = c.dueDate ? `<div class="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-md ${isOverdue ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400'} pointer-events-none"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(c.dueDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>` : '';
         
         // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Текстовые читаемые теги
-        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shadow-sm ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('')}</div>` : '';
-        const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${c.comments.length}</div>` : '';
+        const tagsHtml = c.tags?.length ? `<div class="flex flex-wrap gap-1 pointer-events-none mb-1">${c.tags.map(tId => { const t = getBoardTags().find(tag => tag.id === tId); return t ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold leading-4 border ${esc(t.color)}">${esc(t.name)}</span>` : ''; }).join('')}</div>` : '';
+        const normalComments = c.comments?.length ? `<div class="flex items-center gap-1 text-[11px] font-medium text-gray-400 pointer-events-none"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> ${(c.comments || []).length}</div>` : '';
         
         let priorityHtml = '';
         if (c.priority === 'low') {
@@ -4432,7 +4430,7 @@ function render() {
         } else if (c.priority === 'critical') {
           priorityHtml = `<div class="flex items-center justify-center w-6 h-6 rounded-lg bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 animate-pulse" title="Приоритет: КРИТИЧНЫЙ"><i data-lucide="zap" class="w-3.5 h-3.5 text-red-600 dark:text-red-400 fill-current"></i></div>`;
         }        
-        const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${c.storyPoints}</span>` : '';
+        const spHtml = c.storyPoints ? `<span class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-black px-1.5 py-0.5 rounded-md" title="Story Points">${esc(c.storyPoints)}</span>` : '';
         
         // ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Понятный индикатор видео вместо красного квадрата
         const ytBadgeHtml = c.youtubeEmbed ? `<div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 shadow-sm" title="Прикреплено видео"><i data-lucide="play-circle" class="w-3 h-3"></i><span class="text-[8px] font-black uppercase tracking-wider">Видео</span></div>` : '';
@@ -4444,15 +4442,15 @@ function render() {
             <!-- ЭНТЕРПРАЙЗ МИКРО-УЛУЧШЕНИЕ: Легковесное сжатое превью для ускорения рендеринга доски -->
             ${c.image ? `<div class="compact-hide mb-3 w-full h-32 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700/50 pointer-events-none flex-shrink-0 bg-gray-50 dark:bg-gray-900/50"><img src="${esc(safeUrl(c.imageThumb, {allowData:true}) || safeUrl(c.image, {allowData:true}))}" alt="" referrerpolicy="no-referrer" loading="lazy" decoding="async" fetchpriority="low" style="content-visibility: auto;" class="w-full h-full object-cover block scale-105" /></div>` : ''}
             
-            <div class="flex flex-col items-start w-full pointer-events-none">
+            <div class="flex flex-col items-start gap-1.5 w-full pointer-events-none">
               ${tagsHtml}
-              <div class="font-bold text-sm leading-tight mb-2 text-gray-900 dark:text-white pr-6 line-clamp-3">${displayTitle}</div>
+              <div class="font-semibold text-sm leading-snug text-gray-900 dark:text-white pr-6 line-clamp-3">${displayTitle}</div>
             </div>
-            
-            <div class="flex items-center justify-between w-full mt-auto pt-2 border-t border-gray-100 dark:border-gray-700/50 pointer-events-none">
-              <div class="flex items-center gap-1.5">${dueDateHtml}${checklistHtml || normalComments}</div>
+            ${(dueDateHtml || checklistHtml || normalComments || priorityHtml || spHtml || ytBadgeHtml) ? `
+            <div class="flex items-center justify-between gap-2 w-full mt-3 pointer-events-none">
+              <div class="flex items-center gap-1.5 min-w-0">${dueDateHtml}${checklistHtml || normalComments}</div>
               <div class="flex items-center gap-1.5 justify-end flex-shrink-0">${priorityHtml}${spHtml}${ytBadgeHtml}</div>
-            </div>
+            </div>` : ''}
           </div>`;
       }).join('');
       
@@ -4530,7 +4528,7 @@ function render() {
       fragment.appendChild(wrap);
       
       // Инициализация SortableJS для текущей колонки (Enterprise Smart Invert Physics)
-      const colEl = wrap.querySelector(`#cards-${col.id}`);
+      const colEl = wrap.querySelector(`#cards-${CSS.escape(String(col.id))}`);
       sortableInstances.push(new Sortable(colEl, { 
         group: 'shared', 
         sort: !isSorted, // ЭНТЕРПРАЙЗ: Отключаем ручную сортировку (DnD внутри колонки), если активна умная сортировка
@@ -6099,6 +6097,8 @@ function addCommentToPoll() {
 function closePollStatsModal() {
   const modal = document.getElementById('pollStatsModal');
   const content = document.getElementById('pollStatsContent');
+  // Статистика опроса открывается в общем окне просмотра — закрываем его
+  if (!modal || !content) { if (typeof closeContentViewModal === 'function') closeContentViewModal(); return; }
   modal.classList.add('opacity-0');
   content.classList.add('scale-95');
   setTimeout(() => modal.classList.add('hidden'), 300);
