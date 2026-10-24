@@ -4,7 +4,7 @@
 // работает без тарифа Blaze. Каталог цен общий — functions/lib/catalog.js.
 // =====================================================================
 import * as C from '../../functions/lib/catalog.js';
-import { ApiError, FV, timestamp } from './firestore.js';
+import { ApiError, FV, timestamp, buildWrite } from './firestore.js';
 import { hashPassword, verifyPassword, equalsPlain } from './passwords.js';
 import { makePaypal, completedCapture } from './paypal.js';
 
@@ -445,10 +445,91 @@ async function setBoardPassword(ctx) {
   return { hasPassword: !!password };
 }
 
+// =====================================================================
+// 6. ДАННЫЕ ПРОЕКТОВ: сгорающие и временные файлы, полное удаление проекта
+// Правила базы не дают участнику удалить чужое сообщение, а удалённый документ доски
+// оставлял бы «осиротевшие» задачи и чат. Поэтому это делает сервер — после проверки доступа.
+// =====================================================================
+const BOARD_SUBCOLLECTIONS = ['cards', 'chat', 'presence', 'activity', 'unlocks'];
+
+// Тот же доступ, что у правил canReadContent: участник, а у доски с паролем — ещё и разблокировка
+async function requireBoardReader(db, boardId, uid) {
+  const board = await db.get(`boards/${boardId}`);
+  if (!board) throw err('not-found', 'Проект не найден.');
+  const isOwner = board.owner === uid;
+  if (!isOwner && !(board.members || []).includes(uid)) throw err('permission-denied', 'Нет доступа к проекту.');
+  const hasPassword = board.hasPassword === true || (typeof board.password === 'string' && !!board.password);
+  if (hasPassword && !isOwner) {
+    const unlock = await db.get(`boards/${boardId}/unlocks/${uid}`);
+    if (!unlock || !(Number(unlock.expiresAt) > Date.now())) throw err('permission-denied', 'Проект защищён паролем.');
+  }
+  return board;
+}
+
+// «Одно скачивание»: после скачивания любым участником сообщение с файлом удаляется
+async function burnChatFile(ctx) {
+  const { uid, db, data } = ctx;
+  const boardId = requireId(data.boardId, 'boardId');
+  const msgId = requireId(data.msgId, 'msgId');
+  await requireBoardReader(db, boardId, uid);
+  const path = `boards/${boardId}/chat/${msgId}`;
+  const msg = await db.get(path);
+  if (!msg) return { deleted: false };
+  if (!msg.attachment || msg.attachment.retention !== 'burn') throw err('failed-precondition', 'Это не сгорающий файл.');
+  await db.delete(path);
+  return { deleted: true };
+}
+
+// Файлы «на 1 день / 7 дней»: по истечении срока убираем сам файл, оставляя отметку в чате
+async function purgeExpiredChatFiles(ctx) {
+  const { uid, db, data } = ctx;
+  const boardId = requireId(data.boardId, 'boardId');
+  const ids = Array.isArray(data.msgIds) ? [...new Set(data.msgIds)].slice(0, 25) : [];
+  ids.forEach((id) => requireId(id, 'msgId'));
+  if (!ids.length) return { purged: 0 };
+  await requireBoardReader(db, boardId, uid);
+  const now = Date.now();
+  const writes = [];
+  for (const id of ids) {
+    const path = `boards/${boardId}/chat/${id}`;
+    const msg = await db.get(path);
+    const a = msg && msg.attachment;
+    if (!a || a.type !== 'file' || !a.url) continue;
+    if (!(typeof a.expiresAt === 'number' && a.expiresAt < now)) continue;
+    writes.push(buildWrite(db.docName(path), {
+      attachment: { type: 'file', name: String(a.name || 'file'), size: String(a.size || ''), retention: String(a.retention || ''), expiresAt: a.expiresAt, expired: true },
+    }, 'update'));
+  }
+  if (writes.length) await db.commit(writes);
+  return { purged: writes.length };
+}
+// Полное удаление облачного проекта владельцем: задачи, чат, статусы, журнал, доступы, пароль
+async function deleteBoard(ctx) {
+  const { uid, db, data } = ctx;
+  const boardId = requireId(data.boardId, 'boardId');
+  const boardPath = `boards/${boardId}`;
+  const board = await db.get(boardPath);
+  if (!board) return { deleted: false };
+  if (board.owner !== uid) throw err('permission-denied', 'Удалить проект может только владелец.');
+  let removed = 0;
+  for (const sub of BOARD_SUBCOLLECTIONS) {
+    for (let page = 0; page < 100; page++) {
+      const ids = await db.listIds(`${boardPath}/${sub}`, 300);
+      if (!ids.length) break;
+      await db.commit(ids.map((id) => ({ delete: db.docName(`${boardPath}/${sub}/${id}`) })));
+      removed += ids.length;
+      if (ids.length < 300) break;
+    }
+  }
+  await db.commit([{ delete: db.docName(`board_secrets/${boardId}`) }, { delete: db.docName(boardPath) }]);
+  return { deleted: true, removed };
+}
+
 export const HANDLERS = {
   createPaypalOrder, capturePaypalOrder,
   purchasePlan, storePurchase,
   redeemPromo, claimDailyGift, claimDailyQuest,
   registerReferral, claimReferralReward, listReferrals, cpaWithdraw, cpaTransferToCoins,
   enterBoard, setBoardPassword,
+  burnChatFile, purgeExpiredChatFiles, deleteBoard,
 };

@@ -110,5 +110,25 @@
     return (err && err.message) || '';
   }
 
-  global.BlockoAPI = { call, errorCode, errorMessage, isBackendUnavailable, BACKEND_DOWN_MESSAGE };
+  // Платёжная форма PayPal загружается только когда человек открывает оплату:
+  // без этого скрипт PayPal (и его cookie) подгружался бы каждому посетителю.
+  // Client ID публичный, секрет хранится только на сервере.
+  const PAYPAL_SDK = 'https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD';
+  let paypalPromise = null;
+  function loadPayPal() {
+    if (global.paypal && typeof global.paypal.Buttons === 'function') return Promise.resolve(global.paypal);
+    if (!paypalPromise) {
+      paypalPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = PAYPAL_SDK;
+        s.async = true;
+        s.onload = () => (global.paypal && typeof global.paypal.Buttons === 'function' ? resolve(global.paypal) : reject(new Error('paypal-not-ready')));
+        s.onerror = () => reject(new Error('paypal-load-failed'));
+        document.head.appendChild(s);
+      }).catch((e) => { paypalPromise = null; throw e; });
+    }
+    return paypalPromise;
+  }
+
+  global.BlockoAPI = { call, errorCode, errorMessage, isBackendUnavailable, BACKEND_DOWN_MESSAGE, loadPayPal };
 })(window);

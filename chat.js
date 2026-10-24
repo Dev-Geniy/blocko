@@ -356,8 +356,9 @@
 
   function fileHtml(m, d, isMe) {
     const a = d.attachment;
-    if (a.expiresAt && Date.now() > a.expiresAt) {
-      return `<span class="text-xs italic opacity-80">⏳ Срок хранения файла истёк</span>`;
+    if (a.expired || (a.expiresAt && Date.now() > a.expiresAt)) {
+      if (a.url && !m.pending) queueExpiredPurge(m.id);
+      return `<span class="text-xs italic opacity-80">⏳ Срок хранения файла истёк, файл удалён</span>`;
     }
     const isBurn = a.retention === 'burn';
     const fileUrl = safeUrl(a.url, { allowData: true });
@@ -1101,7 +1102,27 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    S.chatCol.doc(id).delete().catch(() => {});
+    // Удаляет сервер: по правилам базы участник не может удалить чужое сообщение
+    const direct = () => S.chatCol.doc(id).delete();
+    const run = (typeof BlockoAPI !== 'undefined')
+      ? BlockoAPI.call('burnChatFile', { boardId: BOARD_ID, msgId: id }, direct)
+      : direct();
+    Promise.resolve(run).catch(() => direct().catch(() => {}));
+  }
+
+  // Файлы «на 1 день / 7 дней»: когда срок вышел, просим сервер удалить сам файл (в чате остаётся отметка)
+  const purgeQueue = new Set();
+  const purgeSent = new Set();
+  let purgeTimer = null;
+  function queueExpiredPurge(id) {
+    if (purgeSent.has(id) || typeof BlockoAPI === 'undefined') return;
+    purgeQueue.add(id);
+    clearTimeout(purgeTimer);
+    purgeTimer = setTimeout(() => {
+      const ids = [...purgeQueue].slice(0, 25);
+      ids.forEach((x) => { purgeQueue.delete(x); purgeSent.add(x); });
+      if (ids.length) BlockoAPI.call('purgeExpiredChatFiles', { boardId: BOARD_ID, msgIds: ids }).catch(() => {});
+    }, 1500);
   }
 
   // ---------- действия с сообщениями ----------

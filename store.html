@@ -13,8 +13,7 @@
   <!-- Нужны только по клику — не задерживают открытие страницы -->
   <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-  <!-- PayPal: только Client ID (публичный). Секрет хранится на сервере. -->
-  <script defer src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
+  <!-- PayPal подгружается только при открытии оплаты (BlockoAPI.loadPayPal в api.js) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -1003,6 +1002,7 @@
     backToPacks();
     openModal('topUpModal');
     refreshIcons($('topUpModal'));
+    BlockoAPI.loadPayPal().catch(() => {}); // форма оплаты подгрузится, пока человек выбирает набор
   }
 
   function closeTopUpModal() { closeModal('topUpModal'); }
@@ -1027,12 +1027,7 @@
     container.innerHTML = `<div class="absolute inset-0 flex items-center justify-center text-gray-400">${icon('loader-circle', 'w-7 h-7 animate-spin')}</div>`;
     refreshIcons(container);
 
-    if (typeof paypal === 'undefined' || !paypal || typeof paypal.Buttons !== 'function') {
-      container.innerHTML = '<div class="text-sm text-red-600 dark:text-red-400 p-4 rounded-xl bg-red-50 dark:bg-red-500/10">Платёжная форма PayPal не загрузилась. Обновите страницу или отключите блокировщик рекламы для этого сайта.</div>';
-      return;
-    }
-
-    setTimeout(() => {
+    BlockoAPI.loadPayPal().then((paypal) => {
       container.innerHTML = '';
       paypal.Buttons({
         style: { color: 'gold', shape: 'rect', label: 'paypal', height: 45 },
@@ -1071,7 +1066,9 @@
           toast('error', 'Ошибка PayPal', 'Не удалось открыть оплату. Попробуйте ещё раз.');
         },
       }).render('#paypal-button-container');
-    }, 200);
+    }).catch(() => {
+      container.innerHTML = '<div class="text-sm text-red-600 dark:text-red-400 p-4 rounded-xl bg-red-50 dark:bg-red-500/10">Платёжная форма PayPal не загрузилась. Обновите страницу или отключите блокировщик рекламы для этого сайта.</div>';
+    });
   }
 
   // ==========================================================

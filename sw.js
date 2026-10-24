@@ -4,7 +4,7 @@
 // а кэш нужен только для работы без интернета. Раньше ядро отдавалось из кэша
 // (stale-while-revalidate), и после обновления сайта люди неделями видели старые файлы
 // вперемешку с новыми.
-const VERSION = 'v7';
+const VERSION = 'v8';
 const CORE_CACHE_NAME = `blocko-pro-core-${VERSION}`;
 const MEDIA_CACHE_NAME = 'blocko-media-cache-v2';
 
@@ -19,6 +19,7 @@ const CORE_ASSETS = [
   './config.js',
   './security.js',
   './api.js',
+  './consent.js',
   './chat.js',
   './home.js',
   './ui.css',

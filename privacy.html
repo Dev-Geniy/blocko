@@ -2,215 +2,103 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Политика конфиденциальности — Blocko Pro</title>
-
+  <meta name="description" content="Какие данные получает Blocko Pro, зачем, кому передаёт и как вы можете ими управлять.">
+  <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     html { scroll-behavior: smooth; }
-
-    html, body {
-      width: 100%;
-      min-height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    .doc { font-size: 15px; color: #3f3f46; }
+    .dark .doc { color: #d4d4d8; }
+    .doc p, .doc li { line-height: 1.75; }
+    .doc h2 { scroll-margin-top: 5.5rem; }
+    .doc b, .doc strong { color: #18181b; font-weight: 600; }
+    .dark .doc b, .dark .doc strong { color: #fafafa; }
+    .doc p a, .doc li a, .doc td a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+    .dark .doc p a, .dark .doc li a, .dark .doc td a { color: #60a5fa; }
+    .doc code { font-size: 13px; padding: 1px 6px; border-radius: 6px; background: #f4f4f5; }
+    .dark .doc code { background: #27272a; }
+    .doc ul.dots > li { position: relative; padding-left: 1.1rem; }
+    .doc ul.dots > li::before { content: ''; position: absolute; left: .2rem; top: .72em; width: 5px; height: 5px; border-radius: 9999px; background: #a1a1aa; }
+    .heading-anchor { opacity: 0; transition: opacity .15s; text-decoration: none; }
+    h2:hover .heading-anchor, .heading-anchor:focus { opacity: 1; }
+    .toc a[aria-current="true"] { color: #18181b; border-color: #2563eb; font-weight: 500; }
+    .dark .toc a[aria-current="true"] { color: #fafafa; border-color: #3b82f6; }
+    details[data-toc-mobile] summary::-webkit-details-marker { display: none; }
+    details[data-toc-mobile][open] summary .chev { transform: rotate(180deg); }
+    @media (max-width: 639px) {
+      .stack-table thead { display: none; }
+      .stack-table tr { display: block; padding: .75rem 1rem; }
+      .stack-table td { display: block; padding: .1rem 0 !important; }
+      .stack-table td:first-child { margin-bottom: .2rem; }
+      .stack-table td[data-label]::before { content: attr(data-label) ': '; color: #71717a; }
+    }
+    @media print {
+      header, nav[data-tabs], aside, details[data-toc-mobile], .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .doc-card { border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+      .doc, .doc b { color: #000 !important; }
     }
   </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col">
 
-  </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col overflow-x-hidden transition-colors duration-300">
-  
-<!-- Фоновые неоновые блики (Изумрудно-синие для Privacy) -->
-<div class="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-
-<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
-      <i data-lucide="arrow-left" class="w-5 h-5"></i>
-    </a>
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">Legal Center</h1>
-      <p class="text-xs text-emerald-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Конфиденциальность
-      </p>
-    </div>
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-30">
+  <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="На главную" aria-label="На главную"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+  <div class="min-w-0">
+    <p class="text-base sm:text-lg font-semibold tracking-tight leading-tight">Правовая информация</p>
+    <p class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 leading-tight">Условия, конфиденциальность и cookie</p>
   </div>
-  <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
-    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
-  </button>
+  <div class="ml-auto flex items-center gap-1.5">
+    <button type="button" data-print class="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Распечатать или сохранить в PDF" aria-label="Распечатать"><i data-lucide="printer" class="w-5 h-5"></i></button>
+    <button type="button" onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
+  </div>
 </header>
 
-<main class="p-4 sm:p-8 max-w-7xl mx-auto w-full flex-1 mb-20 flex flex-col lg:flex-row gap-10">
-  
-  <!-- Боковая навигация (Sticky) -->
-  <aside class="hidden lg:block w-72 flex-shrink-0">
-    <div class="sticky top-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] shadow-sm">
-      <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Оглавление</h3>
-      <nav class="space-y-3">
-        <a href="#privacy-1" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">1. Сбор информации</a>
-        <a href="#privacy-2" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">2. Использование данных</a>
-        <a href="#privacy-3" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">3. Хранение и Офлайн-режим</a>
-        <a href="#privacy-4" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">4. Передача третьим лицам</a>
-        <a href="#privacy-5" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-emerald-500 transition-colors">5. Ваши права</a>
-      </nav>
-      
-      <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
-         <a href="terms.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
-           Условия сервиса
-           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
-         </a>
-         <a href="cookies.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
-           Cookie политика
-           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
-         </a>
-      </div>
+<div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6">
+  <nav data-tabs aria-label="Документы" class="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800 w-full sm:w-fit overflow-x-auto hide-scroll"><a href="terms.html" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><span class="sm:hidden">Условия</span><span class="hidden sm:inline">Условия использования</span></a><a href="privacy.html" aria-current="page" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"><span class="sm:hidden">Конфиденциальность</span><span class="hidden sm:inline">Конфиденциальность</span></a><a href="cookies.html" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><span class="sm:hidden">Cookie</span><span class="hidden sm:inline">Cookie</span></a></nav>
+</div>
+
+<main class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 flex-1 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+  <aside class="hidden lg:block">
+    <div class="sticky top-24">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Содержание</p>
+      <nav class="toc border-l border-gray-200 dark:border-gray-800" data-toc-list aria-label="Содержание"></nav>
     </div>
   </aside>
 
-  <!-- Контент документа -->
-  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 sm:p-12 rounded-[3rem] shadow-sm relative overflow-hidden">
-    
-    <div class="mb-12 border-b border-gray-100 dark:border-gray-800 pb-10 text-center sm:text-left">
-      <div class="inline-flex items-center justify-center p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400 rounded-2xl mb-6 shadow-sm border border-emerald-200 dark:border-emerald-800/50">
-        <i data-lucide="shield" class="w-8 h-8"></i>
-      </div>
-      <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Политика конфиденциальности</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Последнее обновление: <b class="text-gray-700 dark:text-gray-300">10 Мая 2026 г.</b></p>
-    </div>
+  <div class="min-w-0">
+    <details class="lg:hidden mb-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900" data-toc-mobile>
+      <summary class="px-4 h-12 flex items-center justify-between cursor-pointer list-none text-sm font-medium">Содержание <i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform"></i></summary>
+      <nav class="toc mx-4 mb-3 border-l border-gray-200 dark:border-gray-800" data-toc-list aria-label="Содержание"></nav>
+    </details>
 
-    <div class="space-y-12 text-gray-600 dark:text-gray-300 leading-relaxed">
-
-      <!-- Вступление -->
-      <p class="text-lg font-medium text-gray-700 dark:text-gray-200">
-        Ваша приватность — наш абсолютный приоритет. Мы создали Blocko Pro с расчетом на максимальную безопасность данных. В этом документе мы прозрачно объясняем, какие данные мы собираем, как их используем и как вы можете ими управлять.
-      </p>
-
-      <!-- Секция 1 -->
-      <section id="privacy-1" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">1</span> Сбор информации
-        </h3>
-        <p class="mb-4">Мы собираем минимально необходимый объем информации для обеспечения работы платформы:</p>
-        <ul class="space-y-3 list-none pl-0">
-          <li class="flex items-start gap-3">
-            <i data-lucide="user" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white">Учетные данные:</strong> Имя, email и фото профиля (аватар), полученные при авторизации через Google (OAuth).
-            </div>
-          </li>
-          <li class="flex items-start gap-3">
-            <i data-lucide="layout" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white">Контент Облачных досок (Cloud):</strong> Задачи, комментарии, файлы и структура досок, которые вы осознанно создаете в режиме онлайн-синхронизации.
-            </div>
-          </li>
-          <li class="flex items-start gap-3">
-            <i data-lucide="credit-card" class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white">Транзакции:</strong> История пополнения B-Coins и активации подписок. Важно: мы <b class="text-red-500 dark:text-red-400">не храним</b> данные ваших банковских карт, все платежи обрабатываются на стороне платежных шлюзов (например, PayPal).
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <!-- Секция 2 -->
-      <section id="privacy-2" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">2</span> Использование данных
-        </h3>
-        <p class="mb-4">Собранные данные используются исключительно для:</p>
-        <ul class="space-y-2 mt-2 list-disc list-inside">
-          <li>Обеспечения работоспособности сервиса (синхронизация досок между участниками команды).</li>
-          <li>Обработки платежей и начисления бонусных баллов (CPA Network).</li>
-          <li>Отправки критических системных уведомлений (например, о скором дедлайне задач).</li>
-          <li>Обеспечения безопасности (предотвращение несанкционированного доступа).</li>
-        </ul>
-        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-500 rounded-r-xl">
-           <p class="text-sm text-blue-800 dark:text-blue-300 font-medium">
-             <i data-lucide="bot" class="w-4 h-4 inline mb-0.5 mr-1"></i> Мы <b>не используем</b> данные ваших приватных проектов для обучения моделей искусственного интеллекта (AI).
-           </p>
-        </div>
-      </section>
-
-      <!-- Секция 3 -->
-      <section id="privacy-3" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">3</span> Хранение и Офлайн-режим (Device Mode)
-        </h3>
-        <p class="mb-4">Мы используем инфраструктуру <b>Google Firebase</b> для надежного и зашифрованного хранения данных Облачных проектов.</p>
+    <article class="doc doc-card bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-10" data-legal-article>
+      <div class="max-w-[70ch]">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Действует с 24 октября 2026 г. · читать ≈&nbsp;7&nbsp;мин</p>
+        <h1 class="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">Политика конфиденциальности</h1>
+        <p class="mt-3 text-gray-600 dark:text-gray-300">Какие данные о вас получает Blocko Pro, зачем, кому мы их передаём и как вы можете ими управлять.</p>
+        <div class="mt-6 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 p-4 sm:p-5"><p class="text-sm font-semibold text-gray-900 dark:text-white">Коротко — самое главное</p><ul class="mt-3 space-y-2 text-[15px]"><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Мы получаем только то, что нужно для работы: аккаунт Google, ваши облачные проекты и сообщения, данные о платежах.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Не продаём данные, не показываем рекламу и не обучаем AI на ваших проектах.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Офлайн-проекты остаются в вашем браузере — мы их не видим.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Для работы пользуемся сервисами Google Firebase, Cloudflare, PayPal, ImgBB и Pollinations.ai — полный список ниже.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Google Analytics включается только с вашего согласия.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Копию данных или удаление аккаунта можно запросить на privacy@blocko.cloud.</span></li></ul></div>
         
-        <h4 class="font-bold text-gray-900 dark:text-white mb-2 mt-6">Офлайн-доски (Local Mode)</h4>
-        <p class="mb-4">
-          Уникальная особенность Blocko Pro — возможность создавать локальные проекты (Device Mode). Данные таких проектов <b class="text-gray-900 dark:text-white">никогда не покидают ваше устройство</b>. Они хранятся исключительно в Local Storage вашего браузера. Мы не имеем к ним физического доступа, не можем их восстановить при удалении и не можем передать правоохранительным органам.
-        </p>
-
-        <h4 class="font-bold text-gray-900 dark:text-white mb-2">Сгорающие файлы</h4>
-        <p>
-          Файлы, отправленные в чат с атрибутом "Сжечь после прочтения", безвозвратно удаляются с наших серверов сразу после первого скачивания получателем.
-        </p>
-      </section>
-
-      <!-- Секция 4 -->
-      <section id="privacy-4" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">4</span> Передача третьим лицам
-        </h3>
-        <p>
-          Мы <b>не продаем</b> и <b>не сдаем в аренду</b> ваши персональные данные. Передача информации возможна только нашим доверенным технологическим партнерам, строго необходимым для работы сервиса (например, провайдеры хостинга или платежные системы).
-        </p>
-      </section>
-
-      <!-- Секция 5 -->
-      <section id="privacy-5" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center text-sm border border-emerald-100 dark:border-emerald-800/50">5</span> Ваши права (GDPR / CCPA)
-        </h3>
-        <p class="mb-4">В соответствии с мировыми стандартами защиты данных, вы имеете право:</p>
-        <ul class="space-y-2 list-disc list-inside mb-6">
-          <li>Запросить копию всех ваших данных (Экспорт в JSON).</li>
-          <li>Отозвать согласие на обработку данных.</li>
-          <li>Запросить полное и безвозвратное удаление вашего аккаунта и всех связанных облачных досок (Право быть забытым).</li>
-        </ul>
-      </section>
-
-    </div>
-    
-    <!-- Footer CTA -->
-    <div class="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6 bg-gray-50 dark:bg-gray-800/30 p-6 rounded-3xl">
-      <div class="flex flex-col">
-         <span class="text-sm font-bold text-gray-900 dark:text-white mb-1">Служба защиты данных (DPO)</span>
-         <span class="text-xs text-gray-500 dark:text-gray-400">Напишите нам, если хотите запросить удаление аккаунта.</span>
+        <section class="mt-10 sm:mt-12"><h2 id="p-who" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">1. Кто мы</h2><div class="mt-3 space-y-3"><p>Blocko Pro (сайт blocko.cloud; дальше — «мы») решает, зачем и как обрабатываются ваши персональные данные в сервисе, и отвечает за это. Политика действует вместе с <a href="terms.html">Условиями использования</a>.</p><p>Вопросы о данных — <a href="mailto:privacy@blocko.cloud">privacy@blocko.cloud</a>.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-data" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">2. Какие данные мы получаем</h2><div class="mt-3 space-y-3"><div class="not-prose mt-1 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden"><table class="stack-table w-full text-sm text-left text-gray-600 dark:text-gray-300"><thead class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400"><tr><th scope="col" class="px-4 py-2.5 font-medium">Данные</th><th scope="col" class="px-4 py-2.5 font-medium">Что именно</th><th scope="col" class="px-4 py-2.5 font-medium">Откуда</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800"><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Аккаунт</td><td data-label="Что именно" class="px-4 py-3 align-top">имя, адрес почты, фото профиля, идентификатор аккаунта</td><td data-label="Откуда" class="px-4 py-3 align-top">от Google при входе; аватар можно сменить в профиле</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Облачные проекты</td><td data-label="Что именно" class="px-4 py-3 align-top">названия, колонки, задачи, описания, сроки, теги, чек-листы, голосовые заметки, участники и их роли, настройки, журнал действий</td><td data-label="Откуда" class="px-4 py-3 align-top">от вас и участников проектов</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Сообщения</td><td data-label="Что именно" class="px-4 py-3 align-top">чат проекта и личные сообщения, вложенные файлы и картинки</td><td data-label="Откуда" class="px-4 py-3 align-top">от вас и собеседников</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Статус в проекте</td><td data-label="Что именно" class="px-4 py-3 align-top">когда вы были в сети, печатаете ли вы сейчас, до какого сообщения прочитан чат</td><td data-label="Откуда" class="px-4 py-3 align-top">создаётся автоматически</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Графики работы</td><td data-label="Что именно" class="px-4 py-3 align-top">графики, папки и ключи доступа к ним</td><td data-label="Откуда" class="px-4 py-3 align-top">от вас</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Платежи и баланс</td><td data-label="Что именно" class="px-4 py-3 align-top">номер заказа PayPal, сумма и статус, монеты, покупки, тариф и его срок, промокоды</td><td data-label="Откуда" class="px-4 py-3 align-top">от PayPal и из ваших действий; данных карты и счёта PayPal у нас нет</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Приглашения и партнёрство</td><td data-label="Что именно" class="px-4 py-3 align-top">кто вас пригласил, кого пригласили вы, бонусы, заявки на выплату</td><td data-label="Откуда" class="px-4 py-3 align-top">из ваших действий</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Обращения</td><td data-label="Что именно" class="px-4 py-3 align-top">текст обращения в поддержку, ссылки на статьи и видео для заданий, имя и почта для ответа</td><td data-label="Откуда" class="px-4 py-3 align-top">от вас</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Технические данные</td><td data-label="Что именно" class="px-4 py-3 align-top">IP-адрес, тип браузера и устройства, время запросов</td><td data-label="Откуда" class="px-4 py-3 align-top">передаются автоматически серверам, к которым обращается сайт</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Аналитика</td><td data-label="Что именно" class="px-4 py-3 align-top">просмотренные страницы, тип устройства, примерная страна и город</td><td data-label="Откуда" class="px-4 py-3 align-top">Google Analytics — только с вашего согласия</td></tr></tbody></table></div><p>Мы не собираем данные банковских карт, точное местоположение и контакты из телефона.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-purposes" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">3. Зачем мы используем данные</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li><b>Чтобы сервис работал</b> — вход, синхронизация проектов между участниками, чат, уведомления. Основание: договор с вами (Условия использования).</li><li><b>Платежи, монеты, тарифы, подарки и партнёрские выплаты.</b> Основание: договор и обязанности по учёту платежей.</li><li><b>Безопасность</b> — защита от взлома, мошенничества и злоупотреблений, соблюдение лимитов. Основание: наш законный интерес в безопасной работе сервиса.</li><li><b>Поддержка</b> — ответы на обращения и проверка заданий. Основание: договор и законный интерес.</li><li><b>Улучшение сервиса</b> по обезличенной статистике посещений. Основание: ваше согласие — его можно отозвать в любой момент.</li></ul><p>Уведомления о задачах и сообщениях показывает ваш браузер — только если вы их разрешили. Рекламных рассылок мы не делаем, данные не продаём и не обучаем на ваших проектах модели AI.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-visibility" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">4. Кто видит ваши данные</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li><b>Участники проекта</b> — его содержимое, имена, аватары и роли участников, ваш статус «в сети», «печатает» и «прочитано», журнал действий.</li><li><b>Собеседник</b> — ваши личные сообщения. В приложении их видите только вы двое.</li><li><b>Вошедший пользователь с ключом доступа</b> — график работы, которым вы поделились.</li><li><b>Получатель подарка</b> — имя и аватар отправителя; отправитель ежедневного подарка — имя и аватар того, кто его забрал.</li><li><b>Администраторы сервиса</b> технически могут получить доступ к данным в базе — профилям, проектам и сообщениям. Мы делаем это только для поддержки по вашему запросу, безопасности, разбора нарушений и по требованию закона.</li><li><b>Государственные органы</b> — только по законному требованию и в необходимом объёме.</li></ul></div></section><section class="mt-10 sm:mt-12"><h2 id="p-processors" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">5. Сервисы, которые помогают нам работать</h2><div class="mt-3 space-y-3"><p>Часть работы выполняют внешние сервисы. Каждый получает только нужные ему данные и обрабатывает их по своим правилам. Серверы некоторых из них находятся за пределами вашей страны, в том числе в США и ЕС.</p><div class="not-prose mt-1 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden"><table class="stack-table w-full text-sm text-left text-gray-600 dark:text-gray-300"><thead class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400"><tr><th scope="col" class="px-4 py-2.5 font-medium">Сервис</th><th scope="col" class="px-4 py-2.5 font-medium">Для чего</th><th scope="col" class="px-4 py-2.5 font-medium">Какие данные</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800"><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Google Firebase</td><td data-label="Для чего" class="px-4 py-3 align-top">вход через Google и база данных облачных проектов</td><td data-label="Какие данные" class="px-4 py-3 align-top">аккаунт, проекты, сообщения, статусы</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Cloudflare</td><td data-label="Для чего" class="px-4 py-3 align-top">сервер для платежей, промокодов, паролей проектов и удаления данных</td><td data-label="Какие данные" class="px-4 py-3 align-top">идентификатор аккаунта, данные операции, IP-адрес</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">GitHub Pages</td><td data-label="Для чего" class="px-4 py-3 align-top">хостинг файлов сайта</td><td data-label="Какие данные" class="px-4 py-3 align-top">IP-адрес, тип браузера</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">PayPal</td><td data-label="Для чего" class="px-4 py-3 align-top">приём оплаты</td><td data-label="Какие данные" class="px-4 py-3 align-top">данные платежа — PayPal обрабатывает их самостоятельно</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">ImgBB</td><td data-label="Для чего" class="px-4 py-3 align-top">хранение картинок из чата, личных сообщений, обложек и аватаров</td><td data-label="Какие данные" class="px-4 py-3 align-top">загруженные картинки</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Pollinations.ai (модели OpenAI)</td><td data-label="Для чего" class="px-4 py-3 align-top">AI-ассистент и обложки по описанию</td><td data-label="Какие данные" class="px-4 py-3 align-top">текст запроса или описание обложки</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Распознавание речи браузера</td><td data-label="Для чего" class="px-4 py-3 align-top">голосовой ввод</td><td data-label="Какие данные" class="px-4 py-3 align-top">запись голосовой команды — её обрабатывает браузер (например, Chrome передаёт её Google)</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Google Analytics</td><td data-label="Для чего" class="px-4 py-3 align-top">статистика посещений — только с согласия</td><td data-label="Какие данные" class="px-4 py-3 align-top">данные о посещении, cookie аналитики</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Google Fonts, jsDelivr, unpkg, Tailwind CDN</td><td data-label="Для чего" class="px-4 py-3 align-top">шрифты и библиотеки интерфейса</td><td data-label="Какие данные" class="px-4 py-3 align-top">IP-адрес, тип браузера</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">YouTube (режим без cookie)</td><td data-label="Для чего" class="px-4 py-3 align-top">видео, встроенные в карточки</td><td data-label="Какие данные" class="px-4 py-3 align-top">IP-адрес при просмотре</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Unsplash, Picsum</td><td data-label="Для чего" class="px-4 py-3 align-top">фоновые картинки и случайные обложки</td><td data-label="Какие данные" class="px-4 py-3 align-top">IP-адрес</td></tr></tbody></table></div></div></section><section class="mt-10 sm:mt-12"><h2 id="p-offline" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">6. Офлайн-проекты</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li>Офлайн-проекты хранятся только в браузере на вашем устройстве и не отправляются на наши серверы. Мы их не видим и не можем восстановить.</li><li>Исключение — функции, которым нужен интернет, если вы ими пользуетесь: текст запроса к AI уходит в Pollinations.ai, а загруженная картинка — в ImgBB.</li><li>Очистка данных браузера удаляет офлайн-проекты. Перед этим скачайте резервную копию.</li></ul></div></section><section class="mt-10 sm:mt-12"><h2 id="p-retention" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">7. Сколько мы храним данные</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li><b>Аккаунт, баланс и покупки</b> — пока существует аккаунт.</li><li><b>Облачный проект</b> — пока его не удалит владелец. При удалении мы стираем задачи, чат, статусы участников, журнал и доступы проекта.</li><li><b>Сообщения</b> — пока их не удалит автор (в чате проекта — также владелец) или пока существует проект.</li><li><b>Файлы «на 1 день» и «на 7 дней»</b> перестают открываться по истечении срока и удаляются из хранилища, когда кто-то из участников открывает чат; <b>«одно скачивание»</b> удаляется сразу после скачивания.</li><li><b>Журнал действий</b> — от 1 до 14 дней, по выбору владельца проекта.</li><li><b>Картинки на ImgBB</b> остаются доступными по прямой ссылке и после удаления сообщения.</li><li><b>Записи о платежах</b> — столько, сколько требует закон об учёте, в том числе после удаления аккаунта.</li><li><b>Обращения и заявки на задания</b> — пока они нужны для ответа и разбора.</li><li><b>Статистика Google Analytics</b> — по настройкам сервиса, не дольше 14 месяцев.</li></ul><p>После удаления аккаунта мы удаляем или обезличиваем ваши данные в течение 30 дней — кроме тех, что обязаны хранить по закону.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-security" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">8. Как мы защищаем данные</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li>Соединение с сайтом и серверами шифруется (HTTPS).</li><li>Правила базы данных открывают проект только его участникам, а личные сообщения — только двум собеседникам.</li><li>Баланс, покупки и платежи меняет только сервер — изменить их из браузера нельзя.</li><li>Пароли проектов хранятся в виде хэша (PBKDF2), число попыток ввода ограничено.</li><li>Полной защиты не даёт ни одна система. Если произойдёт утечка, которая угрожает вашим правам, мы сообщим вам и, где это требуется, регулятору.</li></ul></div></section><section class="mt-10 sm:mt-12"><h2 id="p-rights" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">9. Ваши права</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li><b>Получить копию данных.</b> Облачный проект владелец скачивает сам — кнопка «Скачать резервную копию» у проекта на главной. Полную копию данных аккаунта пришлём по запросу.</li><li><b>Исправить данные.</b> Аватар меняется в профиле; имя приходит из аккаунта Google — его, как и остальное, исправим по запросу.</li><li><b>Удалить данные.</b> Облачный проект владелец удаляет сам. Чтобы удалить аккаунт целиком, напишите на <a href="mailto:privacy@blocko.cloud">privacy@blocko.cloud</a> с почты аккаунта.</li><li><b>Отозвать согласие на аналитику</b> — переключателем в <a href="cookies.html#consent">Политике cookie</a>.</li><li><b>Возразить против обработки, ограничить её или перенести данные</b> в другой сервис.</li><li><b>Пожаловаться</b> в орган по защите персональных данных вашей страны.</li></ul><p>На запросы отвечаем в течение 30 дней. Чтобы защитить вас, можем попросить подтвердить, что запрос пришёл от владельца аккаунта.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-children" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">10. Дети</h2><div class="mt-3 space-y-3"><p>Blocko Pro не предназначен для детей младше 16 лет. Если мы узнаем, что аккаунт создал ребёнок младше 16 лет без согласия родителей, мы удалим его.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-changes" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">11. Изменения политики</h2><div class="mt-3 space-y-3"><p>Мы обновляем политику, когда меняется сервис. Дата редакции — вверху страницы; о существенных изменениях сообщим в приложении.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="p-contacts" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">12. Контакты</h2><div class="mt-3 space-y-3"><p>Вопросы о данных и запросы — <a href="mailto:privacy@blocko.cloud">privacy@blocko.cloud</a>. Помощь с сервисом — раздел <a href="index.html?open=support">«Поддержка»</a> в приложении.</p></div></section>
+        <div class="not-prose mt-12 rounded-xl border border-gray-200 dark:border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center gap-4"><div class="flex-1 min-w-0"><p class="font-semibold text-gray-900 dark:text-white">Остались вопросы?</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">На запросы о данных отвечаем в течение 30 дней.</p></div><div class="flex flex-wrap gap-2"><a href="mailto:privacy@blocko.cloud" class="h-10 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium inline-flex items-center gap-2 transition-colors"><i data-lucide="mail" class="w-4 h-4"></i>privacy@blocko.cloud</a><a href="index.html?open=support" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 inline-flex items-center gap-2 transition-colors"><i data-lucide="life-buoy" class="w-4 h-4"></i>Поддержка</a></div></div>
       </div>
-      <a href="mailto:privacy@blocko.cloud" class="px-6 py-3.5 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 flex-shrink-0">
-        <i data-lucide="shield-check" class="w-4 h-4"></i> privacy@blocko.cloud
-      </a>
-    </div>
-
+    </article>
+    <p class="mt-5 text-sm text-gray-500 dark:text-gray-400 no-print">Другие документы: <a href="terms.html" class="hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline">Условия использования</a> · <a href="cookies.html" class="hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline">Cookie</a></p>
   </div>
-
 </main>
 
-<script>
-  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
-  function toggleTheme() {
-    document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-  }
-  lucide.createIcons();
-</script>
+<script src="legal.js"></script>
 </body>
 </html>

@@ -43,15 +43,8 @@
   }
   </script>
 
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WM851HTC0E"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'G-WM851HTC0E');
-  </script>
+  <!-- Google Analytics — только после согласия посетителя (consent.js, выбор меняется на cookies.html) -->
+  <script src="consent.js" data-banner="true"></script>
   
   <!-- Предзагрузка критических ресурсов (Zero-Latency) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -76,7 +69,6 @@
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
   <script src="security.js"></script>
     <!-- Client ID -->
-  <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -478,6 +470,7 @@
       <a href="affiliates-money.html" class="hover:text-gray-900 dark:hover:text-white">Партнёрам</a>
       <a href="terms.html" class="hover:text-gray-900 dark:hover:text-white">Условия</a>
       <a href="privacy.html" class="hover:text-gray-900 dark:hover:text-white">Конфиденциальность</a>
+      <a href="cookies.html" class="hover:text-gray-900 dark:hover:text-white">Cookie</a>
     </nav>
   </div>
   <script>document.getElementById('footerYear').textContent = new Date().getFullYear();</script>
@@ -1161,11 +1154,11 @@ auth.onAuthStateChanged(async (user) => {
         } else if (errorParam === 'not_member') {
           window.history.replaceState({}, document.title, window.location.pathname);
           setTimeout(() => showSystemToast('Отказ в доступе', 'Вы не являетесь участником этого проекта.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20'), 500);
-        } else if (urlParams.get('open') === 'partners' || urlParams.get('open') === 'pricing') {
-          // Ссылки из магазина: сразу открыть партнёрскую программу или тарифы
+        } else if (['partners', 'pricing', 'support'].includes(urlParams.get('open'))) {
+          // Ссылки из магазина и документов: сразу открыть партнёрскую программу, тарифы или поддержку
           const openWhat = urlParams.get('open');
           window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(() => (openWhat === 'partners' ? openAffiliateModal() : openPricingModal()), 500);
+          setTimeout(() => ({ partners: openAffiliateModal, pricing: openPricingModal, support: openSupportModal })[openWhat](), 500);
         }
       } else {
     // Если не авторизован — показываем экран входа без долгого лоадера
@@ -1565,6 +1558,7 @@ async function upgradeTo(planId) {
 // --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
   function openTopUpModal() {
     const el = document.getElementById('topUpModal');
+    BlockoAPI.loadPayPal().catch(() => {}); // форма оплаты подгрузится, пока человек выбирает набор
     backToPacks(); // Сбрасываем вид на выбор пакетов при открытии
     el.classList.remove('hidden');
     setTimeout(() => el.classList.remove('opacity-0'), 10);
@@ -1600,12 +1594,7 @@ async function upgradeTo(planId) {
      container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i></div>';
      lucide.createIcons({ root: container });
 
-     if (typeof paypal === 'undefined') {
-         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Ошибка: скрипт PayPal не загружен. Проверьте интернет или блокировщики рекламы.</div>';
-         return;
-     }
-
-     setTimeout(() => {
+     BlockoAPI.loadPayPal().then((paypal) => {
          container.innerHTML = ''; // Убираем лоадер
          
          // Инициализация Smart Buttons
@@ -1648,7 +1637,9 @@ async function upgradeTo(planId) {
               showSystemToast('Ошибка PayPal', 'Не удалось инициализировать платеж.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
             }
          }).render('#paypal-button-container');
-     }, 300);
+     }).catch(() => {
+         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Платёжная форма PayPal не загрузилась. Проверьте интернет или отключите блокировщик рекламы для этого сайта.</div>';
+     });
   }
 
 async function activatePromoCode(inputId = 'promoCodeInput', btnId = 'activatePromoBtn') {
@@ -2280,9 +2271,11 @@ function deleteBoard(id, isLocal) {
       const local = getLocalBoards(); delete local[id];
       localStorage.setItem('blocko_local_boards', JSON.stringify(local)); renderBoardsGrid();
       showSystemToast('Удалено', 'Локальный проект успешно удален.', 'trash-2', 'text-red-500', 'bg-red-50');
-    } else { 
-      db.collection("boards").doc(id).delete(); 
-      showSystemToast('Удалено', 'Облачный проект успешно удален.', 'trash-2', 'text-red-500', 'bg-red-50');
+    } else {
+      // Сервер удаляет проект целиком: задачи, чат, журнал и доступы (не только карточку проекта)
+      BlockoAPI.call('deleteBoard', { boardId: id }, () => db.collection('boards').doc(id).delete())
+        .then(() => showSystemToast('Удалено', 'Облачный проект и все его данные удалены.', 'trash-2', 'text-red-500', 'bg-red-50'))
+        .catch((e) => showSystemToast('Не удалось удалить', BlockoAPI.errorMessage(e) || 'Попробуйте ещё раз.', 'alert-circle', 'text-red-500', 'bg-red-50'));
     }
   });
 }
