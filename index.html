@@ -781,7 +781,7 @@
     <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-gray-500 dark:text-gray-400">
       <span class="inline-flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4"></i> Оплата через PayPal</span>
       <span class="hidden sm:inline text-gray-300 dark:text-gray-700">·</span>
-      <a href="store.html" class="inline-flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600"><i data-lucide="ticket" class="w-4 h-4"></i> Есть промокод?</a>
+      <a href="store.html#promo" class="inline-flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600"><i data-lucide="ticket" class="w-4 h-4"></i> Есть промокод?</a>
       <span class="hidden sm:inline text-gray-300 dark:text-gray-700">·</span>
       <button onclick="closePricingModal(); setTimeout(openTopUpModal, 250)" class="inline-flex items-center gap-2 font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600"><i data-lucide="wallet" class="w-4 h-4"></i> Пополнить баланс</button>
     </div>
@@ -1161,6 +1161,11 @@ auth.onAuthStateChanged(async (user) => {
         } else if (errorParam === 'not_member') {
           window.history.replaceState({}, document.title, window.location.pathname);
           setTimeout(() => showSystemToast('Отказ в доступе', 'Вы не являетесь участником этого проекта.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/20'), 500);
+        } else if (urlParams.get('open') === 'partners' || urlParams.get('open') === 'pricing') {
+          // Ссылки из магазина: сразу открыть партнёрскую программу или тарифы
+          const openWhat = urlParams.get('open');
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(() => (openWhat === 'partners' ? openAffiliateModal() : openPricingModal()), 500);
         }
       } else {
     // Если не авторизован — показываем экран входа без долгого лоадера
