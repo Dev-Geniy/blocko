@@ -2,19 +2,19 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blocko Market - Магазин улучшений</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Магазин — Blocko Pro</title>
+  <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <!-- ЭНТЕРПРАЙЗ: Ядро для генерации QR-кодов на стороне клиента (Zero-latency) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-  <!-- Client ID -->
-  <script src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
+  <!-- Нужны только по клику — не задерживают открытие страницы -->
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <!-- PayPal: только Client ID (публичный). Секрет хранится на сервере. -->
+  <script defer src="https://www.paypal.com/sdk/js?client-id=AaLW-O9Lrf97E4ok5qaUwz9ml1bJAqPNTjAufRMMmEfrC53NSXdzGSherMK3WaXbbXzU8omY7IKnMym_&currency=USD"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
@@ -25,1264 +25,1460 @@
   <script src="security.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
-    .shelf-title { position: relative; display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
-    .shelf-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
-    .card-zoom:hover { transform: translateY(-8px); }
-    .glass-modal { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-    .detail-overlay { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+    html, body { width: 100%; min-height: 100dvh; }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    .tabular { font-variant-numeric: tabular-nums; }
 
-    /* Premium Blocko Loader */
-    @keyframes block-stretch {
-      0%, 100% { transform: scaleX(1); opacity: 0.5; }
-      50% { transform: scaleX(2.5); opacity: 1; }
+    /* Окна: на телефоне выезжают снизу, на ПК — появляются по центру */
+    .modal { opacity: 0; transition: opacity .2s ease; }
+    .modal.is-open { opacity: 1; }
+    .modal .modal-panel { transform: translateY(12px) scale(.98); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+    .modal.is-open .modal-panel { transform: none; }
+    .modal-panel:focus { outline: none; }
+    @media (max-width: 639px) {
+      .modal .modal-panel { transform: translateY(100%); }
+      .modal-panel { padding-bottom: env(safe-area-inset-bottom); }
     }
-    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
-    .delay-200 { animation-delay: 0.2s; }
-    .delay-400 { animation-delay: 0.4s; }
 
-    html, body {
-      width: 100%;
-      min-height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
-    }
+    /* Раздел, к которому перешли (например, из-за лимита AI), коротко подсвечивается */
+    @keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0); } 30% { box-shadow: 0 0 0 4px rgb(37 99 235 / .25); } }
+    .flash > article { animation: flash 1.6s ease 1; }
+
+    /* Подарочная карта */
+    .gift-card { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); }
+    .dark .gift-card { background: linear-gradient(135deg, #27272a 0%, #3f3f46 100%); }
+    .gift-card::after { content: ''; position: absolute; top: 0; bottom: 0; right: 28%; width: 10px; background: rgb(255 255 255 / .08); }
+
+    .nav-chip[aria-current="true"] { background: #fff; color: #18181b; box-shadow: 0 1px 2px 0 rgb(0 0 0 / .06), 0 0 0 1px #e4e4e7; }
+    .dark .nav-chip[aria-current="true"] { background: #18181b; color: #fafafa; box-shadow: 0 0 0 1px #27272a; }
   </style>
   <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
 </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col overflow-x-hidden transition-colors duration-300">
-<!-- ПРЕМИАЛЬНЫЙ ЭКРАН ЗАГРУЗКИ (BLOCKO ANIMATION) -->
-<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
-  <div class="flex flex-col items-center scale-110">
-    <div class="bg-gradient-to-br from-blue-600 to-indigo-600 p-4 rounded-3xl text-white shadow-2xl shadow-blue-500/40 mb-6">
-      <i data-lucide="layers" class="w-12 h-12"></i>
-    </div>
-    <h2 class="text-3xl font-black tracking-tighter mb-10">BLOCKO <span class="text-blue-500">PRO</span></h2>
-    
-    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
-       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-blue-500 rounded-full"></div>
-       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-indigo-500 rounded-full"></div>
-       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-blue-400 rounded-full"></div>
-    </div>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col">
+
+<div id="globalLoader" class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
+  <div class="flex flex-col items-center gap-4 text-gray-400">
+    <span class="bg-blue-600 p-3 rounded-2xl text-white"><i data-lucide="shopping-bag" class="w-7 h-7"></i></span>
+    <span class="text-sm">Открываем магазин…</span>
   </div>
 </div>
 
-<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">  <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">Blocko Market</h1>
-      <p class="text-[10px] text-blue-500 font-bold uppercase tracking-[0.2em]">Upgrade your power</p>
-    </div>
+<!-- Шапка — как на главной и в календаре -->
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-40">
+  <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="На главную" aria-label="На главную"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+  <div class="min-w-0">
+    <h1 class="text-base sm:text-lg font-semibold tracking-tight leading-tight">Магазин</h1>
+    <p class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 leading-tight">AI, тарифы, подарки и бонусы</p>
   </div>
-
-  <div class="flex gap-4">
-    <div class="flex flex-col items-end px-4 border-r border-gray-200 dark:border-gray-800">
-      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Бонусные баллы</span>
-      <div class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-black"><i data-lucide="gem" class="w-4 h-4"></i> <span id="valCredits">0</span></div>
-    </div>
-    
-    <div onclick="openTopUpModal()" class="flex flex-col items-end cursor-pointer group">
-      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-amber-500 transition-colors">Реальные монеты</span>
-      <div class="flex items-center gap-2 text-amber-500 font-black bg-amber-50 dark:bg-amber-900/30 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800/50 group-hover:scale-105 transition-transform">
-        <i data-lucide="plus-circle" class="w-4 h-4"></i> <span id="valCoins">0</span>
-      </div>
-    </div>
+  <div class="ml-auto flex items-center gap-1.5">
+    <button type="button" onclick="openTopUpModal()" class="h-9 pl-2 pr-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2 text-sm font-semibold transition-colors" title="Пополнить монеты" aria-label="Монеты — пополнить">
+      <span class="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i data-lucide="coins" class="w-3.5 h-3.5"></i></span>
+      <span id="valCoinsHeader" class="tabular">0</span>
+      <i data-lucide="plus" class="w-4 h-4 text-gray-400"></i>
+    </button>
+    <button type="button" onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
   </div>
 </header>
 
-<main class="p-8 max-w-7xl mx-auto w-full flex-1">
-  
-  <!-- ПРОМО БЛОК (Интеграция маркетинга) -->
-  <section class="mb-16">
-    <div class="bg-gray-900/5 dark:bg-white/5 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden transition-all hover:border-amber-300 dark:hover:border-amber-700/50 hover:shadow-xl hover:shadow-amber-500/10">
-      <div class="absolute -right-20 -top-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="relative z-10 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
-        <div class="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-[1.2rem] flex items-center justify-center shadow-inner border border-amber-200 dark:border-amber-800/50 flex-shrink-0">
-          <i data-lucide="ticket" class="w-8 h-8"></i>
+<main class="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-16 flex-1">
+
+  <!-- Кошелёк -->
+  <section class="mt-6 sm:mt-8 grid grid-cols-2 lg:grid-cols-[1fr_1fr_1.3fr] gap-3 sm:gap-4" aria-label="Баланс">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col">
+      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <span class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i data-lucide="coins" class="w-3.5 h-3.5"></i></span>Монеты
+      </div>
+      <div class="mt-3 flex items-baseline gap-2 flex-wrap">
+        <span id="valCoins" class="text-2xl sm:text-3xl font-semibold tracking-tight tabular">0</span>
+        <span id="valCoinsUsd" class="text-sm text-gray-400 tabular">≈ $0</span>
+      </div>
+      <p class="hidden sm:block mt-1 text-xs text-gray-400 dark:text-gray-500">100 монет = $1</p>
+      <button type="button" onclick="openTopUpModal()" class="mt-4 sm:mt-auto sm:pt-0 h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-1.5 sm:self-start sm:mt-4"><i data-lucide="plus" class="w-4 h-4"></i>Пополнить</button>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col">
+      <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <span class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center"><i data-lucide="gem" class="w-3.5 h-3.5"></i></span>Бонусы
+      </div>
+      <div class="mt-3"><span id="valCredits" class="text-2xl sm:text-3xl font-semibold tracking-tight tabular">0</span></div>
+      <p class="hidden sm:block mt-1 text-xs text-gray-400 dark:text-gray-500">За друзей и задания</p>
+      <button type="button" onclick="goToSection('bonus')" class="mt-4 h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors sm:self-start"><span class="sm:hidden">Получить</span><span class="hidden sm:inline">Получить бонусы</span></button>
+    </div>
+
+    <div id="promo" class="col-span-2 lg:col-span-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col scroll-mt-24">
+      <label for="storePromoCodeInput" class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <span class="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center"><i data-lucide="ticket" class="w-3.5 h-3.5"></i></span>Промокод
+      </label>
+      <p class="mt-3 text-sm text-gray-600 dark:text-gray-300">Монеты, скидка или тариф — по коду от нас или партнёров.</p>
+      <form class="mt-auto pt-4 flex gap-2" onsubmit="event.preventDefault(); activatePromoCode();">
+        <input type="text" id="storePromoCodeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" placeholder="Введите код" class="flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm font-medium uppercase tracking-wide placeholder:normal-case placeholder:tracking-normal placeholder:font-normal outline-none focus:border-blue-500 dark:text-white transition-colors">
+        <button type="submit" id="activateStorePromoBtn" class="h-10 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors flex-shrink-0 inline-flex items-center justify-center min-w-[104px]">Применить</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Разделы -->
+  <nav id="storeNav" class="sticky top-16 z-30 -mx-4 sm:-mx-6 px-4 sm:px-6 mt-6 py-2.5 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-xl" aria-label="Разделы магазина">
+    <div class="flex gap-1 overflow-x-auto hide-scroll">
+      <button type="button" data-nav="ai" onclick="goToSection('ai')" class="nav-chip h-8 px-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors"><span class="sm:hidden">AI</span><span class="hidden sm:inline">AI-ассистент</span></button>
+      <button type="button" data-nav="plans" onclick="goToSection('plans')" class="nav-chip h-8 px-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors">Тарифы</button>
+      <button type="button" data-nav="gifts" onclick="goToSection('gifts')" class="nav-chip h-8 px-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors">Подарки</button>
+      <button type="button" data-nav="bonus" onclick="goToSection('bonus')" class="nav-chip h-8 px-3 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white whitespace-nowrap transition-colors">Бонусы<span class="hidden sm:inline"> бесплатно</span></button>
+    </div>
+  </nav>
+
+  <section id="ai" data-section class="scroll-mt-32 pt-6">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4 mb-4">
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight">AI-ассистент</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Больше запросов: разбить задачу на шаги, составить чек-лист или план.</p>
+      </div>
+      <p id="aiStatus" class="text-sm text-gray-500 dark:text-gray-400 sm:text-right"></p>
+    </div>
+    <!-- Пришли с доски, когда закончились запросы к AI -->
+    <div id="aiLimitBanner" class="hidden mb-4 rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-4 items-start gap-3">
+      <span class="w-9 h-9 rounded-xl bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i data-lucide="zap-off" class="w-4 h-4"></i></span>
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-gray-900 dark:text-white">Запросы к AI на сегодня закончились</p>
+        <p class="text-sm text-gray-600 dark:text-gray-300 mt-0.5">Возьмите пакет ниже — запросы добавятся сразу после оплаты. Или подождите до завтра: лимит обновится сам.</p>
+      </div>
+    </div>
+    <div id="shelfAI" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></div>
+  </section>
+
+  <section id="plans" data-section class="scroll-mt-32 pt-12">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-4 mb-4">
+      <div>
+        <h2 class="text-lg font-semibold tracking-tight">Тарифы и внедрение</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Оплата монетами за 30 дней. Продлевается в один клик.</p>
+      </div>
+      <p id="planStatus" class="text-sm text-gray-500 dark:text-gray-400 sm:text-right"></p>
+    </div>
+    <div id="shelfPlans" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></div>
+  </section>
+
+  <section id="gifts" data-section class="scroll-mt-32 pt-12">
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold tracking-tight">Подарки</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Порадуйте друга, коллегу или команду монетами Blocko Pro.</p>
+      <ol class="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+        <li class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-gray-200/70 dark:bg-gray-800 text-xs font-semibold flex items-center justify-center">1</span>Купите подарок</li>
+        <li class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-gray-200/70 dark:bg-gray-800 text-xs font-semibold flex items-center justify-center">2</span>Отправьте ссылку</li>
+        <li class="flex items-center gap-2"><span class="w-5 h-5 rounded-full bg-gray-200/70 dark:bg-gray-800 text-xs font-semibold flex items-center justify-center">3</span>Получатель забирает монеты</li>
+      </ol>
+    </div>
+    <div id="shelfGifts" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></div>
+  </section>
+
+  <section id="bonus" data-section class="scroll-mt-32 pt-12">
+    <div class="mb-4">
+      <h2 class="text-lg font-semibold tracking-tight">Бонусы бесплатно</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Зовите друзей и выполняйте задания. Бонусами можно оплатить AI и тарифы.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+      <!-- Подарок другу раз в день -->
+      <article id="dailyGiftCard" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col">
+        <div class="flex items-start justify-between gap-3">
+          <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5"></i></span>
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400">Каждый день</span>
         </div>
-        <div>
-          <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-1">Есть промокод?</h3>
-          <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Активируйте скидку, премиум-тариф или получите B-Coins.</p>
+        <h3 class="mt-4 text-base font-semibold">Подарок другу</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Бесплатная ссылка на 50 монет — отправьте её тому, кому пригодится.</p>
+        <div id="dailyGiftAction" class="mt-5 sm:mt-auto sm:pt-5"></div>
+      </article>
+
+      <!-- Пригласить друга -->
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col">
+        <div class="flex items-start justify-between gap-3">
+          <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5"></i></span>
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300">+10 бонусов</span>
         </div>
-      </div>
-      <div class="relative z-10 w-full md:w-auto flex gap-2">
-        <input type="text" id="storePromoCodeInput" placeholder="Введите код..." class="w-full md:w-64 px-5 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl outline-none text-sm font-bold uppercase tracking-widest focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner dark:text-white">
-        <button id="activateStorePromoBtn" onclick="activatePromoCode('storePromoCodeInput', 'activateStorePromoBtn')" class="px-6 py-4 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-lg shadow-amber-500/25 active:scale-95 transition-all text-sm flex items-center gap-2 flex-shrink-0">
-          <i data-lucide="zap" class="w-5 h-5"></i>
-        </button>
-      </div>
+        <h3 class="mt-4 text-base font-semibold">Пригласить друга</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">+10 бонусов вам за каждого, кто зарегистрируется по вашей ссылке.</p>
+        <div id="referralProgress" class="mt-4"></div>
+        <div class="mt-5 sm:mt-auto sm:pt-5 flex gap-2">
+          <button type="button" id="copyRefBtn" onclick="copyStoreAffiliateLink(this)" class="flex-1 h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="link" class="w-4 h-4"></i>Скопировать ссылку</button>
+          <button type="button" onclick="openRefQr()" class="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 inline-flex items-center justify-center transition-colors" title="QR-код ссылки" aria-label="QR-код ссылки"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
+        </div>
+      </article>
     </div>
+
+    <!-- Задания -->
+    <article class="mt-3 sm:mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">
+      <div class="px-5 pt-5 pb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h3 class="text-base font-semibold">Задания</h3>
+        <span class="text-sm text-gray-500 dark:text-gray-400">Ежедневные обновляются в полночь</span>
+      </div>
+      <ul id="questsList" class="divide-y divide-gray-100 dark:divide-gray-800"></ul>
+    </article>
   </section>
 
-  <section class="mb-20">
-    <div class="shelf-title">
-      <div class="p-2 bg-blue-50 dark:bg-blue-500/10 rounded-lg text-blue-500 border border-blue-100 dark:border-blue-900"><i data-lucide="cpu" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Нейросети & Интеллект</h2>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfAI"></div>
-  </section>
-
-  <section class="mb-20">
-    <div class="shelf-title">
-      <div class="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg text-indigo-500 border border-indigo-100 dark:border-indigo-900"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Инфраструктура & Внедрение</h2>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfPlans"></div>
-  </section>
-
-  <section class="mb-16">
-    <div class="shelf-title">
-      <div class="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-rose-500 border border-rose-100 dark:border-rose-900"><i data-lucide="gift" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Корпоративные Подарки</h2>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8" id="shelfGifts"></div>
-  </section>
-
-  <!-- Бонусный центр (Gamification & Retention) -->
-  <section class="mb-20">
-    <div class="shelf-title">
-      <div class="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-lg text-amber-500 border border-amber-100 dark:border-amber-900"><i data-lucide="sparkles" class="w-5 h-5"></i></div>
-      <h2 class="text-sm font-black uppercase tracking-widest text-gray-400">Бонусный Центр</h2>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      
-      <!-- Блок 1: Ежедневный подарок -->
-      <div id="dailyGiftCard" onclick="handleDailyGiftClick()" class="cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-amber-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
-         <!-- Оверлей при использованном подарке -->
-         <div id="dailyGiftOverlay" class="absolute inset-0 bg-gray-50/90 dark:bg-gray-950/90 backdrop-blur-[2px] z-10 hidden flex-col items-center justify-center">
-            <i data-lucide="clock" class="w-8 h-8 text-gray-400 mb-2"></i>
-            <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Следующий подарок</span>
-            <div id="dailyGiftTimer" class="text-2xl font-mono font-black text-gray-800 dark:text-white">00:00:00</div>
-            <button onclick="event.stopPropagation(); handleDailyGiftClick()" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors border border-gray-300 dark:border-gray-700 shadow-sm active:scale-95"><i data-lucide="search" class="w-3.5 h-3.5 inline mr-1 mb-0.5"></i> Статус отправки</button>
-         </div>
-
-         <div class="relative w-20 h-20 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-rose-100 dark:border-rose-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-           <i data-lucide="gift" class="w-10 h-10 relative z-10"></i>
-         </div>
-         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Подарок другу</h3>
-         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Бесплатный гифт-бокс на 50 монет каждый день. Отправьте другу!</p>
-         <button class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white shadow-lg shadow-rose-500/25 active:scale-95 relative z-0"><i data-lucide="box" class="w-5 h-5"></i> Забрать и отправить</button>
-      </div>
-
-      <!-- Блок 2: Пригласи друга -->
-      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
-         <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-         <div class="relative w-20 h-20 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-indigo-100 dark:border-indigo-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-           <i data-lucide="users" class="w-10 h-10 relative z-10"></i>
-         </div>
-         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Пригласи друга</h3>
-         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Вы получите по 10 кредитов каждый за регистрацию.</p>
-         <button onclick="copyStoreAffiliateLink(this)" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 active:scale-95 relative z-10"><i data-lucide="link" class="w-5 h-5"></i> Копировать ссылку</button>
-      </div>
-
-      <!-- Блок 3: Квесты -->
-      <div onclick="openQuestsModal()" class="cursor-pointer bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-emerald-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
-         <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-         <div class="relative w-20 h-20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-emerald-100 dark:border-emerald-900 transition-transform duration-500 group-hover:scale-110 shadow-inner">
-           <i data-lucide="check-square" class="w-10 h-10 relative z-10"></i>
-         </div>
-         <h3 class="font-extrabold text-xl mb-2 text-gray-900 dark:text-white tracking-tight">Центр заданий</h3>
-         <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 flex-1 leading-relaxed">Выполняй квесты и забирай ценные награды.</p>
-         <button class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25 active:scale-95 relative z-10"><i data-lucide="play" class="w-5 h-5"></i> Открыть квесты</button>
-      </div>
-
-    </div>
-  </section>
+  <p class="mt-12 text-sm text-gray-500 dark:text-gray-400 flex items-start gap-2">
+    <i data-lucide="shield-check" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+    <span>Платежи проходят через PayPal, списание и начисление выполняет сервер. Если деньги списались, а монеты не пришли, напишите в поддержку на главной и укажите номер заказа. <a href="terms.html" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условия</a></span>
+  </p>
 </main>
 
-<div id="productDetailsModal" class="hidden fixed inset-0 z-[300] bg-white/95 dark:bg-black/95 detail-overlay flex items-center justify-center opacity-0 transition-opacity duration-500 px-6">
-  <button onclick="closeDetails()" class="absolute top-8 right-8 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-4 rounded-full hover:bg-gray-100 dark:hover:bg-gray-900">
-    <i data-lucide="x" class="w-8 h-8"></i>
-  </button>
-  
-  <div class="max-w-4xl w-full text-center flex flex-col items-center transform scale-95 transition-transform duration-500" id="productDetailsContent">
-    <div id="pdIconWrapper" class="w-24 h-24 rounded-full flex items-center justify-center mb-8 mx-auto shadow-2xl relative">
-      <div id="pdIconGlow" class="absolute inset-0 rounded-full blur-2xl opacity-50"></div>
-      <i id="pdIcon" data-lucide="star" class="w-12 h-12 relative z-10"></i>
-    </div>
-    
-    <h2 id="pdTitle" class="text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-8 leading-tight">Название продукта</h2>
-    
-    <p id="pdDesc" class="text-lg md:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl mx-auto font-medium">
-      Подробное описание продукта.
-    </p>
-  </div>
-</div>
+<!-- ============ ОКНА ============ -->
 
-<div id="topUpModal" class="hidden fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/80 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[2rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800">
-    <button onclick="closeTopUpModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-800 dark:hover:text-white p-2 rounded-full transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-    
-    <div class="text-center mb-8">
-      <div class="mx-auto w-16 h-16 bg-amber-100 dark:bg-amber-900/30 text-amber-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-amber-500/20"><i data-lucide="coins" class="w-8 h-8"></i></div>
-      <h2 class="text-2xl font-black text-gray-900 dark:text-white">Пополнить Монеты</h2>
-      <p class="text-sm text-gray-500 mt-2">Приобретайте реальные монеты для оплаты услуг.</p>
-    </div>
-
-    <div id="packsContainer" class="space-y-4 block">
-      <button onclick="preparePayPalPayment(1000, 10, 'Набор Новичка')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
-        <div class="flex items-center gap-3">
-          <i data-lucide="circle-dollar-sign" class="w-6 h-6 text-amber-500"></i>
-          <div class="text-left"><div class="font-bold dark:text-white">Набор Новичка</div><div class="text-xs text-gray-500">1 000 Монет</div></div>
+<!-- Подробнее о товаре -->
+<div id="productDetailsModal" class="modal hidden fixed inset-0 z-[300] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="pdTitle">
+  <div class="modal-panel w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl">
+    <div class="p-5 sm:p-6">
+      <div class="flex items-start gap-4">
+        <span id="pdIconWrap" class="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"></span>
+        <div class="flex-1 min-w-0">
+          <h2 id="pdTitle" class="text-lg font-semibold tracking-tight"></h2>
+          <p id="pdShort" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5"></p>
         </div>
-        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$10.00</div>
-      </button>
-
-      <button onclick="preparePayPalPayment(5000, 45, 'Популярный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-amber-300 dark:border-amber-600 relative overflow-hidden group shadow-lg shadow-amber-500/10">
-        <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
-        <div class="flex items-center gap-3 relative z-10">
-          <i data-lucide="gem" class="w-6 h-6 text-amber-500"></i>
-          <div class="text-left"><div class="font-bold dark:text-white">Популярный <span class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full ml-2">-10%</span></div><div class="text-xs text-gray-500">5 000 Монет</div></div>
-        </div>
-        <div class="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl text-sm group-hover:scale-105 transition-transform relative z-10">$45.00</div>
-      </button>
-
-      <button onclick="preparePayPalPayment(12000, 100, 'Максимальный')" class="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-amber-500 transition-all group">
-        <div class="flex items-center gap-3">
-          <i data-lucide="crown" class="w-6 h-6 text-amber-500"></i>
-          <div class="text-left"><div class="font-bold dark:text-white">Максимальный</div><div class="text-xs text-gray-500">12 000 Монет (Бонус 2000)</div></div>
-        </div>
-        <div class="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl text-sm group-hover:scale-105 transition-transform">$100.00</div>
-      </button>
-    </div>
-
-    <!-- БЛОК ОПЛАТЫ PAYPAL (Скрыт по умолчанию) -->
-    <div id="paypalPaymentContainer" class="hidden flex-col items-center">
-       <button onclick="backToPacks()" class="mb-4 text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 self-start transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i> Назад к выбору</button>
-       
-       <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-2xl w-full text-center mb-6">
-         <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">К оплате</p>
-         <div class="text-2xl font-black text-blue-600 dark:text-blue-400" id="checkoutTotal">$0.00</div>
-         <div class="text-sm font-bold text-gray-900 dark:text-white mt-1" id="checkoutItemName">Набор</div>
-       </div>
-       
-       <div id="paypal-button-container" class="w-full relative min-h-[150px]">
-          <!-- Сюда скрипт вставит кнопки PayPal -->
-       </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- Premium Confirm Modal -->
-<div id="customConfirmModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-gray-900/60 dark:bg-black/80 glass-modal opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-700 text-center transform transition-transform scale-95" id="confirmModalContent">
-    <div id="confirmIconBg" class="mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50">
-      <i id="confirmIcon" data-lucide="shopping-bag" class="w-10 h-10"></i>
-    </div>
-    <h2 id="confirmTitle" class="text-2xl font-black mb-3 text-gray-900 dark:text-white tracking-tight">Подтверждение</h2>
-    <p id="confirmDesc" class="text-sm text-gray-500 mb-8 leading-relaxed font-medium">Вы уверены?</p>
-    <div class="flex gap-3">
-      <button onclick="closeConfirmModal()" class="flex-1 py-4 text-sm font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-2xl transition-colors">Отмена</button>
-      <button id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all">Подтвердить</button>
-    </div>
-  </div>
-</div>
-
-<!-- Epic Gift Link Modal -->
-<div id="giftLinkModal" class="hidden fixed inset-0 z-[400] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform duration-500 overflow-hidden" id="giftLinkContent">
-    
-    <!-- Неоновое свечение на фоне -->
-    <div class="absolute -top-32 -right-32 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-    <button onclick="closeGiftLinkModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
-
-    <div class="relative w-28 h-28 mx-auto mb-8 z-10">
-       <div class="absolute inset-0 bg-gradient-to-tr from-rose-500 to-pink-500 rounded-[2rem] blur-xl opacity-50 animate-pulse"></div>
-       <div class="relative w-full h-full bg-gradient-to-tr from-rose-500 to-pink-600 rounded-[2rem] flex items-center justify-center shadow-inner border border-rose-400/50">
-         <i data-lucide="gift" class="w-14 h-14 text-white"></i>
-       </div>
-    </div>
-
-    <h2 class="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white mb-3 relative z-10 tracking-tight">Ваш подарок готов!</h2>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mb-10 relative z-10 leading-relaxed font-medium">Скопируйте уникальную ссылку ниже и отправьте её получателю. Распаковка подарит незабываемые эмоции.</p>
-
-    <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 p-2 pl-6 rounded-2xl flex items-center gap-3 relative z-10 transition-colors hover:border-rose-300 dark:hover:border-rose-700/50 shadow-inner group">
-       <input type="text" id="generatedGiftLink" readonly class="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 truncate cursor-copy" onclick="copyGeneratedGiftLink()">
-       <button onclick="copyGeneratedGiftLink()" class="px-6 py-4 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl shadow-lg shadow-rose-500/25 active:scale-95 transition-all flex items-center gap-2 flex-shrink-0">
-         <i data-lucide="copy" class="w-4 h-4"></i> Копировать
-       </button>
-    </div>
-  </div>
-</div>
-
-<!-- Daily Gift View Modal -->
-<div id="dailyGiftModal" class="hidden fixed inset-0 z-[450] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-lg shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform duration-500 overflow-hidden" id="dailyGiftContent">
-    
-    <button onclick="closeDailyGiftModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
-
-    <!-- State 1: Ready to Share -->
-    <div id="dgStateReady" class="block">
-        <div class="absolute -top-32 -right-32 w-64 h-64 bg-rose-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="relative w-28 h-28 mx-auto mb-6 z-10">
-           <div class="absolute inset-0 bg-gradient-to-tr from-rose-500 to-amber-500 rounded-[2rem] blur-xl opacity-50 animate-pulse"></div>
-           <div class="relative w-full h-full bg-gradient-to-tr from-rose-500 to-amber-500 rounded-[2rem] flex items-center justify-center shadow-inner border border-rose-400/50">
-             <i data-lucide="gift" class="w-14 h-14 text-white"></i>
-           </div>
-        </div>
-        <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Подарок готов!</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 leading-relaxed font-medium">Бесплатный гифт-бокс на 50 B-Coins сгенерирован. Отправьте ссылку другу! <br><span class="text-[10px] font-black uppercase tracking-widest text-rose-500 bg-rose-500/10 border border-rose-500/20 px-2 py-1 rounded-md mt-2 inline-block">Только 1 использование</span></p>
-        
-        <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 p-2 pl-6 rounded-2xl flex items-center gap-3 relative z-10 transition-colors hover:border-rose-300 dark:hover:border-rose-700/50 shadow-inner group mb-4">
-           <input type="text" id="dgGiftLinkInput" readonly class="flex-1 bg-transparent border-none outline-none text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200 truncate cursor-copy" onclick="copyDgLink()">
-           <button onclick="openQrModal('dgGiftLinkInput', 'Отсканируйте код, чтобы забрать 50 B-Coins.')" class="px-4 py-3.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 font-bold rounded-xl shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 flex-shrink-0 border border-rose-200 dark:border-rose-800/50">
-             <i data-lucide="qr-code" class="w-4 h-4"></i>
-           </button>
-           <button onclick="copyDgLink()" class="px-4 py-3.5 bg-rose-500 hover:bg-rose-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 flex-shrink-0">
-             <i data-lucide="copy" class="w-4 h-4"></i>
-           </button>
-        </div>
-        
-        <button onclick="shareDgLink()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <i data-lucide="share-2" class="w-5 h-5"></i> Отправить в соц. сети
-        </button>
-    </div>
-
-    <!-- State 2: Claimed -->
-    <div id="dgStateClaimed" class="hidden">
-        <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="relative w-28 h-28 mx-auto mb-6 z-10">
-           <div class="absolute inset-0 bg-emerald-500 rounded-[2rem] blur-xl opacity-30"></div>
-           <div class="relative w-full h-full bg-emerald-50 dark:bg-emerald-900/30 rounded-[2rem] flex items-center justify-center border border-emerald-200 dark:border-emerald-800 shadow-inner">
-             <i data-lucide="check-circle" class="w-14 h-14 text-emerald-500"></i>
-           </div>
-        </div>
-        <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Подарок открыт!</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 leading-relaxed font-medium">Пользователь успешно распаковал коробку и забрал 50 B-Coins. Завтра вы сможете подарить еще один!</p>
-        
-        <div class="flex items-center justify-center gap-4 bg-gray-50 dark:bg-gray-800/80 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 w-fit mx-auto shadow-inner relative z-10">
-            <img id="dgClaimerAvatar" src="" class="w-12 h-12 rounded-full border-2 border-white dark:border-gray-700 shadow-sm object-cover" />
-            <div class="text-left">
-                <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Новый владелец:</div>
-                <div id="dgClaimerName" class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">User Name</div>
-            </div>
-        </div>
-    </div>
-    
-  </div>
-</div>
-
-<!-- Quests Modal (Энтерпрайз Геймификация) -->
-<div id="questsModal" class="hidden fixed inset-0 z-[460] flex items-center justify-center bg-gray-900/90 dark:bg-black/95 backdrop-blur-xl opacity-0 transition-opacity duration-500 px-4 py-10 overflow-y-auto">
-  <div class="bg-white dark:bg-gray-900 p-8 sm:p-10 rounded-[3rem] w-full max-w-2xl shadow-2xl relative border border-gray-200 dark:border-gray-800 m-auto transform scale-95 transition-transform duration-500" id="questsContent">
-    
-    <div class="absolute -top-32 -left-32 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-    <button onclick="closeQuestsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-6 h-6"></i></button>
-
-    <div class="text-center mb-8 relative z-10">
-      <div class="mx-auto w-20 h-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-[1.5rem] flex items-center justify-center mb-4 shadow-inner border border-emerald-100 dark:border-emerald-800/50">
-        <i data-lucide="target" class="w-10 h-10"></i>
+        <button type="button" onclick="closeModal('productDetailsModal')" aria-label="Закрыть" class="w-9 h-9 -mt-1 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      <h2 class="text-3xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">Задания и награды</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Выполняйте квесты, чтобы быстро накопить баланс.</p>
+      <p id="pdDesc" class="mt-5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed"></p>
+      <h3 class="mt-5 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Что входит</h3>
+      <ul id="pdFeatures" class="mt-3 space-y-2.5"></ul>
+      <p id="pdNote" class="hidden mt-5 text-sm rounded-xl px-3.5 py-3 bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300"></p>
     </div>
-
-    <div class="space-y-8 relative z-10">
-        <!-- Ежедневные задания -->
-        <div>
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Ежедневные квесты</h3>
-            <div class="space-y-3">
-                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white dark:bg-gray-900 text-blue-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="door-open" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Открытие Бонусного Центра</h4>
-                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+10 кр.</span></p>
-                        </div>
-                    </div>
-                    <button id="btnQuestLogin" onclick="claimDailyQuest('login', 10)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="download" class="w-4 h-4"></i> Забрать</button>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-sky-300 dark:hover:border-sky-700 transition-colors">
-                    <div class="flex items-center gap-4">
-                        <div class="p-3 bg-white dark:bg-gray-900 text-sky-500 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 group-hover:scale-110 transition-transform"><i data-lucide="send" class="w-5 h-5"></i></div>
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-900 dark:text-white">Поделиться платформой в Telegram</h4>
-                            <p class="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+50 кр.</span></p>
-                        </div>
-                    </div>
-                    <button id="btnQuestTelegram" onclick="claimDailyQuest('telegram', 50)" class="w-full sm:w-auto px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0"><i data-lucide="external-link" class="w-4 h-4"></i> Выполнить</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Глобальные задания (С ручной проверкой) -->
-        <div>
-            <h3 class="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-4 flex items-center gap-2"><i data-lucide="flame" class="w-4 h-4"></i> Уникальные квесты</h3>
-            <div class="space-y-4">
-                
-                <!-- Эпическое -->
-                <div class="bg-gradient-to-br from-purple-500/5 to-pink-500/5 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-800/50 p-5 rounded-2xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 bg-purple-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Эпическое</div>
-                    <div class="flex items-start gap-4 mb-4 mt-2">
-                        <div class="p-3 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-xl shadow-inner border border-purple-200 dark:border-purple-800 flex-shrink-0"><i data-lucide="edit-3" class="w-6 h-6"></i></div>
-                        <div>
-                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Написать статью о Blocko Pro</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте текстовый обзор платформы на любом сайте, блоге или форуме.</p>
-                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-indigo-500 bg-indigo-500/10 px-2 py-0.5 rounded-md ml-1">+300 кр.</span></p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
-                        <input type="text" id="questArticleLink" placeholder="Вставьте ссылку на статью (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-purple-500 transition-colors shadow-inner">
-                        <button id="btnQuestArticle" onclick="submitSpecialQuest('article')" class="w-full sm:w-auto px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
-                    </div>
-                </div>
-
-                <!-- Мифическое -->
-                <div class="bg-gradient-to-br from-amber-500/5 to-orange-500/5 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/50 p-5 rounded-2xl relative overflow-hidden shadow-[0_0_15px_rgba(245,158,11,0.05)]">
-                    <div class="absolute top-0 right-0 bg-amber-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl shadow-sm">Мифическое</div>
-                    <div class="flex items-start gap-4 mb-4 mt-2">
-                        <div class="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-xl shadow-inner border border-amber-200 dark:border-amber-800 flex-shrink-0"><i data-lucide="video" class="w-6 h-6"></i></div>
-                        <div>
-                            <h4 class="font-extrabold text-gray-900 dark:text-white mb-1">Снять видеообзор</h4>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">Опубликуйте качественный видеообзор о том, как вы используете Blocko Pro, на YouTube, TikTok или Reels.</p>
-                            <p class="text-[10px] font-black uppercase tracking-widest">Награда: <span class="text-amber-600 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md ml-1">Тариф COMPANY</span></p>
-                        </div>
-                    </div>
-                    <div class="flex flex-col sm:flex-row gap-2 relative z-10 pt-2">
-                        <input type="text" id="questVideoLink" placeholder="Вставьте ссылку на видео (http://...)" class="flex-1 bg-white dark:bg-gray-900 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-3 text-xs font-bold dark:text-white outline-none focus:border-amber-500 transition-colors shadow-inner">
-                        <button id="btnQuestVideo" onclick="submitSpecialQuest('video')" class="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0">Отправить</button>
-                    </div>
-                </div>
-                
-            </div>
-        </div>
-    </div>
-    
-  </div>
-</div>
-
-<!-- ЭНТЕРПРАЙЗ: QR-Share Engine Modal -->
-<div id="qrCodeModal" class="hidden fixed inset-0 z-[600] flex items-center justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4">
-  <div class="bg-white dark:bg-gray-900 p-8 rounded-[3rem] w-full max-w-sm shadow-2xl relative border border-gray-200 dark:border-gray-800 text-center transform scale-95 transition-transform flex flex-col items-center" id="qrCodeContent">
-    <button onclick="closeQrModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 z-20"><i data-lucide="x" class="w-5 h-5"></i></button>
-
-    <div class="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-2xl flex items-center justify-center mb-4 shadow-inner border border-rose-100 dark:border-rose-800/50">
-      <i data-lucide="qr-code" class="w-8 h-8"></i>
-    </div>
-
-    <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight mb-2">Ваш QR-код</h2>
-    <p id="qrCodeDesc" class="text-xs text-gray-500 font-medium leading-relaxed mb-6">
-      Отсканируйте код, чтобы перейти по ссылке.
-    </p>
-
-    <div class="bg-white p-3 rounded-[2rem] shadow-lg border border-gray-100 dark:border-gray-700 mb-8 relative group">
-       <canvas id="qrCanvas" class="rounded-xl w-48 h-48 mx-auto"></canvas>
-       <div class="absolute inset-0 bg-rose-500/10 rounded-[2rem] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-    </div>
-
-    <div class="flex items-center justify-center gap-3 w-full">
-       <button onclick="downloadQrCode()" class="flex-1 py-3.5 text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-rose-500 dark:hover:text-rose-400 bg-gray-50 hover:bg-rose-50 dark:bg-gray-800 dark:hover:bg-rose-900/20 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-gray-100 dark:border-gray-700">
-         <i data-lucide="download" class="w-4 h-4"></i> Сохранить
-       </button>
-       <button onclick="shareQrCode()" class="flex-1 py-3.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white dark:hover:text-white bg-rose-50 hover:bg-rose-500 dark:bg-rose-900/30 dark:hover:bg-rose-600 rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-2 border border-rose-100 dark:border-rose-800/50">
-         <i data-lucide="share-2" class="w-4 h-4"></i> Отправить
-       </button>
+    <div class="px-5 sm:px-6 pb-5 sm:pb-6 pt-4 border-t border-gray-100 dark:border-gray-800">
+      <div class="flex items-baseline gap-1.5">
+        <span id="pdPrice" class="text-2xl font-semibold tracking-tight tabular"></span>
+        <span id="pdPriceUnit" class="text-sm text-gray-500 dark:text-gray-400"></span>
+        <span id="pdUsd" class="ml-auto text-sm text-gray-400 tabular"></span>
+      </div>
+      <div id="pdActions" class="mt-3"></div>
     </div>
   </div>
 </div>
 
-<div id="globalToast" class="fixed bottom-6 right-6 z-[500] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
-  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
-  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+<!-- Подтверждение покупки -->
+<div id="customConfirmModal" class="modal hidden fixed inset-0 z-[320] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal-panel w-full sm:max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <h2 id="confirmTitle" class="text-lg font-semibold tracking-tight">Подтверждение</h2>
+    <p id="confirmDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
+    <dl id="confirmRows" class="mt-5 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 text-sm"></dl>
+    <p id="confirmNote" class="hidden mt-4 text-sm rounded-xl px-3.5 py-3 bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-200"></p>
+    <div class="mt-6 flex gap-2">
+      <button type="button" onclick="closeModal('customConfirmModal')" class="flex-1 h-11 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Отмена</button>
+      <button type="button" id="confirmBtnAction" onclick="executeConfirm()" class="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-60">Оплатить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Пополнение монет -->
+<div id="topUpModal" class="modal hidden fixed inset-0 z-[310] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="topUpTitle">
+  <div class="modal-panel w-full sm:max-w-md max-h-[92dvh] overflow-y-auto bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 id="topUpTitle" class="text-lg font-semibold tracking-tight">Пополнить монеты</h2>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">100 монет = $1 · оплата через PayPal</p>
+      </div>
+      <button type="button" onclick="closeTopUpModal()" aria-label="Закрыть" class="w-9 h-9 -mt-1 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+
+    <p id="topUpNeed" class="hidden mt-4 text-sm rounded-xl px-3.5 py-3 bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-200"></p>
+
+    <div id="packsContainer" class="mt-5 space-y-2.5"></div>
+
+    <!-- Оплата PayPal (появляется после выбора набора) -->
+    <div id="paypalPaymentContainer" class="hidden mt-5 flex-col">
+      <button type="button" onclick="backToPacks()" class="self-start mb-4 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white inline-flex items-center gap-1.5 transition-colors"><i data-lucide="arrow-left" class="w-4 h-4"></i>Другой набор</button>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between gap-4 mb-5">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">К оплате</p>
+          <p id="checkoutItemName" class="text-sm font-medium mt-0.5">Набор</p>
+        </div>
+        <p id="checkoutTotal" class="text-2xl font-semibold tracking-tight tabular">$0</p>
+      </div>
+      <div id="paypal-button-container" class="w-full relative min-h-[150px]"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Подарок куплен: ссылка -->
+<div id="giftLinkModal" class="modal hidden fixed inset-0 z-[330] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="giftLinkTitle">
+  <div class="modal-panel w-full sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <span class="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="gift" class="w-6 h-6"></i></span>
+      <button type="button" onclick="closeModal('giftLinkModal')" aria-label="Закрыть" class="w-9 h-9 -mt-1 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <h2 id="giftLinkTitle" class="mt-4 text-lg font-semibold tracking-tight">Подарок готов</h2>
+    <p id="giftLinkDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400">Отправьте ссылку получателю. Открыть её можно один раз.</p>
+    <div class="mt-5 flex gap-2">
+      <input type="text" id="generatedGiftLink" readonly class="flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-200 outline-none" onclick="this.select()">
+      <button type="button" onclick="copyText(document.getElementById('generatedGiftLink').value, 'Ссылка на подарок скопирована')" class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center gap-2 flex-shrink-0"><i data-lucide="copy" class="w-4 h-4"></i>Копировать</button>
+    </div>
+    <div class="mt-3 grid grid-cols-2 gap-2">
+      <button type="button" onclick="openQrModal(document.getElementById('generatedGiftLink').value, 'Отсканируйте, чтобы открыть подарок.')" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="qr-code" class="w-4 h-4"></i>QR-код</button>
+      <button type="button" onclick="shareLink(document.getElementById('generatedGiftLink').value, 'Это тебе подарок в Blocko Pro 🎁')" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Отправить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ежедневный подарок -->
+<div id="dailyGiftModal" class="modal hidden fixed inset-0 z-[330] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="dgTitle">
+  <div class="modal-panel w-full sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <span id="dgIcon" class="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="gift" class="w-6 h-6"></i></span>
+      <button type="button" onclick="closeModal('dailyGiftModal')" aria-label="Закрыть" class="w-9 h-9 -mt-1 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+
+    <div id="dgStateReady">
+      <h2 id="dgTitle" class="mt-4 text-lg font-semibold tracking-tight">Подарок на 50 монет готов</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Отправьте ссылку другу. Забрать подарок можно один раз, завтра будет новый.</p>
+      <div class="mt-5 flex gap-2">
+        <input type="text" id="dgGiftLinkInput" readonly class="flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-200 outline-none" onclick="this.select()">
+        <button type="button" onclick="copyText(document.getElementById('dgGiftLinkInput').value, 'Ссылка на подарок скопирована')" class="h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center gap-2 flex-shrink-0"><i data-lucide="copy" class="w-4 h-4"></i>Копировать</button>
+      </div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button type="button" onclick="openQrModal(document.getElementById('dgGiftLinkInput').value, 'Отсканируйте, чтобы забрать 50 монет.')" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="qr-code" class="w-4 h-4"></i>QR-код</button>
+        <button type="button" onclick="shareLink(document.getElementById('dgGiftLinkInput').value, 'Забери 50 монет в Blocko Pro — это подарок 🎁')" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Отправить</button>
+      </div>
+    </div>
+
+    <div id="dgStateClaimed" class="hidden">
+      <h2 class="mt-4 text-lg font-semibold tracking-tight">Подарок уже забрали</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Ссылку на сегодня использовали. Завтра можно отправить новую.</p>
+      <div class="mt-5 flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-800 p-3">
+        <img id="dgClaimerAvatar" src="" alt="" class="w-10 h-10 rounded-full object-cover" />
+        <div class="min-w-0">
+          <p class="text-xs text-gray-500 dark:text-gray-400">Получатель</p>
+          <p id="dgClaimerName" class="text-sm font-medium truncate"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIP-внедрение оплачено -->
+<div id="vipModal" class="modal hidden fixed inset-0 z-[330] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="vipTitle">
+  <div class="modal-panel w-full sm:max-w-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <div class="flex items-start justify-between gap-4">
+      <span class="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="badge-check" class="w-6 h-6"></i></span>
+      <button type="button" onclick="closeModal('vipModal')" aria-label="Закрыть" class="w-9 h-9 -mt-1 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <h2 id="vipTitle" class="mt-4 text-lg font-semibold tracking-tight">Заявка на внедрение принята</h2>
+    <p id="vipDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
+    <label for="vipDetails" class="block mt-5 text-sm font-medium">Расскажите о команде и задачах <span class="font-normal text-gray-400">— необязательно</span></label>
+    <textarea id="vipDetails" rows="4" maxlength="2000" placeholder="Сколько человек в команде, какие проекты ведёте, что хотите настроить" class="mt-2 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm outline-none focus:border-blue-500 dark:text-white resize-none"></textarea>
+    <div class="mt-4 flex gap-2">
+      <button type="button" onclick="closeModal('vipModal')" class="flex-1 h-11 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Позже</button>
+      <button type="button" id="vipSendBtn" onclick="sendVipDetails()" class="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2">Отправить</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR-код -->
+<div id="qrCodeModal" class="modal hidden fixed inset-0 z-[400] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="modal-panel w-full sm:max-w-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 text-center">
+    <div class="flex items-center justify-between">
+      <h2 id="qrTitle" class="text-lg font-semibold tracking-tight">QR-код</h2>
+      <button type="button" onclick="closeModal('qrCodeModal')" aria-label="Закрыть" class="w-9 h-9 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <p id="qrCodeDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400 text-left">Отсканируйте код камерой телефона.</p>
+    <div class="mt-5 mx-auto w-fit bg-white p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+      <canvas id="qrCanvas" class="w-48 h-48"></canvas>
+    </div>
+    <div class="mt-5 grid grid-cols-2 gap-2">
+      <button type="button" onclick="downloadQrCode()" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Сохранить</button>
+      <button type="button" onclick="shareQrCode()" class="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Отправить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Уведомление -->
+<div id="globalToast" class="fixed z-[500] left-4 right-4 bottom-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[380px] pointer-events-none opacity-0 translate-y-4 transition-all duration-300" role="status" aria-live="polite">
+  <div class="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+    <span id="toastIconBg" class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-100 dark:bg-gray-800"><i id="toastIcon" data-lucide="info" class="w-5 h-5"></i></span>
+    <div class="min-w-0 pt-0.5">
+      <p id="toastTitle" class="text-sm font-semibold text-gray-900 dark:text-white"></p>
+      <p id="toastDesc" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-snug"></p>
+    </div>
+  </div>
 </div>
 
 <script>
-  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
+  try { if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark'); } catch (e) {}
   lucide.createIcons();
 
+  // ==========================================================
+  // Данные
+  // ==========================================================
   let currentUser = null;
   let currentUserData = {};
+  let affData = {};
   let balances = { coins: 0, credits: 0 };
+  let balancesReady = false;
+  let pendingPurchase = null;   // после пополнения продолжаем эту покупку
+  let questSubs = {};           // последние заявки на особые задания: { article: {...}, video: {...} }
 
-  // Обновленная структура данных с экспертным описанием и правильными иконками
-  const PRODUCTS = {
-    AI: [
-      { id: 'ai_50', name: 'AI Boost', desc: 'Разовое добавление +50 генераций.', detailedDesc: 'Мгновенное пополнение лимита генераций. Идеально подходит для завершения горящих проектов, где требуется быстрая помощь нейросети для декомпозиции задач, без необходимости покупать подписку на месяц.', priceCoins: 200, priceCredits: 600, icon: 'bot', color: 'blue' },
-      { id: 'ai_200', name: 'AI Surge', desc: 'Разовое добавление +200 генераций.', detailedDesc: 'Массивный пакет генераций для масштабных задач. Обеспечивает длительную автономную работу с AI-ассистентом для детального планирования архитектуры проектов и чек-листов.', priceCoins: 600, priceCredits: 1800, icon: 'brain-circuit', color: 'cyan' },
-      { id: 'ai_daily_sub', name: 'AI Unlimited', desc: '250 запросов каждый день в течение месяца.', detailedDesc: 'Абсолютная мощь искусственного интеллекта в вашем распоряжении. Вы получаете 250 запросов каждый день (обновляется раз в 24 часа). Максимально эффективное решение для командных мозговых штурмов.', priceCoins: 1500, priceCredits: 4500, icon: 'sparkles', color: 'indigo' }
-    ],
-    PLANS: [
-      { id: 'plan_freelancer', name: 'Freelancer Cloud', desc: 'До 10 облачных проектов и команд.', detailedDesc: 'Профессиональное расширение лимитов для активных соло-специалистов. Открывает доступ к 10 синхронизируемым облачным проектам с возможностью приглашать до 10 участников на каждую рабочую доску.', priceCoins: 600, priceCredits: 1800, icon: 'cloud-lightning', color: 'emerald' },
-      { id: 'plan_company', name: 'Company Cloud', desc: 'Безлимит облачных досок и ролей.', detailedDesc: 'Снятие абсолютно всех ограничений для вашего бизнеса. Создавайте бесконечное количество проектов, приглашайте всю компанию, управляйте продвинутыми ролями доступа (Viewer/Editor) и используйте сгорающие секьюрные файлы в чатах.', priceCoins: 1900, priceCredits: 5700, icon: 'building-2', color: 'purple' },
-      { id: 'vip_status', name: 'VIP Внедрение', desc: 'Личное сопровождение экспертом компании.', detailedDesc: 'Эксклюзивный формат сотрудничества. Наш ведущий технический эксперт лично погружается в процессы вашей команды. Мы проводим коучинг сотрудников, настраиваем архитектуру досок под бизнес-логику компании и, при необходимости, разрабатываем индивидуальные функции (кастомные интеграции и автоматизации), которых нет в публичной версии Blocko Pro.', priceCoins: 5000, priceCredits: 15000, icon: 'award', color: 'amber' }
-    ],
-    GIFTS: [
-      { id: 'gift_20', name: 'Gift Box $20', desc: 'Код на 2000 монет для любого пользователя.', detailedDesc: 'Подарочный бокс, генерирующий уникальный промокод на 2000 монет. Отличный способ поощрить сотрудника или подарить премиум-статус коллеге.', priceCoins: 2000, priceCredits: null, icon: 'box', color: 'rose' },
-      { id: 'gift_100', name: 'Gift Box $100', desc: 'Код на 10 000 монет для масштабного подарка.', detailedDesc: 'Крупный корпоративный подарок. Код на 10 000 монет позволяет получателю открыть мощные возможности Blocko Pro, оплачивая подписки и покупая AI пакеты месяцами.', priceCoins: 10000, priceCredits: null, icon: 'package-open', color: 'pink' },
-      { id: 'gift_200', name: 'Gift Chest $200', desc: 'Эпический сундук на 20 000 монет.', detailedDesc: 'Максимальный корпоративный жест. Эпический сундук генерирует код на 20 000 монет — абсолютная свобода действий и выбора внутри экосистемы Blocko Pro для целой команды.', priceCoins: 20000, priceCredits: null, icon: 'archive', color: 'orange' }
-    ]
-  };
+  // Курс: 100 монет = $1. Цены совпадают с серверным каталогом (functions/lib/catalog.js),
+  // но списывает и начисляет только сервер — здесь цены лишь для показа.
+  const PRODUCTS = [
+    { id: 'ai_50', cat: 'ai', name: 'AI Boost', icon: 'zap', priceCoins: 200, priceCredits: 600,
+      short: '+50 запросов к AI-ассистенту',
+      desc: 'Когда лимита не хватает, чтобы закончить задачу: разбить проект на шаги, составить чек-лист или план.',
+      features: ['50 дополнительных запросов к AI-ассистенту', 'Добавляются к лимиту вашего тарифа', 'Начисляются сразу после оплаты'],
+      success: '+50 запросов к AI уже доступны.' },
+    { id: 'ai_200', cat: 'ai', name: 'AI Surge', icon: 'bot', priceCoins: 600, priceCredits: 1800, badge: 'Выгоднее на 25%',
+      short: '+200 запросов к AI-ассистенту',
+      desc: 'Большой запас запросов для объёмной работы: планирование проектов, детальные чек-листы, разбор задач для команды.',
+      features: ['200 дополнительных запросов к AI-ассистенту', 'Запрос на 25% дешевле, чем в AI Boost', 'Начисляются сразу после оплаты'],
+      success: '+200 запросов к AI уже доступны.' },
+    { id: 'ai_daily_sub', cat: 'ai', name: 'AI Unlimited', icon: 'sparkles', priceCoins: 1500, priceCredits: 4500, days: 30,
+      short: 'До 250 запросов каждый день, 30 дней',
+      desc: 'Для тех, кто работает с AI каждый день: мозговые штурмы, планирование, разбор задач всей командой.',
+      features: ['До 250 запросов к AI в день', 'Лимит обновляется каждые сутки', 'Действует 30 дней, повторная покупка продлевает срок'],
+      success: 'До 250 запросов к AI в день — следующие 30 дней.' },
 
-  // Плоский список продуктов для удобного поиска по ID
-  const ALL_PRODUCTS_MAP = [...PRODUCTS.AI, ...PRODUCTS.PLANS, ...PRODUCTS.GIFTS].reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+    { id: 'plan_freelancer', cat: 'plans', plan: 'freelancer', name: 'Freelancer', icon: 'briefcase', priceCoins: 600, priceCredits: 1800, days: 30, badge: 'Популярный',
+      short: 'Для фрилансеров и небольших команд',
+      desc: 'Больше облачных проектов и участников, чтобы вести несколько клиентов одновременно.',
+      features: ['10 облачных проектов', 'До 10 участников в проекте', 'AI: 30 запросов в день', 'Вкладки внутри проекта'] },
+    { id: 'plan_company', cat: 'plans', plan: 'pro', name: 'Company', icon: 'building-2', priceCoins: 1900, priceCredits: 5700, days: 30,
+      short: 'Для команд и компаний',
+      desc: 'Без ограничений для всей компании: проекты, участники, роли доступа и сгорающие файлы в чате.',
+      features: ['Безлимит облачных проектов', 'Безлимит участников и роли доступа', 'AI без ограничений', 'Сгорающие файлы в чате'] },
+    { id: 'vip_status', cat: 'plans', name: 'VIP-внедрение', icon: 'award', priceCoins: 5000, priceCredits: 15000,
+      short: 'Эксперт настроит Blocko Pro под вашу команду',
+      desc: 'Наш эксперт разберётся в процессах команды, настроит проекты и доски под ваш бизнес и обучит сотрудников. Если нужно — сделаем доработки, которых нет в обычной версии.',
+      features: ['Разбор процессов вашей команды', 'Настройка проектов и досок под бизнес', 'Обучение сотрудников', 'Индивидуальные доработки — при необходимости'] },
 
-  auth.onAuthStateChanged(user => {
-    const loader = document.getElementById('globalLoader');
-    if (user) { 
-      currentUser = user; 
-      loadBalances(); 
-      renderAll(); 
-      
-      if (loader) {
-        loader.style.opacity = '0';
-        setTimeout(() => loader.classList.add('hidden'), 700);
-      }
-    } else { 
-      window.location.href = 'index.html'; 
+    { id: 'gift_20', cat: 'gifts', name: 'Подарок на $20', usdLabel: '$20', icon: 'gift', priceCoins: 2000, giftCoins: 2000,
+      short: 'Ссылка на 2 000 монет',
+      desc: 'Хватит, например, на три месяца тарифа Freelancer или на пакеты AI. Получатель сам решит, на что потратить.',
+      features: ['Ссылка на 2 000 монет для одного человека', 'Отправить можно в любом мессенджере или QR-кодом', 'Получатель открывает ссылку и забирает монеты на свой счёт'] },
+    { id: 'gift_100', cat: 'gifts', name: 'Подарок на $100', usdLabel: '$100', icon: 'gift', priceCoins: 10000, giftCoins: 10000,
+      short: 'Ссылка на 10 000 монет',
+      desc: 'Щедрый подарок коллеге или партнёру: хватит на несколько месяцев тарифа Company.',
+      features: ['Ссылка на 10 000 монет для одного человека', 'Отправить можно в любом мессенджере или QR-кодом', 'Получатель открывает ссылку и забирает монеты на свой счёт'] },
+    { id: 'gift_200', cat: 'gifts', name: 'Подарок на $200', usdLabel: '$200', icon: 'gift', priceCoins: 20000, giftCoins: 20000,
+      short: 'Ссылка на 20 000 монет',
+      desc: 'Подарок для целой команды: монет хватит на тарифы и AI на долгое время.',
+      features: ['Ссылка на 20 000 монет для одного человека', 'Отправить можно в любом мессенджере или QR-кодом', 'Получатель открывает ссылку и забирает монеты на свой счёт'] },
+  ];
+  const PRODUCT_MAP = PRODUCTS.reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+
+  // Наборы монет за деньги (сервер: COIN_PACKS)
+  const PACKS = [
+    { id: 'starter', coins: 1000, usd: 10, name: 'Набор новичка', note: '' },
+    { id: 'popular', coins: 5000, usd: 45, name: 'Популярный', note: 'Скидка 10%' },
+    { id: 'max', coins: 12000, usd: 100, name: 'Максимальный', note: '+2 000 монет в подарок' },
+  ];
+
+  // Награды за приглашённых друзей (сервер: REFERRAL_TIERS)
+  const REF_TIERS = [
+    { key: 'friend', req: 10, paid: 0, reward: '14 дней Freelancer' },
+    { key: 'partner', req: 25, paid: 0, reward: '14 дней Company' },
+    { key: 'ambassador', req: 50, paid: 10, reward: '60 дней Company' },
+  ];
+
+  const PLAN_ORDER = { free: 0, freelancer: 1, pro: 2, infinity: 3 };
+  const PLAN_NAMES = { free: 'Free', freelancer: 'Freelancer', pro: 'Company', infinity: 'Infinity' };
+  const PLAN_AI = { free: 5, freelancer: 30, pro: Infinity, infinity: Infinity };
+  const DAY = 24 * 60 * 60 * 1000;
+
+  // ==========================================================
+  // Помощники
+  // ==========================================================
+  const $ = (id) => document.getElementById(id);
+  const nf = new Intl.NumberFormat('ru-RU');
+  const fmt = (n) => nf.format(Math.round(Number(n) || 0));
+  function plural(n, forms) {
+    const a = Math.abs(Math.round(n)) % 100, b = a % 10;
+    if (a > 10 && a < 20) return forms[2];
+    if (b > 1 && b < 5) return forms[1];
+    if (b === 1) return forms[0];
+    return forms[2];
+  }
+  const coinsWord = (n) => plural(n, ['монета', 'монеты', 'монет']);
+  const creditsWord = (n) => plural(n, ['бонус', 'бонуса', 'бонусов']);
+  const usd = (coins) => { const v = (Number(coins) || 0) / 100; return '$' + (Number.isInteger(v) ? v : v.toFixed(2)); };
+  const shortDate = (ms) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const todayStr = () => new Date().toLocaleDateString('ru-RU');
+  const pageUrl = (path) => new URL(path, window.location.href).href;
+  const giftUrl = (code) => pageUrl('gift.html?code=' + encodeURIComponent(code));
+  const icon = (name, cls = 'w-4 h-4') => `<i data-lucide="${name}" class="${cls}"></i>`;
+  const refreshIcons = (root) => { try { lucide.createIcons(root ? { root } : undefined); } catch (e) {} };
+
+  function userPlan() {
+    const p = currentUserData.plan || 'free';
+    const exp = currentUserData.planExpiresAt;
+    if (p !== 'free' && typeof exp === 'number' && exp < Date.now()) return 'free';
+    return Object.prototype.hasOwnProperty.call(PLAN_ORDER, p) ? p : 'free';
+  }
+  const aiSubActive = () => !!(currentUserData.aiDailySub && Number(currentUserData.aiSubExpires) > Date.now());
+
+  function apiErrorText(e, fallback) {
+    if (BlockoAPI.errorCode(e) === 'backend-unavailable') return BlockoAPI.errorMessage(e);
+    const msg = BlockoAPI.errorMessage(e);
+    return /[а-яё]/i.test(msg) ? msg : fallback;
+  }
+
+  function celebrate() {
+    try { if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 70, origin: { y: 0.7 }, zIndex: 9999, disableForReducedMotion: true }); } catch (e) {}
+  }
+
+  async function copyText(text, okMessage) {
+    if (!text) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove();
+      } catch (e2) { ok = false; }
     }
+    if (ok) toast('success', 'Скопировано', okMessage || 'Ссылка в буфере обмена.');
+    else toast('warning', 'Не удалось скопировать', 'Выделите ссылку и скопируйте её вручную.');
+    return ok;
+  }
+
+  async function shareLink(url, text) {
+    if (!url) return;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Blocko Pro', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text || '')}`, '_blank', 'noopener,width=600,height=500');
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+  }
+
+  // ==========================================================
+  // Уведомления
+  // ==========================================================
+  const TOAST_KINDS = {
+    success: { icon: 'circle-check', cls: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400' },
+    error: { icon: 'circle-x', cls: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' },
+    warning: { icon: 'circle-alert', cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+    info: { icon: 'info', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' },
+  };
+  let toastTimer = null;
+  function toast(kind, title, desc) {
+    const k = TOAST_KINDS[kind] || TOAST_KINDS.info;
+    const t = $('globalToast');
+    $('toastTitle').textContent = title || '';
+    $('toastDesc').textContent = desc || '';
+    $('toastDesc').classList.toggle('hidden', !desc);
+    const bg = $('toastIconBg');
+    bg.className = 'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ' + k.cls;
+    bg.innerHTML = icon(k.icon, 'w-5 h-5');
+    refreshIcons(bg);
+    t.classList.remove('translate-y-4', 'opacity-0');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.add('translate-y-4', 'opacity-0'), kind === 'error' ? 7000 : 4500);
+  }
+
+  // ==========================================================
+  // Окна
+  // ==========================================================
+  const openStack = [];
+  function openModal(id) {
+    const m = $(id);
+    if (!m) return;
+    if (!openStack.includes(id)) openStack.push(id);
+    m._returnFocus = document.activeElement;
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    document.documentElement.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('is-open')));
+    setTimeout(() => {
+      const panel = m.querySelector('.modal-panel');
+      if (!panel) return;
+      panel.setAttribute('tabindex', '-1');
+      try { panel.focus({ preventScroll: true }); } catch (e) {}
+    }, 60);
+  }
+  function closeModal(id) {
+    const m = $(id);
+    if (!m || m.classList.contains('hidden')) return;
+    const i = openStack.indexOf(id);
+    if (i >= 0) openStack.splice(i, 1);
+    m.classList.remove('is-open');
+    if (!openStack.length) document.documentElement.style.overflow = '';
+    setTimeout(() => {
+      if (m.classList.contains('is-open')) return;
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }, 220);
+    const back = m._returnFocus;
+    if (back && typeof back.focus === 'function' && document.contains(back)) { try { back.focus({ preventScroll: true }); } catch (e) {} }
+    if (id === 'topUpModal') { pendingPurchase = null; setTimeout(backToPacks, 230); }
+    if (id === 'customConfirmModal') confirmCallback = null;
+  }
+  document.querySelectorAll('.modal').forEach((m) => {
+    m.addEventListener('mousedown', (e) => { m._downOnBackdrop = e.target === m; });
+    m.addEventListener('click', (e) => { if (e.target === m && m._downOnBackdrop) closeModal(m.id); });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openStack.length) { e.preventDefault(); closeModal(openStack[openStack.length - 1]); }
+  });
+
+  // ==========================================================
+  // Загрузка
+  // ==========================================================
+  function hideLoader() {
+    const loader = $('globalLoader');
+    if (!loader || loader.classList.contains('hidden')) return;
+    loader.style.opacity = '0';
+    setTimeout(() => loader.classList.add('hidden'), 500);
+  }
+  setTimeout(hideLoader, 5000); // на случай медленной сети
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    currentUser = user;
+    try { await loadBalances(); } catch (e) { console.error(e); }
+    hideLoader();
+    loadSubmissions();
+    handleEntryIntent();
   });
 
   async function loadBalances() {
-    const userDoc = await db.collection('users').doc(currentUser.uid).get();
-    const affDoc = await db.collection('affiliates').doc(currentUser.uid).get();
-    
-    if (userDoc.exists) currentUserData = userDoc.data();
-    
-    balances.coins = userDoc.exists ? (userDoc.data().coins || 0) : 0;
-    balances.credits = affDoc.exists ? (affDoc.data().earnedCredits || 0) : 0;
-    document.getElementById('valCoins').innerText = balances.coins;
-    document.getElementById('valCredits').innerText = balances.credits;
-    
-    checkDailyGiftState();
-  }
-
-  // --- ЭНТЕРПРАЙЗ: ЛОГИКА ЕЖЕДНЕВНЫХ ПОДАРКОВ ---
-  function getNextMidnight() {
-      const now = new Date();
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      return tomorrow.getTime();
-  }
-
-  function updateDailyTimer() {
-      const timerEl = document.getElementById('dailyGiftTimer');
-      if(!timerEl) return;
-      
-      const now = Date.now();
-      const diff = getNextMidnight() - now;
-      
-      if (diff <= 0) {
-          checkDailyGiftState(); // refresh
-          return;
-      }
-      
-      const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const m = Math.floor((diff / 1000 / 60) % 60);
-      const s = Math.floor((diff / 1000) % 60);
-      
-      timerEl.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  }
-  setInterval(updateDailyTimer, 1000);
-
-  function checkDailyGiftState() {
-      const todayStr = new Date().toLocaleDateString('ru-RU');
-      const overlay = document.getElementById('dailyGiftOverlay');
-      
-      if (currentUserData.lastDailyGiftDate === todayStr) {
-          // Подарок уже был сгенерирован сегодня
-          overlay.classList.remove('hidden');
-          overlay.classList.add('flex');
-          updateDailyTimer();
-      } else {
-          // Новый день - новый подарок
-          overlay.classList.add('hidden');
-          overlay.classList.remove('flex');
-      }
-  }
-
-  async function handleDailyGiftClick() {
-      if (!currentUser) return;
-      
-      const todayStr = new Date().toLocaleDateString('ru-RU');
-      
-      // Сценарий 1: Генерация нового подарка (на сервере — раз в сутки)
-      if (currentUserData.lastDailyGiftDate !== todayStr) {
-          try {
-              const res = await BlockoAPI.call('claimDailyGift');
-              currentUserData.lastDailyGiftDate = todayStr;
-              currentUserData.lastDailyGiftCode = res.code;
-              checkDailyGiftState();
-              if (!res.alreadyClaimed) {
-                  openDailyGiftModal(res.code, 'ready');
-                  if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-                  return;
-              }
-          } catch(e) {
-              console.error(e);
-              return showSystemToast('Ошибка', (BlockoAPI.errorCode(e) === 'backend-unavailable' ? BlockoAPI.errorMessage(e) : 'Не удалось сгенерировать подарок'), 'x-circle', 'text-red-500', 'bg-red-50');
-          }
-      }
-      // Сценарий 2: Проверка статуса уже созданного подарка
-      {
-          const code = currentUserData.lastDailyGiftCode;
-          if (!code) return;
-          
-          try {
-              const pDoc = await db.collection('promocodes').doc(code).get();
-              if (pDoc.exists) {
-                  const pData = pDoc.data();
-                  if (pData.uses > 0) {
-                      // Кто-то забрал — сервер сохраняет публичный профиль получателя в коде
-                      const cData = pData.claimedBy || {};
-                      const claimer = {
-                          name: cData.name || 'Секретный Агент',
-                          avatar: safeUrl(cData.customAvatar) || safeUrl(cData.avatar) || `https://ui-avatars.com/api/?name=${encodeURIComponent(cData.name || 'U')}`
-                      };
-                      openDailyGiftModal(code, 'claimed', claimer);
-                  } else {
-                      // Ещё не забрали
-                      openDailyGiftModal(code, 'ready');
-                  }
-              }
-          } catch(e) {
-              console.error(e);
-          }
-      }
-  }
-
-  function openDailyGiftModal(code, state, claimer = null) {
-      const modal = document.getElementById('dailyGiftModal');
-      const content = document.getElementById('dailyGiftContent');
-      
-      const link = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + code;
-      document.getElementById('dgGiftLinkInput').value = link;
-      
-      if (state === 'ready') {
-          document.getElementById('dgStateReady').classList.remove('hidden');
-          document.getElementById('dgStateClaimed').classList.add('hidden');
-      } else {
-          document.getElementById('dgStateReady').classList.add('hidden');
-          document.getElementById('dgStateClaimed').classList.remove('hidden');
-          if (claimer) {
-              document.getElementById('dgClaimerName').innerText = claimer.name;
-              document.getElementById('dgClaimerAvatar').src = claimer.avatar;
-          }
-      }
-
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          content.classList.remove('scale-95');
-          content.classList.add('scale-100');
-      }, 10);
-  }
-
-  function closeDailyGiftModal() {
-      const modal = document.getElementById('dailyGiftModal');
-      const content = document.getElementById('dailyGiftContent');
-      modal.classList.add('opacity-0');
-      content.classList.remove('scale-100');
-      content.classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 500);
-  }
-
-  function copyDgLink() {
-      const input = document.getElementById('dgGiftLinkInput');
-      navigator.clipboard.writeText(input.value);
-      showSystemToast('Скопировано!', 'Ссылка готова к отправке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-  }
-
-  function shareDgLink() {
-      const link = document.getElementById('dgGiftLinkInput').value;
-      const text = encodeURIComponent("Забери 50 B-Coins бесплатно! Я отправил тебе подарок в Blocko Pro:");
-      const url = encodeURIComponent(link);
-      window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'width=600,height=400');
-  }
-
-  function copyStoreAffiliateLink(btn) {
-      if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для получения ссылки.', 'lock', 'text-amber-500', 'bg-amber-50');
-      
-      const url = window.location.origin + window.location.pathname.replace('store.html', '') + 'index.html?ref=' + currentUser.uid;
-      navigator.clipboard.writeText(url);
-      
-      const ogHtml = btn.innerHTML;
-      btn.innerHTML = '<i data-lucide="check-circle" class="w-5 h-5"></i> Скопировано!';
-      btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
-      btn.classList.replace('hover:bg-indigo-500', 'hover:bg-emerald-400');
-      btn.classList.replace('shadow-indigo-500/25', 'shadow-emerald-500/25');
-      lucide.createIcons({ root: btn });
-      
-      showSystemToast('Ссылка скопирована!', 'Отправьте её другу и получите бонусные кредиты.', 'copy', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
-      
-      setTimeout(() => {
-          btn.innerHTML = ogHtml;
-          btn.classList.replace('bg-emerald-500', 'bg-indigo-600');
-          btn.classList.replace('hover:bg-emerald-400', 'hover:bg-indigo-500');
-          btn.classList.replace('shadow-emerald-500/25', 'shadow-indigo-500/25');
-          lucide.createIcons({ root: btn });
-      }, 3000);
-  }
-
-  function renderShelf(data, containerId) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = data.map(p => `
-      <div class="card-zoom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-${p.color}-500/10 flex flex-col items-center text-center transition-all duration-500 relative overflow-hidden group">
-        
-        <div class="absolute inset-0 bg-gradient-to-b from-${p.color}-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-        <div class="relative w-20 h-20 bg-${p.color}-50 dark:bg-${p.color}-500/10 text-${p.color}-500 rounded-[1.5rem] flex items-center justify-center mb-6 border border-${p.color}-100 dark:border-${p.color}-900 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-inner">
-          <div class="absolute inset-0 bg-${p.color}-500 blur-xl opacity-20 group-hover:opacity-40 transition-opacity"></div>
-          <i data-lucide="${p.icon}" class="w-10 h-10 relative z-10"></i>
-        </div>
-        
-        <h3 class="font-extrabold text-2xl mb-3 text-gray-900 dark:text-white tracking-tight">${p.name}</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 flex-1 leading-relaxed">${p.desc}</p>
-        
-        <div class="space-y-3 w-full relative z-10">
-          ${p.priceCoins ? `<button onclick="handlePurchase('${p.id}', 'coins', ${p.priceCoins})" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-500/25 active:scale-95"><i data-lucide="coins" class="w-5 h-5"></i> ${p.priceCoins} Монет</button>` : ''}
-          ${p.priceCredits ? `<button onclick="handlePurchase('${p.id}', 'credits', ${p.priceCredits})" class="w-full py-3.5 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 active:scale-95"><i data-lucide="gem" class="w-5 h-5"></i> ${p.priceCredits} Бонусов</button>` : ''}
-          
-          <button onclick="openDetails('${p.id}')" class="w-full mt-2 pt-2 text-[11px] font-bold text-gray-400 hover:text-${p.color}-500 uppercase tracking-widest transition-colors bg-transparent outline-none">
-            Подробнее об услуге...
-          </button>
-        </div>
-      </div>
-    `).join('');
-    lucide.createIcons();
+    const [userDoc, affDoc] = await Promise.all([
+      db.collection('users').doc(currentUser.uid).get(),
+      db.collection('affiliates').doc(currentUser.uid).get(),
+    ]);
+    currentUserData = userDoc.exists ? (userDoc.data() || {}) : {};
+    affData = affDoc.exists ? (affDoc.data() || {}) : {};
+    balances.coins = Number(currentUserData.coins) || 0;
+    balances.credits = Number(affData.earnedCredits) || 0;
+    balancesReady = true;
+    renderAll();
   }
 
   function renderAll() {
-    renderShelf(PRODUCTS.AI, 'shelfAI');
-    renderShelf(PRODUCTS.PLANS, 'shelfPlans');
-    renderShelf(PRODUCTS.GIFTS, 'shelfGifts');
+    $('valCoins').textContent = fmt(balances.coins);
+    $('valCoinsHeader').textContent = fmt(balances.coins);
+    $('valCoinsUsd').textContent = '≈ ' + usd(balances.coins);
+    $('valCredits').textContent = fmt(balances.credits);
+    renderStatus();
+    renderShelf('ai', 'shelfAI');
+    renderShelf('plans', 'shelfPlans');
+    renderShelf('gifts', 'shelfGifts');
+    renderDailyGift();
+    renderReferral();
+    renderQuests();
+    refreshIcons();
   }
 
-  // --- ЛОГИКА ДЕТАЛЬНОГО МОДАЛЬНОГО ОКНА ---
-  function openDetails(prodId) {
-    const product = ALL_PRODUCTS_MAP[prodId];
-    if (!product) return;
-
-    const modal = document.getElementById('productDetailsModal');
-    const content = document.getElementById('productDetailsContent');
-    
-    // Подставляем данные
-    document.getElementById('pdTitle').innerText = product.name;
-    document.getElementById('pdDesc').innerText = product.detailedDesc;
-    
-    // Оформляем иконку
-    const iconWrapper = document.getElementById('pdIconWrapper');
-    iconWrapper.className = `w-28 h-28 rounded-[2rem] flex items-center justify-center mb-10 mx-auto shadow-2xl relative bg-${product.color}-50 dark:bg-${product.color}-500/10 text-${product.color}-500 border border-${product.color}-200 dark:border-${product.color}-800`;
-    
-    document.getElementById('pdIconGlow').className = `absolute inset-0 rounded-full blur-2xl opacity-60 bg-${product.color}-500`;
-    
-    const iconEl = document.getElementById('pdIcon');
-    iconEl.setAttribute('data-lucide', product.icon);
-    iconEl.className = "w-14 h-14 relative z-10";
-
-    lucide.createIcons();
-
-    // Анимация появления
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-      modal.classList.remove('opacity-0');
-      content.classList.remove('scale-95');
-      content.classList.add('scale-100');
-    }, 10);
-  }
-
-  function closeDetails() {
-    const modal = document.getElementById('productDetailsModal');
-    const content = document.getElementById('productDetailsContent');
-    modal.classList.add('opacity-0');
-    content.classList.remove('scale-100');
-    content.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 500);
-  }
-
-  // --- ЭНТЕРПРАЙЗ КОНТРОЛЛЕРЫ МОДАЛОК (Без системных окон) ---
-  let confirmCallback = null;
-
-  function openConfirmModal(title, desc, confirmText, isDanger, callback) {
-    document.getElementById('confirmTitle').innerText = title;
-    document.getElementById('confirmDesc').innerText = desc;
-    
-    const iconBg = document.getElementById('confirmIconBg');
-    const icon = document.getElementById('confirmIcon');
-    const btn = document.getElementById('confirmBtnAction');
-    
-    if (isDanger) {
-      iconBg.className = "mx-auto w-20 h-20 bg-red-50 dark:bg-red-900/30 text-red-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-red-100 dark:border-red-800/50";
-      icon.setAttribute('data-lucide', 'alert-triangle');
-      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-red-600 hover:bg-red-500 rounded-2xl shadow-lg shadow-red-500/25 active:scale-95 transition-all";
-    } else {
-      iconBg.className = "mx-auto w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-500 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-inner border border-indigo-100 dark:border-indigo-800/50";
-      icon.setAttribute('data-lucide', 'shopping-bag');
-      btn.className = "flex-1 py-4 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all";
+  function renderStatus() {
+    if (!balancesReady) { $('aiStatus').textContent = ''; $('planStatus').textContent = ''; return; }
+    const plan = userPlan();
+    const base = PLAN_AI[plan];
+    const bonus = Number(currentUserData.bonusAiLimit) || 0;
+    let ai;
+    if (base === Infinity) ai = `На тарифе ${PLAN_NAMES[plan]} AI без ограничений`;
+    else {
+      const daily = aiSubActive() ? Math.max(base, 250) : base;
+      ai = `Сейчас: ${daily} ${plural(daily, ['запрос', 'запроса', 'запросов'])} в день` + (bonus ? ` + ${fmt(bonus)} бонусных` : '');
     }
-    btn.innerText = confirmText;
-    lucide.createIcons();
-    confirmCallback = callback;
-    
-    const modal = document.getElementById('customConfirmModal');
-    const content = document.getElementById('confirmModalContent');
-    modal.classList.remove('hidden');
-    setTimeout(() => { modal.classList.remove('opacity-0'); content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+    $('aiStatus').textContent = ai;
+    const exp = currentUserData.planExpiresAt;
+    $('planStatus').textContent = plan === 'free' ? 'Сейчас у вас Free'
+      : `Ваш тариф: ${PLAN_NAMES[plan]}` + (typeof exp === 'number' ? ` · до ${shortDate(exp)}` : ' · бессрочно');
   }
 
-  function closeConfirmModal() {
-    const modal = document.getElementById('customConfirmModal');
-    const content = document.getElementById('confirmModalContent');
-    modal.classList.add('opacity-0');
-    content.classList.remove('scale-100'); content.classList.add('scale-95');
-    setTimeout(() => { modal.classList.add('hidden'); confirmCallback = null; }, 300);
-  }
-
-  function executeConfirm() {
-    if (confirmCallback) confirmCallback();
-    closeConfirmModal();
-  }
-
-  function openGiftLinkModal(url) {
-     document.getElementById('generatedGiftLink').value = url;
-     const modal = document.getElementById('giftLinkModal');
-     const content = document.getElementById('giftLinkContent');
-     modal.classList.remove('hidden');
-     setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        content.classList.remove('scale-95');
-        content.classList.add('scale-100');
-     }, 10);
-  }
-
-  function closeGiftLinkModal() {
-     const modal = document.getElementById('giftLinkModal');
-     const content = document.getElementById('giftLinkContent');
-     modal.classList.add('opacity-0');
-     content.classList.remove('scale-100');
-     content.classList.add('scale-95');
-     setTimeout(() => modal.classList.add('hidden'), 500);
-  }
-
-  function copyGeneratedGiftLink() {
-     const input = document.getElementById('generatedGiftLink');
-     navigator.clipboard.writeText(input.value);
-     showSystemToast('Скопировано!', 'Уникальная ссылка готова к отправке.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-  }
-
-  async function handlePurchase(prodId, currency, price) {
-    if (currency === 'coins' && balances.coins < price) {
-      openTopUpModal();
-      return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50');
+  // ==========================================================
+  // Витрина
+  // ==========================================================
+  // Что можно и что нельзя купить с учётом текущего тарифа
+  function stateOf(p) {
+    const s = { blocked: '', badge: p.badge || '', tone: 'blue', renew: false, note: '' };
+    if (!balancesReady) return s;
+    const plan = userPlan();
+    if (p.cat === 'ai' && (plan === 'pro' || plan === 'infinity')) {
+      s.blocked = 'AI уже без лимита';
+      s.note = `На тарифе ${PLAN_NAMES[plan]} запросы к AI не ограничены — докупать их не нужно.`;
+      s.badge = '';
     }
-    if (currency === 'credits' && balances.credits < price) {
-      return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
+    if (p.id === 'ai_daily_sub' && !s.blocked && aiSubActive()) {
+      s.badge = 'Активно до ' + shortDate(currentUserData.aiSubExpires); s.tone = 'green'; s.renew = true;
+      s.note = 'Новая покупка добавит 30 дней к текущему сроку.';
     }
-
-    const currencyName = currency === 'coins' ? 'монет' : 'бонусов';
-    
-    // Вызываем нашу премиальную модалку вместо системного confirm
-    openConfirmModal('Подтверждение покупки', `Вы собираетесь приобрести этот товар за ${price} ${currencyName}. Списать средства с баланса?`, 'Оплатить', false, async () => {
-      try {
-        // Списание и выдачу товара выполняет сервер (цены — из серверного каталога)
-        const res = await BlockoAPI.call('storePurchase', { productId: prodId, currency });
-        const generatedCode = res.giftCode || null;
-
-        if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
-        
-        if (generatedCode) {
-          const giftUrl = window.location.origin + window.location.pathname.replace('store.html', '') + 'gift.html?code=' + generatedCode;
-          // Открываем роскошную витрину со ссылкой
-          openGiftLinkModal(giftUrl);
-        } else {
-          showSystemToast('Поздравляем!', 'Покупка успешно завершена.', 'check-circle', 'text-green-500', 'bg-green-50 dark:bg-green-900/30');
-        }
-        
-        loadBalances();
-      } catch (e) { 
-        console.error(e); 
-        const reason = BlockoAPI.errorMessage(e);
-        if (reason === 'not_enough_coins') { openTopUpModal(); return showSystemToast('Недостаточно монет', 'Пополните баланс для совершения покупки.', 'alert-circle', 'text-amber-500', 'bg-amber-50'); }
-        if (reason === 'not_enough_credits') return showSystemToast('Недостаточно кредитов', 'Приглашайте больше партнеров!', 'alert-circle', 'text-indigo-500', 'bg-indigo-50');
-        showSystemToast('Ошибка', (BlockoAPI.errorCode(e) === 'backend-unavailable' ? BlockoAPI.errorMessage(e) : 'Сбой транзакции. Баланс не списан.'), 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+    if (p.plan) {
+      const exp = currentUserData.planExpiresAt;
+      // Тариф без срока (выдан навсегда — промокодом, за видеообзор и т. п.): покупка поставила бы срок 30 дней
+      const lifetime = plan !== 'free' && typeof exp !== 'number';
+      if (plan === 'infinity') {
+        s.blocked = 'У вас Infinity'; s.badge = '';
+        s.note = 'У вас бессрочный тариф Infinity — в нём уже есть всё.';
+      } else if (plan === p.plan && lifetime) {
+        s.blocked = 'У вас бессрочно'; s.badge = 'Ваш тариф · бессрочно'; s.tone = 'green';
+        s.note = `Тариф ${p.name} у вас бессрочный — продлевать не нужно.`;
+      } else if (plan === p.plan) {
+        s.badge = 'Ваш тариф · до ' + shortDate(exp); s.tone = 'green'; s.renew = true;
+        s.note = '30 дней добавятся к текущему сроку.';
+      } else if (PLAN_ORDER[plan] > PLAN_ORDER[p.plan]) {
+        s.blocked = 'У вас тариф выше'; s.badge = '';
+        s.note = `Сейчас у вас ${PLAN_NAMES[plan]} — в нём уже есть всё, что даёт ${p.name}.`;
+      } else if (plan !== 'free') {
+        s.note = lifetime
+          ? `Внимание: ${p.name} заменит ваш бессрочный ${PLAN_NAMES[plan]} и будет действовать 30 дней. После этого тариф станет Free.`
+          : `${p.name} начнёт действовать сразу и заменит ${PLAN_NAMES[plan]}. Оставшиеся дни ${PLAN_NAMES[plan]} не переносятся.`;
       }
-    });
+    }
+    if (p.id === 'vip_status' && currentUserData.vipRequestedAt) {
+      s.badge = 'Вы уже оформляли'; s.tone = 'gray';
+      s.note = 'Вы уже оплачивали внедрение. Повторная оплата — это новая заявка.';
+    }
+    return s;
   }
 
-  // --- ЛОГИКА ПОПОЛНЕНИЯ (РЕАЛЬНАЯ ОПЛАТА PAYPAL) ---
-  function openTopUpModal() {
-    const el = document.getElementById('topUpModal');
-    backToPacks(); // Сбрасываем вид на выбор пакетов при открытии
-    el.classList.remove('hidden');
-    setTimeout(() => el.classList.remove('opacity-0'), 10);
+  const BTN = 'w-full h-10 px-4 rounded-xl text-sm font-medium transition-colors inline-flex items-center justify-center gap-2';
+  const BTN_PRIMARY = 'bg-blue-600 hover:bg-blue-700 text-white';
+  const BTN_OUTLINE = 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-white';
+  const BTN_MUTED = 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 cursor-not-allowed';
+  const BADGE_TONES = {
+    blue: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300',
+    green: 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400',
+    gray: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300',
+  };
+
+  function buyButtons(p, s, where) {
+    if (!balancesReady) return `<button type="button" class="${BTN} ${BTN_MUTED}" disabled>${icon('loader-circle', 'w-4 h-4 animate-spin')}</button>`;
+    if (s.blocked) return `<button type="button" class="${BTN} ${BTN_MUTED}" disabled>${s.blocked}</button>`;
+    const enough = balances.coins >= p.priceCoins;
+    const verb = s.renew ? `Продлить на ${p.days || 30} дней` : (p.cat === 'gifts' ? 'Купить подарок' : 'Купить');
+    let html = enough
+      ? `<button type="button" onclick="buy('${p.id}','coins')" class="${BTN} ${BTN_PRIMARY}">${verb}</button>`
+      : `<button type="button" onclick="buy('${p.id}','coins')" class="${BTN} ${BTN_OUTLINE}">${icon('plus')}${s.renew ? 'Пополнить и продлить' : 'Пополнить и купить'}</button>`;
+    const shortBy = p.priceCoins - balances.coins;
+    const hint = enough ? '' : `<span class="text-gray-400 dark:text-gray-500">Не хватает ${fmt(shortBy)} ${coinsWord(shortBy)}</span>`;
+    const credits = p.priceCredits
+      ? `<button type="button" onclick="buy('${p.id}','credits')" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">или за ${fmt(p.priceCredits)} ${creditsWord(p.priceCredits)}</button>`
+      : '';
+    if (where === 'card') return html;
+    if (credits || hint) html += `<div class="mt-3 flex items-center justify-between gap-3 text-sm">${credits || '<span></span>'}${hint}</div>`;
+    return html;
   }
 
-  function closeTopUpModal() {
-    const el = document.getElementById('topUpModal');
-    el.classList.add('opacity-0');
-    setTimeout(() => { 
-        el.classList.add('hidden'); 
-        backToPacks();
-    }, 300);
+  function renderCard(p) {
+    const s = stateOf(p);
+    const featured = p.badge === 'Популярный' && s.badge === 'Популярный';
+    const border = featured ? 'border-blue-600 dark:border-blue-500' : 'border-gray-200 dark:border-gray-800';
+    const badge = s.badge ? `<span class="inline-flex text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${BADGE_TONES[s.tone] || BADGE_TONES.blue}">${s.badge}</span>` : '';
+    const head = p.cat === 'gifts'
+      ? `<div class="flex items-center gap-4 md:block">
+           <div class="gift-card relative overflow-hidden w-32 h-20 md:w-auto md:h-28 rounded-xl px-3 md:px-4 py-2.5 md:py-3 flex flex-col justify-between text-white flex-shrink-0">
+             <span class="text-[11px] font-medium whitespace-nowrap tracking-[0.1em] md:tracking-[0.18em] text-white/60">BLOCKO PRO</span>
+             <div class="flex items-end justify-between relative z-10"><span class="text-xl md:text-3xl font-semibold tracking-tight">${p.usdLabel}</span>${icon('gift', 'w-4 h-4 md:w-5 md:h-5 text-white/70')}</div>
+           </div>
+           <div class="min-w-0 md:mt-4">
+             <h3 class="text-base font-semibold">${p.name}</h3>
+             <p class="mt-0.5 md:mt-1 text-sm text-gray-500 dark:text-gray-400">${p.short}</p>
+           </div>
+         </div>`
+      : `<div class="flex items-start gap-3 md:block">
+           <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0">${icon(p.icon, 'w-5 h-5')}</span>
+           <div class="min-w-0 flex-1 md:mt-4">
+             <h3 class="text-base font-semibold flex flex-wrap items-center gap-x-2 gap-y-1">${p.name}${badge ? `<span class="md:hidden">${badge}</span>` : ''}</h3>
+             <p class="mt-0.5 md:mt-1 text-sm text-gray-500 dark:text-gray-400">${p.short}</p>
+           </div>
+         </div>
+         ${badge ? `<div class="hidden md:block absolute top-5 right-5">${badge}</div>` : ''}`;
+    const period = p.days && p.cat === 'plans' ? `<span class="text-sm text-gray-500 dark:text-gray-400">/ ${p.days} дней</span>` : '';
+    const credits = p.priceCredits && !s.blocked && balancesReady
+      ? `<button type="button" onclick="buy('${p.id}','credits')" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-left">или ${fmt(p.priceCredits)} ${creditsWord(p.priceCredits)}</button>`
+      : '<span></span>';
+    return `
+      <article class="relative bg-white dark:bg-gray-900 border ${border} rounded-2xl p-4 sm:p-5 flex flex-col" data-product="${p.id}">
+        ${head}
+        <div class="flex-1"></div>
+        <div class="mt-4 md:mt-5 flex items-baseline gap-1.5">
+          <span class="text-2xl font-semibold tracking-tight tabular">${fmt(p.priceCoins)}</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">${coinsWord(p.priceCoins)}</span>${period}
+          <span class="ml-auto text-sm text-gray-400 tabular">≈ ${usd(p.priceCoins)}</span>
+        </div>
+        <div class="mt-3">${buyButtons(p, s, 'card')}</div>
+        <div class="mt-3 flex items-center justify-between gap-3 text-sm">
+          ${credits}
+          <button type="button" onclick="openDetails('${p.id}')" class="inline-flex items-center gap-0.5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0">Подробнее${icon('chevron-right', 'w-4 h-4')}</button>
+        </div>
+      </article>`;
   }
+
+  function renderShelf(cat, containerId) {
+    $(containerId).innerHTML = PRODUCTS.filter((p) => p.cat === cat).map(renderCard).join('');
+  }
+
+  // ==========================================================
+  // Подробнее
+  // ==========================================================
+  let detailsId = null;
+  function openDetails(id) {
+    const p = PRODUCT_MAP[id];
+    if (!p) return;
+    detailsId = id;
+    fillDetails(p);
+    openModal('productDetailsModal');
+  }
+  function fillDetails(p) {
+    const s = stateOf(p);
+    $('pdIconWrap').innerHTML = icon(p.icon, 'w-6 h-6');
+    $('pdTitle').textContent = p.name;
+    $('pdShort').textContent = p.short;
+    $('pdDesc').textContent = p.desc;
+    $('pdFeatures').innerHTML = p.features.map((f) => `<li class="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">${icon('check', 'w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0')}<span>${esc(f)}</span></li>`).join('');
+    const note = $('pdNote');
+    note.textContent = s.note || '';
+    note.classList.toggle('hidden', !s.note);
+    $('pdPrice').textContent = fmt(p.priceCoins);
+    $('pdPriceUnit').textContent = coinsWord(p.priceCoins) + (p.days && p.cat === 'plans' ? ` / ${p.days} дней` : '');
+    $('pdUsd').textContent = '≈ ' + usd(p.priceCoins);
+    $('pdActions').innerHTML = buyButtons(p, s, 'details');
+    refreshIcons($('productDetailsModal'));
+  }
+
+  // ==========================================================
+  // Покупка
+  // ==========================================================
+  let confirmCallback = null;
+  function executeConfirm() { if (confirmCallback) confirmCallback(); }
+
+  function buy(id, currency) {
+    const p = PRODUCT_MAP[id];
+    if (!p || !balancesReady) return;
+    const s = stateOf(p);
+    if (s.blocked) return toast('info', s.blocked, s.note);
+    const price = currency === 'coins' ? p.priceCoins : p.priceCredits;
+    if (!price) return;
+    const bal = currency === 'coins' ? balances.coins : balances.credits;
+    if (bal < price) {
+      if (currency === 'coins') {
+        closeModal('productDetailsModal');
+        openTopUpModal({ need: price - bal, forName: p.name, productId: p.id });
+        return;
+      }
+      const need = price - bal;
+      toast('warning', 'Не хватает бонусов', `Нужно ещё ${fmt(need)} ${creditsWord(need)}. Их дают за друзей и задания — раздел «Бонусы бесплатно».`);
+      return;
+    }
+    closeModal('productDetailsModal');
+    openConfirm(p, currency);
+  }
+
+  function openConfirm(p, currency) {
+    const s = stateOf(p);
+    const price = currency === 'coins' ? p.priceCoins : p.priceCredits;
+    const bal = currency === 'coins' ? balances.coins : balances.credits;
+    const word = currency === 'coins' ? coinsWord : creditsWord;
+    $('confirmTitle').textContent = `${s.renew ? 'Продлить' : 'Купить'} «${p.name}»?`;
+    $('confirmDesc').textContent = p.short;
+
+    const rows = [['Цена', `${fmt(price)} ${word(price)}`], ['Останется на балансе', `${fmt(bal - price)} ${word(bal - price)}`]];
+    if (p.days) {
+      let from = Date.now();
+      if (s.renew && p.plan && typeof currentUserData.planExpiresAt === 'number') from = Math.max(from, currentUserData.planExpiresAt);
+      if (s.renew && p.id === 'ai_daily_sub') from = Math.max(from, Number(currentUserData.aiSubExpires) || 0);
+      rows.push(['Будет действовать до', shortDate(from + p.days * DAY)]);
+    }
+    $('confirmRows').innerHTML = rows.map(([k, v]) => `<div class="flex items-center justify-between gap-4 px-3.5 py-3"><dt class="text-gray-500 dark:text-gray-400">${k}</dt><dd class="font-medium tabular text-right">${v}</dd></div>`).join('');
+
+    const showNote = s.note && !s.renew;
+    $('confirmNote').textContent = showNote ? s.note : '';
+    $('confirmNote').classList.toggle('hidden', !showNote);
+
+    const btn = $('confirmBtnAction');
+    btn.disabled = false;
+    btn.textContent = `Оплатить ${fmt(price)} ${word(price)}`;
+    confirmCallback = () => doPurchase(p, currency);
+    openModal('customConfirmModal');
+  }
+
+  async function doPurchase(p, currency) {
+    const btn = $('confirmBtnAction');
+    if (btn.disabled) return;
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin') + 'Оплачиваем…';
+    refreshIcons(btn);
+    try {
+      // Списание и выдачу товара выполняет сервер (цены — из серверного каталога)
+      const res = await BlockoAPI.call('storePurchase', { productId: p.id, currency });
+      closeModal('customConfirmModal');
+      celebrate();
+      try { await loadBalances(); } catch (e) { console.error(e); }
+
+      if (res && res.giftCode) {
+        $('giftLinkDesc').textContent = `Отправьте ссылку получателю — он заберёт ${fmt(p.giftCoins)} ${coinsWord(p.giftCoins)}. Открыть ссылку можно один раз.`;
+        $('generatedGiftLink').value = giftUrl(res.giftCode);
+        setTimeout(() => openModal('giftLinkModal'), 250);
+      } else if (p.id === 'vip_status') {
+        await createVipTicket('Оплачено VIP-внедрение. Свяжитесь со мной, чтобы договориться о первой встрече.');
+        const email = currentUser.email;
+        $('vipDesc').textContent = email
+          ? `Мы получили оплату и напишем вам на ${email}, чтобы договориться о первой встрече.`
+          : 'Мы получили оплату и свяжемся с вами, чтобы договориться о первой встрече.';
+        $('vipDetails').value = '';
+        setTimeout(() => openModal('vipModal'), 250);
+      } else if (p.plan) {
+        const exp = currentUserData.planExpiresAt;
+        toast('success', `Тариф ${p.name} подключён`, typeof exp === 'number' ? `Действует до ${new Date(exp).toLocaleDateString('ru-RU')}.` : 'Все возможности уже доступны.');
+      } else {
+        toast('success', `${p.name} подключён`, p.success || 'Покупка прошла успешно.');
+      }
+    } catch (e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.textContent = label;
+      const reason = BlockoAPI.errorMessage(e);
+      if (reason === 'not_enough_coins') {
+        closeModal('customConfirmModal');
+        try { await loadBalances(); } catch (e2) {}
+        return openTopUpModal({ need: Math.max(1, p.priceCoins - balances.coins), forName: p.name, productId: p.id });
+      }
+      if (reason === 'not_enough_credits') {
+        closeModal('customConfirmModal');
+        try { await loadBalances(); } catch (e2) {}
+        return toast('warning', 'Не хватает бонусов', 'Баланс бонусов изменился. Проверьте его и попробуйте ещё раз.');
+      }
+      toast('error', 'Покупка не прошла', apiErrorText(e, 'Сбой при оплате. Баланс не списан — попробуйте ещё раз.'));
+    }
+  }
+
+  // VIP: заявка приходит в админку (раздел «Поддержка»), чтобы с покупателем связались
+  async function createVipTicket(message) {
+    try {
+      await db.collection('support_tickets').add({
+        type: 'vip',
+        message: String(message || '').slice(0, 5000),
+        status: 'open',
+        user: {
+          id: currentUser.uid,
+          name: currentUserData.name || currentUser.displayName || 'Пользователь',
+          email: currentUser.email || null,
+          avatar: currentUserData.customAvatar || currentUserData.avatar || currentUser.photoURL || null,
+        },
+        createdAt: new Date().toISOString(),
+      });
+      return true;
+    } catch (e) {
+      console.error('vip ticket', e);
+      return false;
+    }
+  }
+  async function sendVipDetails() {
+    const text = $('vipDetails').value.trim();
+    if (!text) return closeModal('vipModal');
+    const btn = $('vipSendBtn');
+    btn.disabled = true;
+    const ok = await createVipTicket('Детали к заявке на VIP-внедрение:\n' + text);
+    btn.disabled = false;
+    if (ok) { closeModal('vipModal'); toast('success', 'Спасибо!', 'Передали эксперту — подготовимся к встрече.'); }
+    else toast('error', 'Не отправилось', 'Попробуйте ещё раз или напишите в поддержку на главной.');
+  }
+
+  // ==========================================================
+  // Пополнение (PayPal)
+  // ==========================================================
+  function openTopUpModal(opts = {}) {
+    const need = Number(opts.need) || 0;
+    pendingPurchase = opts.productId || null;
+    const recommended = need ? (PACKS.find((pk) => pk.coins >= need) || PACKS[PACKS.length - 1]).id : 'popular';
+    const needEl = $('topUpNeed');
+    if (need) {
+      needEl.textContent = `Для «${opts.forName}» не хватает ${fmt(need)} ${coinsWord(need)}. После оплаты вернём вас к покупке.`;
+      needEl.classList.remove('hidden');
+    } else needEl.classList.add('hidden');
+
+    $('packsContainer').innerHTML = PACKS.map((pk) => {
+      const rec = pk.id === recommended;
+      const tag = rec ? `<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-600 text-white">${need ? 'Подходит' : 'Популярный'}</span>` : '';
+      return `
+        <button type="button" onclick="preparePayPalPayment(${pk.coins}, ${pk.usd}, '${pk.name}')" class="w-full flex items-center gap-4 p-4 rounded-xl border ${rec ? 'border-blue-600 dark:border-blue-500' : 'border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'} bg-white dark:bg-gray-900 text-left transition-colors">
+          <span class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">${icon('coins', 'w-5 h-5')}</span>
+          <span class="flex-1 min-w-0">
+            <span class="flex items-center gap-2 flex-wrap"><span class="font-semibold tabular">${fmt(pk.coins)} монет</span>${tag}</span>
+            <span class="block text-sm text-gray-500 dark:text-gray-400">${pk.name}${pk.note ? ' · ' + pk.note : ''}</span>
+          </span>
+          <span class="text-base font-semibold tabular">$${pk.usd}</span>
+        </button>`;
+    }).join('');
+    backToPacks();
+    openModal('topUpModal');
+    refreshIcons($('topUpModal'));
+  }
+
+  function closeTopUpModal() { closeModal('topUpModal'); }
 
   function backToPacks() {
-     document.getElementById('packsContainer').classList.remove('hidden');
-     document.getElementById('paypalPaymentContainer').classList.add('hidden');
-     document.getElementById('paypalPaymentContainer').classList.remove('flex');
-     document.getElementById('paypal-button-container').innerHTML = ''; // Очищаем старые кнопки
+    $('packsContainer').classList.remove('hidden');
+    $('paypalPaymentContainer').classList.add('hidden');
+    $('paypalPaymentContainer').classList.remove('flex');
+    $('paypal-button-container').innerHTML = '';
   }
 
   function preparePayPalPayment(amountCoins, usdPrice, itemName) {
-     const packId = ({ 1000: 'starter', 5000: 'popular', 12000: 'max' })[amountCoins];
-     if (!packId) return showSystemToast('Ошибка', 'Неизвестный пакет монет.', 'x-circle', 'text-red-500', 'bg-red-50');
-     document.getElementById('packsContainer').classList.add('hidden');
-     document.getElementById('paypalPaymentContainer').classList.remove('hidden');
-     document.getElementById('paypalPaymentContainer').classList.add('flex');
-     
-     document.getElementById('checkoutTotal').innerText = `$${usdPrice.toFixed(2)}`;
-     document.getElementById('checkoutItemName').innerText = `${itemName} (${amountCoins} Монет)`;
+    const packId = ({ 1000: 'starter', 5000: 'popular', 12000: 'max' })[amountCoins];
+    if (!packId) return toast('error', 'Ошибка', 'Неизвестный набор монет.');
+    $('packsContainer').classList.add('hidden');
+    $('paypalPaymentContainer').classList.remove('hidden');
+    $('paypalPaymentContainer').classList.add('flex');
+    $('checkoutTotal').textContent = `$${Number(usdPrice).toFixed(2)}`;
+    $('checkoutItemName').textContent = `${itemName} · ${fmt(amountCoins)} монет`;
 
-     const container = document.getElementById('paypal-button-container');
-     container.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-blue-500"></i></div>';
-     lucide.createIcons({ root: container });
+    const container = $('paypal-button-container');
+    container.innerHTML = `<div class="absolute inset-0 flex items-center justify-center text-gray-400">${icon('loader-circle', 'w-7 h-7 animate-spin')}</div>`;
+    refreshIcons(container);
 
-     if (typeof paypal === 'undefined') {
-         container.innerHTML = '<div class="text-sm text-red-500 font-bold p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">Ошибка: скрипт PayPal не загружен. Укажите Client ID.</div>';
-         return;
-     }
-
-     setTimeout(() => {
-         container.innerHTML = ''; // Убираем лоадер
-         
-         // Инициализация Smart Buttons
-         paypal.Buttons({
-            style: {
-                color:  'gold',
-                shape:  'rect',
-                label:  'paypal',
-                height: 45
-            },
-            // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
-            createOrder: async function() {
-              try {
-                const res = await BlockoAPI.call('createPaypalOrder', { packId });
-                return res.orderId;
-              } catch (e) {
-                showSystemToast('Оплата недоступна', BlockoAPI.errorMessage(e) || 'Не удалось создать платёж.', 'cloud-off', 'text-amber-500', 'bg-amber-50');
-                throw e;
-              }
-            },
-            // Оплату захватывает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
-            onApprove: async function(data) {
-              container.innerHTML = '<div class="p-6 text-center bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800"><i data-lucide="loader-2" class="w-8 h-8 animate-spin text-emerald-500 mx-auto mb-3"></i><p class="text-sm font-bold text-emerald-700 dark:text-emerald-300">Подтверждаем оплату...</p></div>';
-              lucide.createIcons({ root: container });
-              try {
-                const res = await BlockoAPI.call('capturePaypalOrder', { orderId: data.orderID });
-                closeTopUpModal();
-                if (typeof confetti === 'function') confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, zIndex: 9999 });
-                showSystemToast('Оплата прошла успешно!', `Вам начислено ${res.coins} B-Coins. Спасибо за покупку!`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-                loadBalances();
-              } catch (e) {
-                console.error('capturePaypalOrder', e);
-                showSystemToast('Сбой зачисления', 'Не удалось подтвердить оплату. Если деньги списались, напишите в поддержку и укажите номер заказа: ' + data.orderID, 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-              }
-            },
-            // 3. Если пользователь закрыл окно оплаты
-            onCancel: function (data) {
-              showSystemToast('Отменено', 'Вы закрыли окно оплаты.', 'info', 'text-gray-500', 'bg-gray-50 dark:bg-gray-900/30');
-            },
-            // 4. Критическая ошибка PayPal
-            onError: function (err) {
-              console.error("PayPal Error:", err);
-              showSystemToast('Ошибка PayPal', 'Не удалось инициализировать платеж.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-            }
-         }).render('#paypal-button-container');
-     }, 300);
-  }
-  function showSystemToast(title, desc, icon, color, bg) {
-    const t = document.getElementById('globalToast');
-    document.getElementById('toastTitle').innerText = title;
-    document.getElementById('toastDesc').innerText = desc;
-    document.getElementById('toastIcon').setAttribute('data-lucide', icon);
-    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bg}`;
-    lucide.createIcons();
-    t.classList.remove('translate-y-24', 'opacity-0');
-    setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 5000);
-  }
-
-  // Закрытие модалок по клику на фон и Escape
-  window.addEventListener('click', (e) => {
-    if (e.target.id === 'topUpModal') closeTopUpModal();
-    if (e.target.id === 'customConfirmModal') closeConfirmModal();
-    if (e.target.id === 'giftLinkModal') closeGiftLinkModal();
-    if (e.target.id === 'dailyGiftModal') closeDailyGiftModal();
-    if (e.target.id === 'questsModal') closeQuestsModal();
-    if (e.target.id === 'qrCodeModal') closeQrModal();
-  });
-  
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      if (!document.getElementById('productDetailsModal').classList.contains('hidden')) closeDetails();
-      if (!document.getElementById('topUpModal').classList.contains('hidden')) closeTopUpModal();
-      if (!document.getElementById('customConfirmModal').classList.contains('hidden')) closeConfirmModal();
-      if (!document.getElementById('giftLinkModal').classList.contains('hidden')) closeGiftLinkModal();
-      if (!document.getElementById('dailyGiftModal').classList.contains('hidden')) closeDailyGiftModal();
-      if (!document.getElementById('questsModal').classList.contains('hidden')) closeQuestsModal();
-      if (!document.getElementById('qrCodeModal')?.classList.contains('hidden')) closeQrModal();
+    if (typeof paypal === 'undefined' || !paypal || typeof paypal.Buttons !== 'function') {
+      container.innerHTML = '<div class="text-sm text-red-600 dark:text-red-400 p-4 rounded-xl bg-red-50 dark:bg-red-500/10">Платёжная форма PayPal не загрузилась. Обновите страницу или отключите блокировщик рекламы для этого сайта.</div>';
+      return;
     }
-  });
 
-  // --- ЭНТЕРПРАЙЗ: ЛОГИКА ЦЕНТРА ЗАДАНИЙ (КВЕСТЫ) ---
-  
-  function openQuestsModal() {
-      const modal = document.getElementById('questsModal');
-      const content = document.getElementById('questsContent');
-      
-      renderQuestsStatus(); // Подтягиваем статусы заданий перед показом
-      
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          content.classList.remove('scale-95');
-          content.classList.add('scale-100');
-      }, 10);
-  }
-
-  function closeQuestsModal() {
-      const modal = document.getElementById('questsModal');
-      const content = document.getElementById('questsContent');
-      modal.classList.add('opacity-0');
-      content.classList.remove('scale-100');
-      content.classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 500);
-  }
-
-  async function renderQuestsStatus() {
-      if (!currentUser) return;
-      
-      const todayStr = new Date().toLocaleDateString('ru-RU');
-      
-      // Блокируем выполненные сегодня кнопки
-      if (currentUserData.dailyQuestsDate === todayStr && currentUserData.dailyQuests) {
-          if (currentUserData.dailyQuests.includes('login')) disableQuestBtn('btnQuestLogin');
-          if (currentUserData.dailyQuests.includes('telegram')) disableQuestBtn('btnQuestTelegram');
-      }
-  }
-
-  function disableQuestBtn(id) {
-      const btn = document.getElementById(id);
-      if(btn) {
-          btn.disabled = true;
-          btn.innerHTML = '<i data-lucide="check-circle" class="w-4 h-4"></i> Выполнено';
-          btn.className = "w-full sm:w-auto px-5 py-3 bg-gray-100 dark:bg-gray-800 text-gray-400 font-bold rounded-xl border border-gray-200 dark:border-gray-700 text-xs cursor-not-allowed flex items-center justify-center gap-2 flex-shrink-0";
-          lucide.createIcons({ root: btn.parentNode });
-      }
-  }
-
-  async function claimDailyQuest(type, amount) {
-      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
-      
-      const btnId = type === 'login' ? 'btnQuestLogin' : 'btnQuestTelegram';
-      const btn = document.getElementById(btnId);
-      
-      const ogHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
-      lucide.createIcons({ root: btn.parentNode });
-
-      try {
-          // Шаринг открываем сразу по клику (иначе браузер заблокирует всплывающее окно)
-          if (type === 'telegram') {
-              const url = encodeURIComponent(window.location.origin + window.location.pathname.replace('store.html', ''));
-              const text = encodeURIComponent("Присоединяйтесь ко мне в Blocko Pro!");
-              window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener,width=600,height=400');
+    setTimeout(() => {
+      container.innerHTML = '';
+      paypal.Buttons({
+        style: { color: 'gold', shape: 'rect', label: 'paypal', height: 45 },
+        // Заказ создаёт сервер: сумма берётся из серверного каталога, а не из браузера
+        createOrder: async function () {
+          try {
+            const res = await BlockoAPI.call('createPaypalOrder', { packId });
+            return res.orderId;
+          } catch (e) {
+            toast('warning', 'Оплата недоступна', apiErrorText(e, 'Не удалось создать платёж. Попробуйте позже.'));
+            throw e;
           }
+        },
+        // Оплату подтверждает и зачисляет монеты тоже сервер (с проверкой суммы в PayPal)
+        onApprove: async function (data) {
+          container.innerHTML = `<div class="p-5 text-center rounded-xl bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 text-sm font-medium">${icon('loader-circle', 'w-6 h-6 animate-spin mx-auto mb-2')}Подтверждаем оплату…</div>`;
+          refreshIcons(container);
+          try {
+            const res = await BlockoAPI.call('capturePaypalOrder', { orderId: data.orderID });
+            const resume = pendingPurchase;
+            closeTopUpModal();
+            celebrate();
+            try { await loadBalances(); } catch (e) { console.error(e); }
+            toast('success', 'Оплата прошла', `Начислено ${fmt(res.coins)} ${coinsWord(res.coins)}. Спасибо!`);
+            const p = resume && PRODUCT_MAP[resume];
+            if (p && balances.coins >= p.priceCoins && !stateOf(p).blocked) setTimeout(() => openConfirm(p, 'coins'), 700);
+          } catch (e) {
+            console.error('capturePaypalOrder', e);
+            container.innerHTML = '';
+            toast('error', 'Не удалось подтвердить оплату', 'Если деньги списались, напишите в поддержку и укажите номер заказа: ' + data.orderID);
+          }
+        },
+        onCancel: function () { toast('info', 'Оплата отменена', 'Вы закрыли окно PayPal. Деньги не списаны.'); },
+        onError: function (err) {
+          console.error('PayPal Error:', err);
+          toast('error', 'Ошибка PayPal', 'Не удалось открыть оплату. Попробуйте ещё раз.');
+        },
+      }).render('#paypal-button-container');
+    }, 200);
+  }
 
-          // Начисление и проверку «раз в день» делает сервер
-          const res = await BlockoAPI.call('claimDailyQuest', { type });
-          amount = res.amount;
-          const todayStr = new Date().toLocaleDateString('ru-RU');
+  // ==========================================================
+  // Подарок другу раз в день
+  // ==========================================================
+  function nextMidnight() { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1).getTime(); }
+  function timeLeftText() {
+    const diff = Math.max(0, nextMidnight() - Date.now());
+    const h = Math.floor(diff / 3600000), m = Math.floor((diff / 60000) % 60), s = Math.floor((diff / 1000) % 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  const dailyUsedToday = () => currentUserData.lastDailyGiftDate === todayStr();
+  let dailyShownUsed = null;
 
-          // Обновляем локальные данные, чтобы не тянуть из базы снова
-          currentUserData.dailyQuestsDate = todayStr;
-          currentUserData.dailyQuests = res.dailyQuests || [type];
+  function renderDailyGift() {
+    const el = $('dailyGiftAction');
+    if (!balancesReady) { el.innerHTML = `<button type="button" class="${BTN} ${BTN_MUTED}" disabled>${icon('loader-circle', 'w-4 h-4 animate-spin')}</button>`; return; }
+    const used = dailyUsedToday();
+    dailyShownUsed = used;
+    el.innerHTML = used
+      ? `<div class="flex items-center gap-3">
+           <p class="flex-1 text-sm text-gray-500 dark:text-gray-400">Новая ссылка через <span id="dailyGiftTimer" class="font-medium text-gray-900 dark:text-white tabular">${timeLeftText()}</span></p>
+           <button type="button" onclick="handleDailyGiftClick()" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors flex-shrink-0">Сегодняшняя ссылка</button>
+         </div>`
+      : `<button type="button" id="dailyGiftBtn" onclick="handleDailyGiftClick()" class="${BTN} ${BTN_PRIMARY}">${icon('gift')}Получить ссылку</button>`;
+    refreshIcons(el);
+  }
+  setInterval(() => {
+    if (!balancesReady) return;
+    if (dailyUsedToday() !== dailyShownUsed) return renderDailyGift();
+    const t = $('dailyGiftTimer');
+    if (t) t.textContent = timeLeftText();
+  }, 1000);
 
-          if (typeof confetti === 'function') confetti({ particleCount: 100, spread: 60, origin: { y: 0.7 }, zIndex: 9999 });
-          showSystemToast('Квест выполнен!', `Вам начислено ${amount} кредитов.`, 'check-square', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-          
-          loadBalances();
-          disableQuestBtn(btnId);
-
+  async function handleDailyGiftClick() {
+    if (!currentUser) return;
+    // 1. Новый подарок (сервер выдаёт раз в сутки)
+    if (!dailyUsedToday()) {
+      const btn = $('dailyGiftBtn');
+      if (btn) { btn.disabled = true; btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin') + 'Готовим ссылку…'; refreshIcons(btn); }
+      try {
+        const res = await BlockoAPI.call('claimDailyGift');
+        currentUserData.lastDailyGiftDate = todayStr();
+        currentUserData.lastDailyGiftCode = res.code;
+        renderDailyGift();
+        if (!res.alreadyClaimed) {
+          showDailyGift(res.code, 'ready');
+          celebrate();
+          return;
+        }
       } catch (e) {
-          btn.disabled = false;
-          btn.innerHTML = ogHtml;
-          lucide.createIcons({ root: btn.parentNode });
-          showSystemToast('Внимание', BlockoAPI.errorMessage(e) || 'Не удалось засчитать задание.', 'alert-triangle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
+        console.error(e);
+        renderDailyGift();
+        return toast('error', 'Подарок не создан', apiErrorText(e, 'Не удалось подготовить ссылку. Попробуйте ещё раз.'));
       }
+    }
+    // 2. Подарок уже создан сегодня — показываем его статус
+    const code = currentUserData.lastDailyGiftCode;
+    if (!code) return toast('info', 'Ссылка на сегодня уже получена', 'Новая будет доступна после полуночи.');
+    try {
+      const pDoc = await db.collection('promocodes').doc(code).get();
+      const pData = pDoc.exists ? pDoc.data() : null;
+      if (pData && pData.uses > 0) {
+        const c = pData.claimedBy || {};
+        showDailyGift(code, 'claimed', { name: c.name || 'Получатель', avatar: safeUrl(c.customAvatar) || safeUrl(c.avatar) || initialsAvatar(c.name || 'Получатель') });
+      } else showDailyGift(code, 'ready');
+    } catch (e) {
+      console.error(e);
+      showDailyGift(code, 'ready');
+    }
+  }
+
+  function showDailyGift(code, state, claimer) {
+    $('dgGiftLinkInput').value = giftUrl(code);
+    const ready = state === 'ready';
+    $('dgStateReady').classList.toggle('hidden', !ready);
+    $('dgStateClaimed').classList.toggle('hidden', ready);
+    if (!ready && claimer) {
+      $('dgClaimerName').textContent = claimer.name;
+      $('dgClaimerAvatar').src = claimer.avatar;
+      $('dgClaimerAvatar').alt = claimer.name;
+      $('dgClaimerAvatar').title = claimer.name;
+    }
+    openModal('dailyGiftModal');
+  }
+
+  // ==========================================================
+  // Приглашения
+  // ==========================================================
+  const refLink = () => (currentUser ? pageUrl('index.html?ref=' + encodeURIComponent(currentUser.uid)) : '');
+
+  function renderReferral() {
+    const el = $('referralProgress');
+    if (!balancesReady) { el.innerHTML = ''; return; }
+    const signups = Number(affData.signups) || 0;
+    const paid = Number(affData.paidSignups) || 0;
+    const claimed = currentUserData.rewardsClaimed || [];
+    const friends = (n) => `${fmt(n)} ${plural(n, ['друг', 'друга', 'друзей'])}`;
+    const ready = REF_TIERS.find((t) => !claimed.includes(t.key) && signups >= t.req && paid >= t.paid);
+    if (ready) {
+      el.innerHTML = `<a href="index.html?open=partners" class="flex items-center gap-3 rounded-xl px-3.5 py-3 bg-green-50 dark:bg-green-500/10 text-green-800 dark:text-green-300 text-sm hover:bg-green-100 dark:hover:bg-green-500/15 transition-colors">${icon('gift', 'w-4 h-4 flex-shrink-0')}<span class="flex-1">Награда готова: <b class="font-semibold">${ready.reward}</b></span><span class="font-medium whitespace-nowrap">Забрать →</span></a>`;
+      return;
+    }
+    const next = REF_TIERS.find((t) => !claimed.includes(t.key) && (signups < t.req || paid < t.paid));
+    if (!next) { el.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400">Приглашено: ${friends(signups)}. Все награды получены — спасибо!</p>`; return; }
+    const pct = Math.min(100, Math.round((signups / next.req) * 100));
+    const left = Math.max(0, next.req - signups);
+    const paidLeft = Math.max(0, next.paid - paid);
+    let goal = left ? `Ещё ${friends(left)}` : '';
+    if (paidLeft) goal += (goal ? ' и ' : 'Ещё ') + `${fmt(paidLeft)} ${plural(paidLeft, ['оплата', 'оплаты', 'оплат'])} от них`;
+    el.innerHTML = `
+      <div class="flex items-center justify-between gap-3 text-sm">
+        <span class="text-gray-500 dark:text-gray-400">Приглашено: <span class="font-medium text-gray-900 dark:text-white tabular">${fmt(signups)}</span> из ${next.req}</span>
+        <a href="index.html?open=partners" class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors whitespace-nowrap">Все награды →</a>
+      </div>
+      <div class="mt-2 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden"><div class="h-full rounded-full bg-blue-600" style="width:${pct}%"></div></div>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">${goal} — и ${next.reward} бесплатно.</p>`;
+  }
+
+  function copyStoreAffiliateLink(btn) {
+    if (!currentUser) return toast('warning', 'Нужен вход', 'Войдите в аккаунт, чтобы получить ссылку.');
+    copyText(refLink(), 'Отправьте её другу — бонусы придут, когда он зарегистрируется.').then((ok) => {
+      if (!ok || !btn) return;
+      const og = btn.innerHTML;
+      btn.innerHTML = icon('check') + 'Скопировано';
+      refreshIcons(btn);
+      setTimeout(() => { btn.innerHTML = og; refreshIcons(btn); }, 2500);
+    });
+  }
+  function openRefQr() {
+    if (!currentUser) return;
+    openQrModal(refLink(), 'Друг отсканирует код и зарегистрируется по вашей ссылке.');
+  }
+
+  // ==========================================================
+  // Задания
+  // ==========================================================
+  const QUESTS_DAILY = [
+    { type: 'login', icon: 'calendar-check', title: 'Ежедневный визит', desc: 'Заходите каждый день.', reward: 10, action: 'Забрать' },
+    { type: 'telegram', icon: 'send', title: 'Поделиться в Telegram', desc: 'Расскажите друзьям о Blocko Pro.', reward: 50, action: 'Поделиться' },
+  ];
+  const QUESTS_SPECIAL = [
+    { type: 'article', icon: 'pen-line', title: 'Статья о Blocko Pro', desc: 'Опубликуйте обзор на сайте, в блоге или на форуме и пришлите ссылку.', reward: '+300 бонусов', placeholder: 'Ссылка на статью' },
+    { type: 'video', icon: 'video', title: 'Видеообзор', desc: 'Покажите, как работаете в Blocko Pro, — на YouTube, в TikTok или Reels.', reward: 'Тариф Company', placeholder: 'Ссылка на видео' },
+  ];
+
+  function questDone(type) {
+    return currentUserData.dailyQuestsDate === todayStr() && Array.isArray(currentUserData.dailyQuests) && currentUserData.dailyQuests.includes(type);
+  }
+
+  function renderQuests() {
+    const list = $('questsList');
+    // Не теряем уже введённые ссылки, когда список перерисовывается
+    const typed = {};
+    QUESTS_SPECIAL.forEach((q) => { const el = $('questLink_' + q.type); if (el && el.value) typed[q.type] = el.value; });
+    const row = (q, rewardHtml, right, extra = '') => `
+      <li class="px-5 py-4">
+        <div class="flex items-start gap-3.5">
+          <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">${icon(q.icon, 'w-4 h-4')}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><p class="text-sm font-medium">${q.title}</p>${rewardHtml}</div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">${q.desc}</p>
+            ${extra}
+          </div>
+          ${right}
+        </div>
+      </li>`;
+    const reward = (text) => `<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 whitespace-nowrap">${text}</span>`;
+
+    const daily = QUESTS_DAILY.map((q) => {
+      const done = balancesReady && questDone(q.type);
+      const btn = !balancesReady
+        ? `<button type="button" class="h-9 px-3.5 rounded-xl text-sm font-medium ${BTN_MUTED} flex-shrink-0" disabled>…</button>`
+        : done
+          ? `<span class="h-9 px-3 rounded-xl text-sm font-medium text-green-700 dark:text-green-400 inline-flex items-center gap-1.5 flex-shrink-0">${icon('check')}Готово</span>`
+          : `<button type="button" id="btnQuest_${q.type}" onclick="claimDailyQuest('${q.type}')" class="h-9 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center gap-1.5 flex-shrink-0">${q.action}</button>`;
+      return row(q, reward(`+${q.reward} ${creditsWord(q.reward)}`), btn);
+    }).join('');
+
+    const special = QUESTS_SPECIAL.map((q) => {
+      const sub = questSubs[q.type];
+      let form;
+      if (sub && sub.status === 'pending') {
+        form = `<p class="mt-3 text-sm inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400">${icon('hourglass')}Ссылка на проверке — награду начислим после неё</p>`;
+      } else if (sub && sub.status === 'approved') {
+        form = `<p class="mt-3 text-sm inline-flex items-center gap-1.5 text-green-700 dark:text-green-400">${icon('check')}Проверено, награда начислена</p>`;
+      } else {
+        const rejected = sub && sub.status === 'rejected'
+          ? `<p class="mt-3 text-sm text-red-600 dark:text-red-400">Прошлую ссылку не приняли. Можно отправить другую.</p>` : '';
+        form = `${rejected}
+          <form class="mt-3 flex flex-col sm:flex-row gap-2" novalidate onsubmit="event.preventDefault(); submitSpecialQuest('${q.type}')">
+            <input type="url" id="questLink_${q.type}" inputmode="url" placeholder="${q.placeholder}" class="w-full sm:flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm outline-none focus:border-blue-500 dark:text-white transition-colors">
+            <button type="submit" id="btnQuest_${q.type}" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors inline-flex items-center justify-center gap-2">Отправить на проверку</button>
+          </form>`;
+      }
+      return row(q, reward(q.reward), '', form);
+    }).join('');
+
+    list.innerHTML = daily + special;
+    Object.keys(typed).forEach((t) => { const el = $('questLink_' + t); if (el) el.value = typed[t]; });
+    refreshIcons(list);
+  }
+
+  async function loadSubmissions() {
+    try {
+      const snap = await db.collection('quest_submissions').where('userId', '==', currentUser.uid).get();
+      const latest = {};
+      snap.forEach((d) => {
+        const x = d.data() || {};
+        const prev = latest[x.type];
+        if (!prev || String(x.createdAt || '') > String(prev.createdAt || '')) latest[x.type] = x;
+      });
+      questSubs = latest;
+    } catch (e) {
+      console.warn('quest submissions', e);
+    }
+    renderQuests();
+  }
+
+  async function claimDailyQuest(type) {
+    if (!currentUser) return;
+    const btn = $('btnQuest_' + type);
+    if (btn) { btn.disabled = true; btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin'); refreshIcons(btn); }
+    // Окно шаринга открываем сразу по клику — иначе браузер его заблокирует
+    if (type === 'telegram') {
+      const url = encodeURIComponent(pageUrl('index.html'));
+      const text = encodeURIComponent('Присоединяйтесь ко мне в Blocko Pro — простая канбан-доска для себя и команды');
+      window.open(`https://t.me/share/url?url=${url}&text=${text}`, '_blank', 'noopener,width=600,height=500');
+    }
+    try {
+      // Начисление и проверку «раз в день» делает сервер
+      const res = await BlockoAPI.call('claimDailyQuest', { type });
+      currentUserData.dailyQuestsDate = todayStr();
+      currentUserData.dailyQuests = res.dailyQuests || [...(currentUserData.dailyQuests || []), type];
+      const amount = Number(res.amount) || 0;
+      toast('success', 'Задание выполнено', amount ? `+${fmt(amount)} ${creditsWord(amount)} на ваш счёт.` : 'Бонусы начислены.');
+      try { await loadBalances(); } catch (e) { renderQuests(); }
+    } catch (e) {
+      renderQuests();
+      toast('warning', 'Не получилось', apiErrorText(e, 'Не удалось засчитать задание. Попробуйте позже.'));
+    }
   }
 
   async function submitSpecialQuest(type) {
-      if (!currentUser) return showSystemToast('Доступ закрыт', 'Авторизуйтесь для выполнения квестов.', 'lock', 'text-amber-500', 'bg-amber-50');
-      
-      const inputId = type === 'article' ? 'questArticleLink' : 'questVideoLink';
-      const btnId = type === 'article' ? 'btnQuestArticle' : 'btnQuestVideo';
-      const linkInput = document.getElementById(inputId);
-      const link = linkInput.value.trim();
-
-      if (!link || !link.startsWith('http')) {
-          return showSystemToast('Ошибка', 'Введите корректную ссылку, начинающуюся с http:// или https://', 'alert-circle', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-      }
-
-      const btn = document.getElementById(btnId);
-      const ogHtml = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>';
-      lucide.createIcons({ root: btn.parentNode });
-
-      try {
-          // Создаем заявку в отдельной коллекции для админ-панели
-          await db.collection('quest_submissions').add({
-              userId: currentUser.uid,
-              userName: currentUserData.name || 'User',
-              userEmail: currentUser.email || 'Скрыт',
-              type: type,
-              link: link,
-              status: 'pending',
-              createdAt: new Date().toISOString()
-          });
-
-          linkInput.value = '';
-          btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Отправлено';
-          btn.className = "w-full sm:w-auto px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl shadow-md active:scale-95 transition-all text-xs flex items-center justify-center gap-2 flex-shrink-0 cursor-default";
-          lucide.createIcons({ root: btn.parentNode });
-          
-          showSystemToast('Заявка принята!', 'Ваша работа отправлена на ручную проверку. Награда будет начислена администратором.', 'send', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-
-      } catch (e) {
-          btn.disabled = false;
-          btn.innerHTML = ogHtml;
-          lucide.createIcons({ root: btn.parentNode });
-          showSystemToast('Ошибка', 'Не удалось отправить заявку в базу.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-      }
+    if (!currentUser) return;
+    const input = $('questLink_' + type);
+    const link = (input && input.value || '').trim();
+    let ok = false;
+    try { const u = new URL(link); ok = u.protocol === 'https:' || u.protocol === 'http:'; } catch (e) {}
+    if (!ok) { if (input) input.focus(); return toast('warning', 'Проверьте ссылку', 'Вставьте полный адрес, например https://youtube.com/…'); }
+    const btn = $('btnQuest_' + type);
+    if (btn) { btn.disabled = true; btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin'); refreshIcons(btn); }
+    try {
+      const doc = {
+        userId: currentUser.uid,
+        userName: currentUserData.name || currentUser.displayName || 'User',
+        userEmail: currentUser.email || 'Скрыт',
+        type, link: link.slice(0, 1000), status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      // Заявка уходит в админку на ручную проверку
+      await db.collection('quest_submissions').add(doc);
+      questSubs[type] = doc;
+      renderQuests();
+      toast('success', 'Отправлено на проверку', 'Посмотрим работу и начислим награду. Обычно это занимает до пары дней.');
+    } catch (e) {
+      renderQuests();
+      toast('error', 'Не отправилось', 'Попробуйте ещё раз чуть позже.');
+    }
   }
 
-  // --- ЭНТЕРПРАЙЗ: QR-SHARE ENGINE ---
-    let currentQrUrl = '';
-
-    function openQrModal(inputId, descText) {
-        const input = document.getElementById(inputId);
-        if (!input || !input.value) return;
-
-        currentQrUrl = input.value;
-        document.getElementById('qrCodeDesc').innerText = descText || 'Отсканируйте код, чтобы перейти по ссылке.';
-
-        const canvas = document.getElementById('qrCanvas');
-        
-        // Генерация QR-кода на лету
-        QRCode.toCanvas(canvas, currentQrUrl, {
-            width: 200,
-            margin: 1,
-            color: {
-                dark: "#0f172a",
-                light: "#ffffff"
-            }
-        }, function (error) {
-            if (error) console.error("QR Engine Error:", error);
-        });
-
-        const modal = document.getElementById('qrCodeModal');
-        const content = document.getElementById('qrCodeContent');
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            content.classList.remove('scale-95');
-            content.classList.add('scale-100');
-        }, 10);
-    }
-
-    function closeQrModal() {
-        const modal = document.getElementById('qrCodeModal');
-        const content = document.getElementById('qrCodeContent');
-        modal.classList.add('opacity-0');
-        content.classList.remove('scale-100');
-        content.classList.add('scale-95');
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
-
-    function downloadQrCode() {
-        const canvas = document.getElementById('qrCanvas');
-        const url = canvas.toDataURL("image/png");
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'BlockoPro_Gift_QR.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        showSystemToast('Успешно', 'QR-код сохранен на ваше устройство.', 'download', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-    }
-
-    async function shareQrCode() {
-        const canvas = document.getElementById('qrCanvas');
-        
-        try {
-            // Конвертируем canvas в Blob для отправки в системный шаринг
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const file = new File([blob], 'BlockoPro_Gift_QR.png', { type: 'image/png' });
-
-            // Проверка поддержки нативного шаринга файлов (Web Share API Level 2)
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    title: 'Blocko Pro',
-                    text: 'Лови подарок от меня в Blocko Pro!\n' + currentQrUrl,
-                    files: [file]
-                });
-                showSystemToast('Отправлено', 'Подарочный QR-код успешно отправлен.', 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-            } else {
-                throw new Error('Native file share is not supported');
-            }
-        } catch (error) {
-            console.warn('Share API fallback:', error);
-            navigator.clipboard.writeText(currentQrUrl);
-            showSystemToast('Скопировано', 'Файловый шаринг недоступен. Ссылка на подарок скопирована.', 'copy', 'text-blue-500', 'bg-blue-50 dark:bg-blue-900/30');
-        }
-    }
-
-  // --- ЛОГИКА АКТИВАЦИИ ПРОМОКОДОВ В МАГАЗИНЕ ---
-  async function activatePromoCode(inputId = 'storePromoCodeInput', btnId = 'activateStorePromoBtn') {
-    if (!currentUser) return showSystemToast('Ошибка', 'Авторизуйтесь для активации.', 'lock', 'text-amber-500', 'bg-amber-50');
-    
-    const input = document.getElementById(inputId);
-    const code = input.value.trim().toUpperCase();
-    const btn = document.getElementById(btnId);
-    
-    if (!code) return;
-    
-    const ogBtn = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
-    lucide.createIcons({ root: btn.parentElement });
-
+  // ==========================================================
+  // QR-код
+  // ==========================================================
+  let currentQrUrl = '';
+  function openQrModal(url, descText) {
+    if (!url) return;
+    if (typeof QRCode === 'undefined' || !QRCode.toCanvas) return toast('warning', 'QR-код недоступен', 'Не загрузился модуль QR. Скопируйте ссылку вместо этого.');
+    currentQrUrl = url;
+    $('qrCodeDesc').textContent = descText || 'Отсканируйте код камерой телефона.';
+    QRCode.toCanvas($('qrCanvas'), currentQrUrl, { width: 192, margin: 1, color: { dark: '#18181b', light: '#ffffff' } }, (error) => { if (error) console.error('QR', error); });
+    openModal('qrCodeModal');
+  }
+  function downloadQrCode() {
+    const a = document.createElement('a');
+    a.href = $('qrCanvas').toDataURL('image/png');
+    a.download = 'BlockoPro_QR.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function shareQrCode() {
     try {
-       // Проверки (срок, лимит, повтор) и начисление — на сервере
-       const reward = await BlockoAPI.call('redeemPromo', { code });
-       let successMsg = 'Промокод применён.';
-       if (reward.type === 'plan') successMsg = `Активирован тариф ${reward.plan.toUpperCase()}`;
-       else if (reward.type === 'coins') successMsg = `Начислено ${reward.coins} B-Coins!`;
-       else if (reward.type === 'discount') successMsg = `Получена скидка ${reward.discount}% на следующую покупку!`;
-       
-       if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 9999 });
-       showSystemToast('Промокод активирован!', successMsg, 'ticket', 'text-amber-500', 'bg-amber-50 dark:bg-amber-900/30');
-       input.value = '';
-       
-       // Мгновенное обновление баланса в шапке магазина
-       loadBalances();
+      const blob = await new Promise((resolve) => $('qrCanvas').toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'BlockoPro_QR.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Blocko Pro', text: currentQrUrl, files: [file] });
+        return;
+      }
+      throw new Error('no file share');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      copyText(currentQrUrl, 'Отправка картинки недоступна на этом устройстве — скопировали ссылку.');
+    }
+  }
 
+  // ==========================================================
+  // Промокод
+  // ==========================================================
+  async function activatePromoCode() {
+    if (!currentUser) return toast('warning', 'Нужен вход', 'Войдите в аккаунт, чтобы активировать код.');
+    const input = $('storePromoCodeInput');
+    const code = input.value.trim().toUpperCase();
+    if (!code) { input.focus(); return; }
+    const btn = $('activateStorePromoBtn');
+    const og = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin');
+    refreshIcons(btn);
+    try {
+      // Проверки (срок, лимит, повтор) и начисление — на сервере
+      const reward = await BlockoAPI.call('redeemPromo', { code });
+      let msg = 'Промокод применён.';
+      if (reward.type === 'plan') msg = `Подключён тариф ${PLAN_NAMES[reward.plan] || reward.plan}` + (reward.planExpiresAt ? ` до ${new Date(reward.planExpiresAt).toLocaleDateString('ru-RU')}.` : '.');
+      else if (reward.type === 'coins') msg = `Начислено ${fmt(reward.coins)} ${coinsWord(reward.coins)}.`;
+      else if (reward.type === 'discount') msg = `Скидка ${reward.discount}% на следующую покупку.`;
+      celebrate();
+      toast('success', 'Промокод активирован', msg);
+      input.value = '';
+      try { await loadBalances(); } catch (e) {}
     } catch (err) {
-       let errMsg = (BlockoAPI.errorCode(err) === 'backend-unavailable' ? BlockoAPI.errorMessage(err) : 'Не удалось активировать промокод.');
-       if (err.message === 'not_found') errMsg = 'Такой промокод не существует.';
-       else if (err.message === 'expired') errMsg = 'Срок действия промокода истек.';
-       else if (err.message === 'limit') errMsg = 'Лимит активаций этого промокода исчерпан.';
-       else if (err.message === 'already_used') errMsg = 'Вы уже активировали этот промокод ранее.';
-       
-       showSystemToast('Ошибка активации', errMsg, 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
+      const m = BlockoAPI.errorMessage(err);
+      let text = apiErrorText(err, 'Не удалось активировать промокод.');
+      if (m === 'not_found') text = 'Такого промокода нет. Проверьте, нет ли опечатки.';
+      else if (m === 'expired') text = 'Срок действия промокода закончился.';
+      else if (m === 'limit') text = 'Этот промокод уже активировали максимальное число раз.';
+      else if (m === 'already_used') text = 'Вы уже активировали этот промокод.';
+      toast('error', 'Код не сработал', text);
     } finally {
-       btn.disabled = false;
-       btn.innerHTML = ogBtn;
-       lucide.createIcons({ root: btn.parentElement });
+      btn.disabled = false;
+      btn.innerHTML = og;
+      refreshIcons(btn);
+    }
+  }
+
+  // ==========================================================
+  // Навигация по разделам
+  // ==========================================================
+  function goToSection(id, flash) {
+    const el = $(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    setActiveNav(id);
+    if (flash) {
+      const grid = el.querySelector('.grid');
+      if (grid) { grid.classList.remove('flash'); void grid.offsetWidth; grid.classList.add('flash'); }
+    }
+  }
+  let activeNav = null;
+  function setActiveNav(id) {
+    if (id === activeNav) return;
+    activeNav = id;
+    document.querySelectorAll('[data-nav]').forEach((b) => b.setAttribute('aria-current', b.dataset.nav === id ? 'true' : 'false'));
+    const chip = document.querySelector(`[data-nav="${id}"]`);
+    const bar = chip && chip.parentElement;
+    if (bar && bar.scrollWidth > bar.clientWidth) {
+      const l = chip.offsetLeft - bar.offsetLeft, r = l + chip.offsetWidth;
+      if (l < bar.scrollLeft || r > bar.scrollLeft + bar.clientWidth) bar.scrollTo({ left: Math.max(0, l - 12), behavior: 'smooth' });
+    }
+  }
+  // Первая отрисовка (цены видны сразу, кнопки оживут после загрузки баланса)
+  renderAll();
+
+  (function scrollSpy() {
+    const sections = [...document.querySelectorAll('[data-section]')];
+    let ticking = false;
+    function update() {
+      ticking = false;
+      const line = 160;
+      let current = sections[0].id;
+      for (const s of sections) if (s.getBoundingClientRect().top - line <= 0) current = s.id;
+      // У самого низа страницы подсвечиваем последний раздел
+      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) current = sections[sections.length - 1].id;
+      setActiveNav(current);
+    }
+    window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+    update();
+  })();
+
+  // Откуда пришли: ?reason=ai_limit (кончились запросы на доске), #promo, #topup, #plans…
+  function handleEntryIntent() {
+    const params = new URLSearchParams(window.location.search);
+    const hash = (window.location.hash || '').slice(1);
+    if (params.get('reason') === 'ai_limit') {
+      const b = $('aiLimitBanner');
+      b.classList.remove('hidden');
+      b.classList.add('flex');
+      setTimeout(() => goToSection('ai', true), 300);
+      return;
+    }
+    if (hash === 'promo') {
+      setTimeout(() => {
+        $('promo').scrollIntoView({ block: 'center' });
+        try { $('storePromoCodeInput').focus({ preventScroll: true }); } catch (e) {}
+      }, 200);
+    } else if (hash === 'topup') {
+      openTopUpModal();
+    } else if (['ai', 'plans', 'gifts', 'bonus'].includes(hash)) {
+      setTimeout(() => goToSection(hash), 200);
     }
   }
 </script>
