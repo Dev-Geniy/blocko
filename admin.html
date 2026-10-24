@@ -824,7 +824,7 @@
         // Подтягиваем 100% точное значение реальных приглашенных
         const realRefsCount = allUsers.filter(ru => ru.referredBy === u.uid).length;
         const safeName = u.name || 'Аноним';
-        const safeAvatar = u.customAvatar || u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+        const safeAvatar = u.customAvatar || u.avatar || initialsAvatar(safeName);
         
         let planColor = 'bg-gray-800 text-gray-400 border border-gray-700';
         if (u.plan === 'freelancer') planColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/30';
@@ -886,7 +886,7 @@
      
      // 1. Fill Header
      const safeName = user.name || 'Аноним';
-     const safeAvatar = user.customAvatar || user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     const safeAvatar = user.customAvatar || user.avatar || initialsAvatar(safeName);
      document.getElementById('upAvatar').src = safeAvatar;
      document.getElementById('upName').innerText = safeName;
      document.getElementById('upEmail').innerText = user.email || 'Email скрыт';
@@ -959,7 +959,7 @@
              const tUser = allUsers.find(u => u.uid === tUid);
              if(!tUser) return '';
              const tName = tUser.name || 'Аноним';
-             const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
+             const tAvatar = tUser.customAvatar || tUser.avatar || initialsAvatar(tName);
              let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
              let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
              
@@ -1010,7 +1010,7 @@
 
          const listHtml = referrals.map(tUser => {
              const tName = tUser.name || 'Аноним';
-             const tAvatar = tUser.customAvatar || tUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(tName)}`;
+             const tAvatar = tUser.customAvatar || tUser.avatar || initialsAvatar(tName);
              let planLabel = tUser.plan === 'pro' ? 'PRO' : (tUser.plan === 'freelancer' ? 'FL' : (tUser.plan === 'infinity' ? 'GOD' : 'FREE'));
              let planColor = tUser.plan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20' : 'text-gray-400 bg-gray-800 border-gray-700';
              
@@ -1435,7 +1435,7 @@
 
      list.innerHTML = filtered.map(t => {
          const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
-         const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+         const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : initialsAvatar(safeName);
          const dateStr = formatFirebaseDate(t.createdAt);
          
          const badgeMap = {
@@ -1474,7 +1474,7 @@
      const safeName = (t.user && t.user.name) ? t.user.name : 'Аноним';
      const safeEmail = (t.user && t.user.email) ? t.user.email : 'Email скрыт';
      const safeUid = (t.user && t.user.id) ? t.user.id : 'Неизвестен';
-     const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+     const safeAvatar = (t.user && (t.user.customAvatar || t.user.avatar)) ? (t.user.customAvatar || t.user.avatar) : initialsAvatar(safeName);
      
      document.getElementById('tmAvatar').src = safeAvatar;
      document.getElementById('tmName').innerText = safeName;
@@ -1633,7 +1633,7 @@
             <div class="bg-gray-800/40 border ${isPending ? 'border-gray-600' : 'border-gray-700/50 opacity-60'} p-5 rounded-2xl flex flex-col gap-4 transition-all">
                <div class="flex justify-between items-start gap-4">
                   <div class="flex items-center gap-3">
-                     <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(q.userName)}&background=3b82f6&color=fff" class="w-10 h-10 rounded-full border border-gray-600">
+                     <img src="${initialsAvatar(q.userName)}" class="w-10 h-10 rounded-full border border-gray-600">
                      <div>
                         <div class="font-bold text-white text-sm">${esc(q.userName)} <span class="text-gray-500 text-xs ml-2 font-normal">${esc(q.userEmail)}</span></div>
                         <div class="text-[10px] text-gray-400 font-mono mt-0.5">UID: ${esc(q.userId)} • Дата: ${esc(formatFirebaseDate(q.createdAt))}</div>
@@ -1745,7 +1745,7 @@
           const userProfile = allUsers.find(u => u.uid === p.id) || {};
           const safeName = userProfile.name || 'Аноним Партнер';
           const safeEmail = userProfile.email || p.id;
-          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || initialsAvatar(safeName);
 
           const totalSales = p.sales || 0;
           let rankName = 'Silver';
@@ -1823,7 +1823,7 @@
           
           const safeName = userProfile.name || 'Аноним Партнер';
           const safeEmail = userProfile.email || partnerId;
-          const safeAvatar = userProfile.customAvatar || userProfile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}`;
+          const safeAvatar = userProfile.customAvatar || userProfile.avatar || initialsAvatar(safeName);
 
           const sales = partner.sales || 0;
           const currentBal = parseFloat(partner.balanceUSD) || 0;

@@ -2,197 +2,117 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Политика Cookie — Blocko Pro</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Cookie и хранение данных — Blocko Pro</title>
+  <meta name="description" content="Какие данные Blocko Pro хранит в браузере, зачем и как этим управлять. Настройка аналитики.">
+  <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  
-  
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <script src="consent.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    .glass-card { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
     html { scroll-behavior: smooth; }
-
-    html, body {
-      height: 100dvh;
-      width: 100%;
-      min-height: 100dvh; /* Гарантируем высоту минимум на весь экран */
-      overflow-y: auto;   /* Разрешаем вертикальный скролл */
-      -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    .hide-scroll::-webkit-scrollbar { display: none; }
+    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+    .doc { font-size: 15px; color: #3f3f46; }
+    .dark .doc { color: #d4d4d8; }
+    .doc p, .doc li { line-height: 1.75; }
+    .doc h2 { scroll-margin-top: 5.5rem; }
+    .doc b, .doc strong { color: #18181b; font-weight: 600; }
+    .dark .doc b, .dark .doc strong { color: #fafafa; }
+    .doc p a, .doc li a, .doc td a { color: #2563eb; text-decoration: underline; text-underline-offset: 2px; }
+    .dark .doc p a, .dark .doc li a, .dark .doc td a { color: #60a5fa; }
+    .doc code { font-size: 13px; padding: 1px 6px; border-radius: 6px; background: #f4f4f5; }
+    .dark .doc code { background: #27272a; }
+    .doc ul.dots > li { position: relative; padding-left: 1.1rem; }
+    .doc ul.dots > li::before { content: ''; position: absolute; left: .2rem; top: .72em; width: 5px; height: 5px; border-radius: 9999px; background: #a1a1aa; }
+    .heading-anchor { opacity: 0; transition: opacity .15s; text-decoration: none; }
+    h2:hover .heading-anchor, .heading-anchor:focus { opacity: 1; }
+    .toc a[aria-current="true"] { color: #18181b; border-color: #2563eb; font-weight: 500; }
+    .dark .toc a[aria-current="true"] { color: #fafafa; border-color: #3b82f6; }
+    details[data-toc-mobile] summary::-webkit-details-marker { display: none; }
+    details[data-toc-mobile][open] summary .chev { transform: rotate(180deg); }
+    @media (max-width: 639px) {
+      .stack-table thead { display: none; }
+      .stack-table tr { display: block; padding: .75rem 1rem; }
+      .stack-table td { display: block; padding: .1rem 0 !important; }
+      .stack-table td:first-child { margin-bottom: .2rem; }
+      .stack-table td[data-label]::before { content: attr(data-label) ': '; color: #71717a; }
+    }
+    @media print {
+      header, nav[data-tabs], aside, details[data-toc-mobile], .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .doc-card { border: 0 !important; padding: 0 !important; box-shadow: none !important; }
+      .doc, .doc b { color: #000 !important; }
     }
   </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col">
 
-  </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen flex flex-col transition-colors duration-300 relative overflow-x-hidden">
-
-<!-- Фоновые неоновые блики (Теплые янтарные для Cookie) -->
-<div class="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
-
-<header class="px-8 py-6 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95" title="На главную">
-      <i data-lucide="arrow-left" class="w-5 h-5"></i>
-    </a>
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">Legal Center</h1>
-      <p class="text-xs text-amber-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-        <i data-lucide="cookie" class="w-3.5 h-3.5"></i> Cookie политика
-      </p>
-    </div>
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-30">
+  <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="На главную" aria-label="На главную"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+  <div class="min-w-0">
+    <p class="text-base sm:text-lg font-semibold tracking-tight leading-tight">Правовая информация</p>
+    <p class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 leading-tight">Условия, конфиденциальность и cookie</p>
   </div>
-  <button onclick="toggleTheme()" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors shadow-sm">
-    <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
-  </button>
+  <div class="ml-auto flex items-center gap-1.5">
+    <button type="button" data-print class="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors" title="Распечатать или сохранить в PDF" aria-label="Распечатать"><i data-lucide="printer" class="w-5 h-5"></i></button>
+    <button type="button" onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
+  </div>
 </header>
 
-<main class="p-4 sm:p-8 max-w-7xl mx-auto w-full flex-1 mb-20 flex flex-col lg:flex-row gap-10">
-  
-  <!-- Боковая навигация (Sticky) -->
-  <aside class="hidden lg:block w-72 flex-shrink-0">
-    <div class="sticky top-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-[2rem] shadow-sm">
-      <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Оглавление</h3>
-      <nav class="space-y-3">
-        <a href="#cookie-1" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors">1. Что такое файлы Cookie?</a>
-        <a href="#cookie-2" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors">2. Использование Local Storage</a>
-        <a href="#cookie-3" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors">3. Типы собираемых данных</a>
-        <a href="#cookie-4" class="block text-sm font-bold text-gray-600 dark:text-gray-400 hover:text-amber-500 transition-colors">4. Управление настройками</a>
-      </nav>
-      
-      <div class="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
-         <a href="terms.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
-           Условия сервиса
-           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
-         </a>
-         <a href="privacy.html" class="flex items-center justify-between text-sm font-bold text-gray-500 dark:text-gray-400 hover:text-blue-500 transition-colors group">
-           Конфиденциальность
-           <i data-lucide="arrow-right" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0"></i>
-         </a>
-      </div>
+<div class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6">
+  <nav data-tabs aria-label="Документы" class="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-900 border border-gray-200/60 dark:border-gray-800 w-full sm:w-fit overflow-x-auto hide-scroll"><a href="terms.html" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><span class="sm:hidden">Условия</span><span class="hidden sm:inline">Условия использования</span></a><a href="privacy.html" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"><span class="sm:hidden">Конфиденциальность</span><span class="hidden sm:inline">Конфиденциальность</span></a><a href="cookies.html" aria-current="page" class="h-9 px-3.5 rounded-lg text-sm font-medium whitespace-nowrap inline-flex items-center transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm"><span class="sm:hidden">Cookie</span><span class="hidden sm:inline">Cookie</span></a></nav>
+</div>
+
+<main class="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 flex-1 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
+  <aside class="hidden lg:block">
+    <div class="sticky top-24">
+      <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Содержание</p>
+      <nav class="toc border-l border-gray-200 dark:border-gray-800" data-toc-list aria-label="Содержание"></nav>
     </div>
   </aside>
 
-  <!-- Контент документа -->
-  <div class="flex-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 sm:p-12 rounded-[3rem] shadow-sm relative overflow-hidden">
-    
-    <div class="mb-12 border-b border-gray-100 dark:border-gray-800 pb-10 text-center sm:text-left">
-      <div class="inline-flex items-center justify-center p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400 rounded-2xl mb-6 shadow-sm border border-amber-200 dark:border-amber-800/50">
-        <i data-lucide="cookie" class="w-8 h-8"></i>
-      </div>
-      <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">Cookie политика</h2>
-      <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Последнее обновление: <b class="text-gray-700 dark:text-gray-300">10 Мая 2026 г.</b></p>
-    </div>
+  <div class="min-w-0">
+    <details class="lg:hidden mb-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900" data-toc-mobile>
+      <summary class="px-4 h-12 flex items-center justify-between cursor-pointer list-none text-sm font-medium">Содержание <i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform"></i></summary>
+      <nav class="toc mx-4 mb-3 border-l border-gray-200 dark:border-gray-800" data-toc-list aria-label="Содержание"></nav>
+    </details>
 
-    <div class="space-y-12 text-gray-600 dark:text-gray-300 leading-relaxed">
-
-      <!-- Вступление -->
-      <p class="text-lg font-medium text-gray-700 dark:text-gray-200">
-        Мы стремимся сделать использование Blocko Pro максимально комфортным и безопасным. В этой политике мы объясняем, как и зачем мы используем технологии хранения данных на вашем устройстве.
-      </p>
-
-      <!-- Секция 1 -->
-      <section id="cookie-1" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-sm border border-amber-100 dark:border-amber-800/50">1</span> Что такое файлы Cookie?
-        </h3>
-        <p>
-          Cookies — это небольшие текстовые файлы, которые сохраняются в вашем браузере при посещении веб-сайтов. Они позволяют платформе "запоминать" вас и ваши предпочтения (например, выбранную темную или светлую тему), чтобы вам не приходилось настраивать всё заново при каждом входе.
-        </p>
-      </section>
-
-      <!-- Секция 2 -->
-      <section id="cookie-2" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-sm border border-amber-100 dark:border-amber-800/50">2</span> Local Storage и Офлайн-доски
-        </h3>
-        <p class="mb-4">
-          Blocko Pro в значительной степени полагается на технологию <b>Local Storage</b> (Локальное хранилище браузера). Это более современная и емкая альтернатива файлам cookie.
-        </p>
-        
-        <div class="p-6 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/50 rounded-2xl mb-4">
-           <h4 class="font-bold text-red-600 dark:text-red-400 mb-2 flex items-center gap-2">
-             <i data-lucide="alert-triangle" class="w-5 h-5"></i> Важное предупреждение об Офлайн проектах
-           </h4>
-           <p class="text-sm text-red-800 dark:text-red-300">
-             Ваши приватные доски (Device Mode), созданные для работы без интернета, физически хранятся в <b>Local Storage</b> вашего текущего браузера. Если вы очистите кэш браузера или удалите данные сайтов, <b>ваши офлайн-проекты будут безвозвратно удалены</b>. Рекомендуем регулярно делать резервные копии (бэкапы) в настройках доски.
-           </p>
-        </div>
-      </section>
-
-      <!-- Секция 3 -->
-      <section id="cookie-3" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-sm border border-amber-100 dark:border-amber-800/50">3</span> Какие данные мы сохраняем
-        </h3>
-        <ul class="space-y-4 list-none pl-0 mt-4">
-          <li class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <i data-lucide="shield-check" class="w-6 h-6 text-emerald-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white block mb-1">Строго необходимые данные (Сессии)</strong>
-              <p class="text-sm text-gray-500">Токены авторизации Firebase. Позволяют вам оставаться в системе и безопасно получать доступ к вашим облачным проектам.</p>
-            </div>
-          </li>
-          <li class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <i data-lucide="settings-2" class="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white block mb-1">Пользовательские настройки (Preferences)</strong>
-              <p class="text-sm text-gray-500">Ваш выбор темы (Светлая/Темная/OLED), статус компактного режима, порядок сортировки колонок на досках и скрытие обучающих карточек.</p>
-            </div>
-          </li>
-          <li class="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800">
-            <i data-lucide="link" class="w-6 h-6 text-indigo-500 flex-shrink-0 mt-0.5"></i>
-            <div>
-              <strong class="text-gray-900 dark:text-white block mb-1">Реферальные метки (Affiliate)</strong>
-              <p class="text-sm text-gray-500">Параметр <code>blocko_ref_id</code>. Используется для того, чтобы корректно начислить бонус человеку, по ссылке которого вы зарегистрировались.</p>
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <!-- Секция 4 -->
-      <section id="cookie-4" class="scroll-mt-32">
-        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
-          <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center text-sm border border-amber-100 dark:border-amber-800/50">4</span> Управление настройками
-        </h3>
-        <p class="mb-4">
-          Вы в любой момент можете удалить файлы cookie и очистить Local Storage через настройки вашего веб-браузера (в разделах "Конфиденциальность", "История" или "Данные сайтов").
-        </p>
-        <p>
-          Учтите, что удаление системных данных приведет к выходу из вашего аккаунта (потребуется повторная авторизация через Google), сбросу визуальных настроек и <b>потере всех локальных Офлайн-проектов</b>.
-        </p>
-      </section>
-
-    </div>
-    
-    <!-- Footer CTA -->
-    <div class="mt-16 pt-8 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-6 bg-gray-50 dark:bg-gray-800/30 p-6 rounded-3xl">
-      <div class="flex flex-col">
-         <span class="text-sm font-bold text-gray-900 dark:text-white mb-1">Служба защиты данных (DPO)</span>
-         <span class="text-xs text-gray-500 dark:text-gray-400">Напишите нам, если у вас есть вопросы о работе скриптов.</span>
-      </div>
-      <a href="mailto:privacy@blocko.cloud" class="px-6 py-3.5 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 font-bold rounded-xl transition-all shadow-sm active:scale-95 flex items-center gap-2 flex-shrink-0">
-        <i data-lucide="mail" class="w-4 h-4"></i> privacy@blocko.cloud
-      </a>
-    </div>
-
+    <article class="doc doc-card bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-10" data-legal-article>
+      <div class="max-w-[70ch]">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Действует с 24 октября 2026 г. · читать ≈&nbsp;3&nbsp;мин</p>
+        <h1 class="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 dark:text-white">Cookie и хранение данных</h1>
+        <p class="mt-3 text-gray-600 dark:text-gray-300">Какие данные Blocko Pro хранит в вашем браузере, зачем это нужно и как этим управлять.</p>
+        <div class="mt-6 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800 p-4 sm:p-5"><p class="text-sm font-semibold text-gray-900 dark:text-white">Коротко — самое главное</p><ul class="mt-3 space-y-2 text-[15px]"><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Рекламных cookie нет, и мы не следим за вами на других сайтах.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Для работы сервис хранит в браузере вход, настройки и офлайн-проекты — без этого он не работает.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Google Analytics включается только после вашего согласия — изменить выбор можно прямо здесь.</span></li><li class="flex items-start gap-2.5"><i data-lucide="check" class="w-4 h-4 mt-1 text-blue-600 dark:text-blue-400 flex-shrink-0"></i><span>Очистка данных браузера удалит офлайн-проекты — сначала скачайте резервную копию.</span></li></ul></div>
+        <div id="consent" class="not-prose mt-6 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 scroll-mt-24">
+  <div class="p-5">
+    <p class="flex flex-wrap items-center gap-x-2 gap-y-1 font-semibold text-gray-900 dark:text-white">Необходимые <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 whitespace-nowrap">всегда включены</span></p>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Вход, настройки, офлайн-проекты, работа без интернета. Без них сервис не работает.</p>
   </div>
-
+  <div class="p-5 flex items-start gap-4">
+    <div class="flex-1 min-w-0">
+      <label for="consentSwitch" class="font-semibold text-gray-900 dark:text-white cursor-pointer">Аналитика Google</label>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Показывает, какими разделами пользуются, — так мы понимаем, что улучшать. Включается только с вашего согласия.</p>
+      <p id="consentStatus" class="mt-2 text-sm text-gray-700 dark:text-gray-300"></p>
+    </div>
+    <button type="button" id="consentSwitch" role="switch" aria-checked="false" class="relative w-11 h-6 rounded-full bg-gray-200 dark:bg-gray-700 transition-colors flex-shrink-0 mt-0.5"><span class="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"></span></button>
+  </div>
+</div>
+        <section class="mt-10 sm:mt-12"><h2 id="c-what" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">1. Что такое cookie и хранилище браузера</h2><div class="mt-3 space-y-3"><p>Cookie — небольшие файлы, которые сайт сохраняет в браузере. Похожим образом работают локальное хранилище (localStorage и sessionStorage), база браузера IndexedDB и кэш. Всё это хранится на вашем устройстве — дальше мы называем это «хранилищем браузера».</p></div></section><section class="mt-10 sm:mt-12"><h2 id="c-own" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">2. Что сохраняет Blocko Pro</h2><div class="mt-3 space-y-3"><div class="not-prose mt-1 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden"><table class="stack-table w-full text-sm text-left text-gray-600 dark:text-gray-300"><thead class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400"><tr><th scope="col" class="px-4 py-2.5 font-medium">Что</th><th scope="col" class="px-4 py-2.5 font-medium">Зачем</th><th scope="col" class="px-4 py-2.5 font-medium">Где</th><th scope="col" class="px-4 py-2.5 font-medium">Сколько хранится</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800"><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Вход в аккаунт</td><td data-label="Зачем" class="px-4 py-3 align-top">чтобы не входить каждый раз</td><td data-label="Где" class="px-4 py-3 align-top">IndexedDB (Firebase)</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">пока вы не выйдете</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Копия облачных проектов</td><td data-label="Зачем" class="px-4 py-3 align-top">быстрая загрузка и работа без сети</td><td data-label="Где" class="px-4 py-3 align-top">IndexedDB (Firebase)</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">обновляется автоматически</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Файлы приложения и картинки</td><td data-label="Зачем" class="px-4 py-3 align-top">открывать Blocko Pro и картинки без интернета</td><td data-label="Где" class="px-4 py-3 align-top">кэш браузера</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">до обновления сайта</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Офлайн-проекты</td><td data-label="Зачем" class="px-4 py-3 align-top">ваши проекты на этом устройстве</td><td data-label="Где" class="px-4 py-3 align-top">localStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">пока вы их не удалите</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Графики работы</td><td data-label="Зачем" class="px-4 py-3 align-top">быстрый доступ к графикам</td><td data-label="Где" class="px-4 py-3 align-top">localStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">пока вы их не удалите</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Настройки</td><td data-label="Зачем" class="px-4 py-3 align-top">тема, компактный режим, OLED, вид календаря, порядок проектов, звук и уведомления чата, скрытые подсказки</td><td data-label="Где" class="px-4 py-3 align-top">localStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">пока вы их не измените</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Служебные отметки</td><td data-label="Зачем" class="px-4 py-3 align-top">какие сообщения вы уже прочитали и какой у вас тариф — чтобы интерфейс открывался быстрее</td><td data-label="Где" class="px-4 py-3 align-top">localStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">обновляются автоматически</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Счётчик запросов к AI</td><td data-label="Зачем" class="px-4 py-3 align-top">учёт дневного лимита</td><td data-label="Где" class="px-4 py-3 align-top">localStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">сбрасывается каждый день</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Метка приглашения</td><td data-label="Зачем" class="px-4 py-3 align-top">засчитать приглашение тому, кто поделился ссылкой</td><td data-label="Где" class="px-4 py-3 align-top">localStorage (<code>blocko_ref_id</code>)</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">до очистки браузера</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Ваш выбор по аналитике</td><td data-label="Зачем" class="px-4 py-3 align-top">помнить ответ</td><td data-label="Где" class="px-4 py-3 align-top">localStorage (<code>blocko_consent</code>)</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">пока вы его не измените</td></tr><tr><td class="px-4 py-3 font-medium text-gray-900 dark:text-white align-top">Доступ к проекту с паролем, открытая вкладка проекта</td><td data-label="Зачем" class="px-4 py-3 align-top">не вводить пароль повторно и вернуться туда же</td><td data-label="Где" class="px-4 py-3 align-top">sessionStorage</td><td data-label="Сколько хранится" class="px-4 py-3 align-top">до закрытия вкладки</td></tr></tbody></table></div><p>Всё это нужно для работы сервиса и не используется для рекламы. Сам Blocko Pro рекламных cookie не ставит и не следит за вами на других сайтах.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="c-analytics" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">3. Аналитика Google</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li>Работает только на главной странице и только после вашего согласия. Без согласия скрипт Google не загружается.</li><li>Cookie <code>_ga</code> и <code>_ga_…</code> различают посещения без вашего имени и почты и хранятся до 2 лет.</li><li>Изменить решение можно <a href="#consent">переключателем выше</a>. Когда вы выключаете аналитику, мы удаляем эти cookie.</li></ul></div></section><section class="mt-10 sm:mt-12"><h2 id="c-third" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">4. Cookie других сервисов</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li><b>Google</b> — в окне входа через аккаунт Google.</li><li><b>PayPal</b> — когда вы открываете оплату монет: PayPal использует свои cookie для безопасности платежа.</li><li><b>YouTube</b> — видео в карточках встроены в режиме без cookie; cookie YouTube могут появиться после запуска видео.</li></ul><p>Эти cookie ставят сами сервисы по своим правилам — мы ими не управляем.</p></div></section><section class="mt-10 sm:mt-12"><h2 id="c-manage" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">5. Как управлять и удалить</h2><div class="mt-3 space-y-3"><ul class="dots space-y-2"><li>Аналитику — <a href="#consent">переключателем на этой странице</a>.</li><li>Остальное — в настройках браузера, обычно в разделе «Конфиденциальность» → «Файлы cookie и данные сайтов». Там можно удалить данные только сайта blocko.cloud.</li><li><b>Важно:</b> после удаления данных сайта вы выйдете из аккаунта, настройки сбросятся, а офлайн-проекты и графики на этом устройстве удалятся. Сначала скачайте резервные копии проектов.</li></ul></div></section><section class="mt-10 sm:mt-12"><h2 id="c-contacts" class="text-lg sm:text-xl font-semibold tracking-tight text-gray-900 dark:text-white">6. Контакты</h2><div class="mt-3 space-y-3"><p>Вопросы о cookie и данных — <a href="mailto:privacy@blocko.cloud">privacy@blocko.cloud</a>.</p></div></section>
+        <div class="not-prose mt-12 rounded-xl border border-gray-200 dark:border-gray-800 p-5 flex flex-col sm:flex-row sm:items-center gap-4"><div class="flex-1 min-w-0"><p class="font-semibold text-gray-900 dark:text-white">Остались вопросы?</p><p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Расскажем, что и зачем хранится.</p></div><div class="flex flex-wrap gap-2"><a href="mailto:privacy@blocko.cloud" class="h-10 px-4 rounded-xl bg-gray-900 hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 text-sm font-medium inline-flex items-center gap-2 transition-colors"><i data-lucide="mail" class="w-4 h-4"></i>privacy@blocko.cloud</a><a href="index.html?open=support" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 inline-flex items-center gap-2 transition-colors"><i data-lucide="life-buoy" class="w-4 h-4"></i>Поддержка</a></div></div>
+      </div>
+    </article>
+    <p class="mt-5 text-sm text-gray-500 dark:text-gray-400 no-print">Другие документы: <a href="terms.html" class="hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline">Условия использования</a> · <a href="privacy.html" class="hover:text-gray-900 dark:hover:text-white underline-offset-2 hover:underline">Конфиденциальность</a></p>
+  </div>
 </main>
 
-<script>
-  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
-  function toggleTheme() {
-    document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-  }
-  lucide.createIcons();
-</script>
+<script src="legal.js"></script>
 </body>
 </html>

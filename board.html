@@ -28,6 +28,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="config.js"></script> 
+  <script src="api.js"></script>
   
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
@@ -3379,7 +3380,7 @@ async function generateCardCover() {
   try {
     // Используем seed для уникальности, nologo для чистоты изображения
     const seed = Math.floor(Math.random() * 100000);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=400&nologo=true&seed=${seed}`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=400&nologo=true&private=true&seed=${seed}`;
     
     // Скачиваем изображение как Blob для создания виртуального File
     const response = await fetch(imageUrl);
@@ -4684,7 +4685,7 @@ async function generateAIDescFromTitle() {
 4. КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО генерировать таблицы и длинные массивы текста.
 5. Не используй вводных фраз вроде "Вот план" или "Конечно, вот описание" — начинай сразу с сути.`;
 
-    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai`);
+    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai&private=true`);
     textarea.value = await response.text();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   } catch (err) { 
@@ -4708,7 +4709,7 @@ async function generateAIDescFromText() {
   
   try {
     const prompt = `Перепиши, улучши и детально структурируй этот черновик задачи. Сделай текст профессиональным и легко читаемым для команды. Используй Markdown (заголовки H3, выделения). Вот текст:\n\n${currentText}`;
-    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai`);
+    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai&private=true`);
     textarea.value = await response.text();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
   } catch (err) { showSystemToast('Ошибка', 'Сбой нейросети.', 'alert-triangle', 'text-red-500', 'bg-red-50'); } 
@@ -4729,7 +4730,7 @@ async function generateAIChecklistFromDesc() {
   
   try {
     const prompt = `Проанализируй описание задачи "${title}" и выдели из него от 3 до 5 самых важных конкретных шагов для выполнения. Выведи ТОЛЬКО список шагов (строго от 3 до 5 пунктов), каждый с новой строки. Без нумерации, без дефисов в начале. Только текст каждого шага. Описание:\n${desc}`;
-    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai`);
+    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(prompt)}?model=openai&private=true`);
     const text = await response.text();
     
     // Чистим ответ от возможных маркеров списков, которые AI мог добавить от себя
@@ -4972,7 +4973,7 @@ async function generateAIQuickDescription() {
   
   try {
     // Используем AI_ENDPOINT из config.js
-    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(`Краткий план (3 пункта): "${title}"`)}?model=openai`);
+    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(`Краткий план (3 пункта): "${title}"`)}?model=openai&private=true`);
     textarea.value = await response.text();
   } catch (err) { 
     showSystemToast('Ошибка AI', 'Не удалось создать задачу через AI.', 'alert-triangle', 'text-red-500', 'bg-red-50');
@@ -6451,7 +6452,7 @@ async function sendAiMessage() {
 
 Отвечай кратко, профессионально. Запрос пользователя: `;
     
-    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(systemPrompt + text)}?model=openai`);
+    const response = await fetch(`${AI_ENDPOINT}${encodeURIComponent(systemPrompt + text)}?model=openai&private=true`);
     let replyText = await response.text();
     
     document.getElementById(loadId)?.remove();

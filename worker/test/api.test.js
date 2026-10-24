@@ -386,3 +386,74 @@ test('enterBoard: старый пароль в открытом виде пер�
   const r3 = await call('enterBoard', { boardId: '../x' });
   assert.equal(r3.body.error.status, 'invalid-argument');
 });
+
+test('чат: «одно скачивание» удаляет любой участник, временные файлы очищаются после срока', async () => {
+  const { g, call } = setup();
+  g.put('boards/b1', { owner: 'owner', members: ['owner', 'u1'], users: {} });
+  g.put('boards/b1/chat/m1', { text: '', user: { id: 'owner' }, attachment: { type: 'file', url: 'data:a', name: 'a.pdf', retention: 'burn' } });
+  g.put('boards/b1/chat/m2', { text: 'привет', user: { id: 'owner' } });
+
+  let r = await call('burnChatFile', { boardId: 'b1', msgId: 'm1' }, 'stranger');
+  assert.equal(r.body.error.status, 'permission-denied');
+  r = await call('burnChatFile', { boardId: 'b1', msgId: 'm2' }, 'u1');
+  assert.equal(r.body.error.status, 'failed-precondition');
+  assert.equal(g.has('boards/b1/chat/m2'), true);
+  r = await call('burnChatFile', { boardId: 'b1', msgId: 'm1' }, 'u1');
+  assert.equal(r.body.result.deleted, true);
+  assert.equal(g.has('boards/b1/chat/m1'), false);
+  r = await call('burnChatFile', { boardId: 'b1', msgId: 'm1' }, 'u1');
+  assert.equal(r.body.result.deleted, false);
+  r = await call('burnChatFile', { boardId: 'b1', msgId: '../x' }, 'u1');
+  assert.equal(r.body.error.status, 'invalid-argument');
+
+  const past = Date.now() - 1000, future = Date.now() + 864e5;
+  g.put('boards/b1/chat/f1', { user: { id: 'owner' }, attachment: { type: 'file', url: 'data:x', name: 'old.txt', size: '1.0 KB', retention: '1day', expiresAt: past } });
+  g.put('boards/b1/chat/f2', { user: { id: 'owner' }, attachment: { type: 'file', url: 'data:y', name: 'new.txt', size: '2.0 KB', retention: '7days', expiresAt: future } });
+  r = await call('purgeExpiredChatFiles', { boardId: 'b1', msgIds: ['f1', 'f2', 'm2', 'nope'] }, 'stranger');
+  assert.equal(r.body.error.status, 'permission-denied');
+  r = await call('purgeExpiredChatFiles', { boardId: 'b1', msgIds: ['f1', 'f2', 'm2', 'nope'] }, 'u1');
+  assert.equal(r.body.result.purged, 1);
+  const f1 = g.read('boards/b1/chat/f1');
+  assert.equal(f1.attachment.url, undefined);
+  assert.equal(f1.attachment.expired, true);
+  assert.equal(f1.attachment.name, 'old.txt');
+  assert.equal(f1.user.id, 'owner');
+  assert.equal(g.read('boards/b1/chat/f2').attachment.url, 'data:y');
+  r = await call('purgeExpiredChatFiles', { boardId: 'b1', msgIds: ['f1'] }, 'u1');
+  assert.equal(r.body.result.purged, 0);
+
+  // проект с паролем: без разблокировки участник не может
+  g.put('boards/b2', { owner: 'owner', members: ['owner', 'u1'], users: {}, hasPassword: true });
+  g.put('boards/b2/chat/x', { attachment: { type: 'file', url: 'u', retention: 'burn' } });
+  r = await call('burnChatFile', { boardId: 'b2', msgId: 'x' }, 'u1');
+  assert.equal(r.body.error.status, 'permission-denied');
+  g.put('boards/b2/unlocks/u1', { expiresAt: { __ts: Date.now() + 3600e3 } });
+  r = await call('burnChatFile', { boardId: 'b2', msgId: 'x' }, 'u1');
+  assert.equal(r.body.result.deleted, true);
+});
+
+test('deleteBoard: владелец удаляет проект вместе со всеми данными', async () => {
+  const { g, call } = setup();
+  g.put('boards/b1', { owner: 'owner', members: ['owner', 'u1'], users: {} });
+  for (let i = 0; i < 5; i++) g.put(`boards/b1/cards/c${i}`, { title: 'Задача ' + i });
+  g.put('boards/b1/chat/m1', { text: 'a' });
+  g.put('boards/b1/presence/u1', { lastActive: 1 });
+  g.put('boards/b1/activity/a1', { text: 'x' });
+  g.put('boards/b1/unlocks/u1', { expiresAt: { __ts: Date.now() } });
+  g.put('board_secrets/b1', { hash: 'h' });
+  g.put('boards/b2', { owner: 'other', members: ['other'] });
+  g.put('boards/b2/cards/c1', { title: 'чужое' });
+
+  let r = await call('deleteBoard', { boardId: 'b1' }, 'u1');
+  assert.equal(r.body.error.status, 'permission-denied');
+  assert.equal(g.has('boards/b1'), true);
+  r = await call('deleteBoard', { boardId: 'b1' }, 'owner');
+  assert.equal(r.body.result.deleted, true);
+  assert.equal(r.body.result.removed, 9);
+  for (const p of ['boards/b1', 'boards/b1/cards/c0', 'boards/b1/cards/c4', 'boards/b1/chat/m1', 'boards/b1/presence/u1', 'boards/b1/activity/a1', 'boards/b1/unlocks/u1', 'board_secrets/b1']) {
+    assert.equal(g.has(p), false, p);
+  }
+  assert.equal(g.has('boards/b2/cards/c1'), true);
+  r = await call('deleteBoard', { boardId: 'b1' }, 'owner');
+  assert.equal(r.body.result.deleted, false);
+});
