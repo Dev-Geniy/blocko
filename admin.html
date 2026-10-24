@@ -417,17 +417,17 @@
             </div>
             <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
               <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Суммарный оборот ($)</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Балансы партнёров ($)</div>
                 <div class="text-2xl font-black text-emerald-400" id="statCpaRevenue">$0.00</div>
               </div>
               <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl"><i data-lucide="dollar-sign" class="w-6 h-6"></i></div>
             </div>
             <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
               <div>
-                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Всего хостов (Клики)</div>
+                <div class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Регистраций от партнёров</div>
                 <div class="text-2xl font-black text-blue-400" id="statCpaClicks">0</div>
               </div>
-              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="mouse-pointer-click" class="w-6 h-6"></i></div>
+              <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl"><i data-lucide="user-plus" class="w-6 h-6"></i></div>
             </div>
             <div class="bg-gray-800/50 border border-gray-700 p-5 rounded-2xl flex items-center justify-between">
               <div>
@@ -1709,11 +1709,9 @@
               if(data.isActive) {
                   allCpaPartners.push({ id: doc.id, ...data });
                   totalRevenue += (data.balanceUSD || 0);
-                  totalClicks += (data.clicks || 0);
-                  // Подсчитываем заявки на вывод (предполагаем наличие массива withdrawals)
-                  if(data.withdrawals) {
-                      pendingWithdrawals += data.withdrawals.filter(w => w.status === 'pending').length;
-                  }
+                  totalClicks += (data.signups || 0);
+                  // Заявки на вывод — записи истории с минусом и статусом «pending» (их создаёт сервер)
+                  pendingWithdrawals += (data.history || []).filter(t => (parseFloat(t.amount) || 0) < 0 && t.status === 'pending').length;
               }
           });
 

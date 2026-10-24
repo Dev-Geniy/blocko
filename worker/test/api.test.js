@@ -215,12 +215,31 @@ test('registerReferral: начисление один раз и только с�
   g.put('users/ref', { name: 'Пригласивший' });
   g.put('affiliates_cpa/ref', { isActive: true, signups: 0 });
   g.put('users/new', { referredBy: 'ref', createdAt: { __ts: Date.now() - 1000 } });
-  let r = await call('registerReferral', {}, 'new');
+  let r = await call('registerReferral', { sub: 'youtube' }, 'new');
   assert.equal(r.body.result.credited, true);
-  r = await call('registerReferral', {}, 'new');
+  r = await call('registerReferral', { sub: 'youtube' }, 'new');
   assert.equal(r.body.result.credited, false);
   assert.deepEqual([g.read('affiliates/ref').signups, g.read('affiliates/ref').earnedCredits], [1, 10]);
-  assert.equal(g.read('affiliates_cpa/ref').signups, 1);
+  const cpaAfter = g.read('affiliates_cpa/ref');
+  assert.equal(cpaAfter.signups, 1);
+  assert.equal(cpaAfter.subStats.youtube.signups, 1);
+  const days = Object.keys(cpaAfter.daily);
+  assert.equal(days.length, 1);
+  assert.match(days[0], /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(cpaAfter.daily[days[0]].signups, 1);
+  assert.equal(g.read('users/new').referredSub, 'youtube');
+  // метка с недопустимыми символами не сохраняется, регистрация идёт в «без метки»
+  g.put('users/new2', { referredBy: 'ref', createdAt: { __ts: Date.now() - 1000 } });
+  r = await call('registerReferral', { sub: 'bad sub/../x' }, 'new2');
+  assert.equal(r.body.result.credited, true);
+  assert.equal(g.read('users/new2').referredSub, null);
+  assert.equal(g.read('affiliates_cpa/ref').subStats.direct.signups, 1);
+  // служебные имена полей (__x__) тоже не принимаем
+  g.put('users/new3', { referredBy: 'ref', createdAt: { __ts: Date.now() - 1000 } });
+  r = await call('registerReferral', { sub: '__proto__' }, 'new3');
+  assert.equal(r.body.result.credited, true);
+  assert.equal(g.read('users/new3').referredSub, null);
+  assert.equal(g.read('affiliates_cpa/ref').subStats.direct.signups, 2);
   g.put('users/old', { referredBy: 'ref', createdAt: { __ts: Date.now() - 5 * 864e5 } });
   r = await call('registerReferral', {}, 'old');
   assert.equal(r.body.result.reason, 'too_old');
@@ -257,6 +276,10 @@ test('CPA: вывод и перевод в монеты', async () => {
   assert.equal(g.read('users/u1').coins, 2050);
   assert.equal(g.read('affiliates_cpa/u1').balanceUSD, 0);
   assert.equal(g.read('affiliates_cpa/u1').history.length, 1);
+  // дробные центы не теряют монету: $10.29 → 1029 монет
+  g.put('affiliates_cpa/u1', { isActive: true, balanceUSD: 10.29, history: [] });
+  r = await call('cpaTransferToCoins', {});
+  assert.deepEqual(r.body.result, { amount: 10.29, coins: 1029 });
 });
 
 // ---------- PayPal ----------
@@ -275,7 +298,7 @@ function fakePaypal({ amount = '45.00', customId = 'u1' } = {}) {
 
 test('PayPal: заказ → оплата → монеты и комиссия партнёру, повтор не начисляет', async () => {
   const { g, call } = setup();
-  g.put('users/u1', { referredBy: 'ref', coins: 5 });
+  g.put('users/u1', { referredBy: 'ref', referredSub: 'telegram', coins: 5 });
   g.put('affiliates_cpa/ref', { isActive: true, sales: 10, balanceUSD: 0, history: [] });
   const paypal = fakePaypal();
   let r = await call('createPaypalOrder', { packId: 'popular' }, 'u1', { paypal });
@@ -292,6 +315,10 @@ test('PayPal: заказ → оплата → монеты и комиссия �
   const cpa = g.read('affiliates_cpa/ref');
   assert.equal(cpa.balanceUSD, 18); // 40% от $45
   assert.equal(cpa.sales, 11);
+  assert.equal(cpa.history.length, 1);
+  assert.equal(cpa.history[0].sub, 'telegram');
+  assert.equal(cpa.history[0].amount, 18);
+  assert.equal(Object.values(cpa.daily)[0].sales, 1);
 
   r = await call('capturePaypalOrder', { orderId: 'ORDER12345' }, 'u1', { paypal });
   assert.equal(r.body.result.alreadyCaptured, true);

@@ -24,7 +24,7 @@
     html, body { width: 100%; min-height: 100dvh; }
   </style>
 
-  <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
+  <script>/* партнёрская ссылка: запоминаем ?ref и метку источника ?sub для регистрации на главной */try{var q=new URLSearchParams(location.search),r=q.get('ref'),s=q.get('sub');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r)){localStorage.setItem('blocko_ref_id',r);if(s&&/^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/.test(s))localStorage.setItem('blocko_ref_sub',s);else localStorage.removeItem('blocko_ref_sub')}}catch(e){}</script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col transition-colors duration-300">
 

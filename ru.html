@@ -55,7 +55,7 @@
        Раньше body был фиксированной высоты с overflow:hidden — низ страницы был недоступен. */
     html, body { width: 100%; min-height: 100dvh; }
   </style>
-  <script>/* партнёрская ссылка: запоминаем ?ref для регистрации на главной */try{var r=new URLSearchParams(location.search).get('ref');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r))localStorage.setItem('blocko_ref_id',r)}catch(e){}</script>
+  <script>/* партнёрская ссылка: запоминаем ?ref и метку источника ?sub для регистрации на главной */try{var q=new URLSearchParams(location.search),r=q.get('ref'),s=q.get('sub');if(r&&/^[A-Za-z0-9_-]{1,128}$/.test(r)){localStorage.setItem('blocko_ref_id',r);if(s&&/^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/.test(s))localStorage.setItem('blocko_ref_sub',s);else localStorage.removeItem('blocko_ref_sub')}}catch(e){}</script>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-[100dvh] flex flex-col transition-colors duration-300">
   <!-- ЭНТЕРПРАЙЗ АБСТРАКЦИЯ: Инновационный живой фон -->
@@ -219,7 +219,7 @@
         <p class="text-lg text-gray-500 dark:text-gray-400 font-medium mb-6 leading-relaxed">Поручите рутину нейросети: генерация описаний и планов задач в один клик. А когда вы внедрите Blocko Pro в процессы коллег, наша многоуровневая партнерская система вознаградит вас премиум-статусами и балансом.</p>
         <ul class="space-y-4 text-gray-700 dark:text-gray-300 font-medium">
           <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Интеграция OpenAI</li>
-          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> 20% комиссии с рефералов</li>
+          <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> До 50% с каждой оплаты приглашённых</li>
           <li class="flex items-center gap-3"><i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-500"></i> Система достижений (Амбассадор)</li>
         </ul>
       </div>
@@ -286,7 +286,7 @@
         <ul class="space-y-3 text-sm text-gray-500 dark:text-gray-400 font-medium">
           <li><a href="#" class="hover:text-indigo-500 transition-colors">Возможности</a></li>
           <li><a href="#" class="hover:text-indigo-500 transition-colors">Безопасность (Security)</a></li>
-          <li><a href="#" class="hover:text-indigo-500 transition-colors">Партнерская сеть</a></li>
+          <li><a href="affiliates-money.html" class="hover:text-indigo-500 transition-colors">Партнерская сеть</a></li>
           <li><a href="#" class="hover:text-indigo-500 transition-colors">API Документация</a></li>
         </ul>
       </div>
