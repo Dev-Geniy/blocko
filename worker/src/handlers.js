@@ -12,6 +12,16 @@ const UNLOCK_TTL_MS = 12 * 60 * 60 * 1000;
 const MAX_PASSWORD_ATTEMPTS = 5;
 const PASSWORD_LOCK_MS = 10 * 60 * 1000;
 const ID_RE = /^[A-Za-z0-9_-]{1,128}$/;
+// Метка источника в партнёрской ссылке (?sub=youtube): латиница, цифры, _ и -,
+// первый символ — буква или цифра (имена вида __x__ Firestore резервирует)
+const SUB_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/;
+const cleanSub = (v) => (typeof v === 'string' && SUB_RE.test(v) ? v : null);
+// День по Киеву в виде ГГГГ-ММ-ДД — ключ дневной статистики партнёра
+function isoDay(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(now));
+  const get = (t) => (parts.find((x) => x.type === t) || {}).value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
 
 const err = (code, message) => new ApiError(code, message);
 
@@ -106,11 +116,13 @@ async function capturePaypalOrder(ctx) {
       if (cpa && cpa.isActive) {
         const rate = C.cpaRate(cpa.sales);
         const commission = Math.round(parseFloat(pack.usd) * rate * 100) / 100;
+        const sub = cleanSub(user.referredSub);
         tx.update(`affiliates_cpa/${referrer}`, {
           balanceUSD: FV.increment(commission),
           sales: FV.increment(1),
+          [`daily.${isoDay()}.sales`]: FV.increment(1),
           history: FV.arrayUnion({
-            id: `tx_sale_${orderId}`, amount: commission, status: 'completed',
+            id: `tx_sale_${orderId}`, amount: commission, status: 'completed', sub,
             description: `Комиссия ${Math.round(rate * 100)}% с оплаты реферала`, date: new Date().toISOString(),
           }),
         });
@@ -275,6 +287,7 @@ async function claimDailyQuest(ctx) {
 // Начисление ровно один раз: флаг referralCredited ставится в той же транзакции.
 async function registerReferral(ctx) {
   const { uid, db } = ctx;
+  const sub = cleanSub(ctx.data && ctx.data.sub);
   return db.runTransaction(async (tx) => {
     const me = await tx.get(`users/${uid}`);
     if (!me) return { credited: false, reason: 'no_user' };
@@ -287,9 +300,16 @@ async function registerReferral(ctx) {
 
     const [refUser, cpa] = await Promise.all([tx.get(`users/${ref}`), tx.get(`affiliates_cpa/${ref}`)]);
     if (!refUser) return { credited: false, reason: 'no_referrer' };
-    tx.set(`users/${uid}`, { referralCredited: true }, { merge: true });
+    tx.set(`users/${uid}`, { referralCredited: true, referredSub: sub }, { merge: true });
     tx.set(`affiliates/${ref}`, { signups: FV.increment(1), earnedCredits: FV.increment(C.SIGNUP_REFERRAL_CREDITS) }, { merge: true });
-    if (cpa && cpa.isActive) tx.update(`affiliates_cpa/${ref}`, { signups: FV.increment(1) });
+    // Партнёрская статистика: всего, по источнику (метке) и по дням
+    if (cpa && cpa.isActive) {
+      tx.update(`affiliates_cpa/${ref}`, {
+        signups: FV.increment(1),
+        [`subStats.${sub || 'direct'}.signups`]: FV.increment(1),
+        [`daily.${isoDay()}.signups`]: FV.increment(1),
+      });
+    }
     return { credited: true };
   });
 }
@@ -342,7 +362,8 @@ async function cpaTransferToCoins(ctx) {
     if (!cpa || !cpa.isActive) throw err('failed-precondition', 'Кабинет партнёра не активирован.');
     const balance = Math.round((cpa.balanceUSD || 0) * 100) / 100;
     if (balance < C.CPA_MIN_TRANSFER_USD) throw err('failed-precondition', `Перевод в магазин возможен от $${C.CPA_MIN_TRANSFER_USD}.`);
-    const coins = Math.floor(balance * 100);
+    // Баланс уже округлён до центов: Math.round убирает погрешность дробей ($10.29 → 1029, а не 1028)
+    const coins = Math.round(balance * 100);
     tx.update(path, {
       balanceUSD: FV.increment(-balance),
       history: FV.arrayUnion({ id: `tx_coins_${Date.now()}`, amount: -balance, status: 'completed', description: 'Перевод в Marketplace (B-Coins)', date: new Date().toISOString() }),

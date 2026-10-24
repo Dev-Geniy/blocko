@@ -2,843 +2,1588 @@
 <html lang="ru" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Blocko Pro - CPA Партнерская сеть</title>
-
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Партнёрская программа — Blocko Pro</title>
+  <meta name="description" content="Рекомендуйте Blocko Pro и получайте до 50% с каждой оплаты приглашённых. Вывод от $50, статистика по источникам.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="theme.js"></script>
   <link rel="stylesheet" href="ui.css">
   <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
+  <!-- Нужны только по клику — не задерживают открытие страницы -->
+  <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-functions-compat.js"></script>
   <script src="config.js"></script>
-  <script src="security.js"></script>
   <script src="api.js"></script>
-  
+  <script src="security.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    .glass-panel { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
-    .hide-scroll::-webkit-scrollbar { display: none; }
-    .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Premium Blocko Loader */
-    @keyframes block-stretch {
-      0%, 100% { transform: scaleX(1); opacity: 0.5; }
-      50% { transform: scaleX(2.5); opacity: 1; }
-    }
-    .loader-block { animation: block-stretch 1.2s ease-in-out infinite; }
-    .delay-200 { animation-delay: 0.2s; }
-    .delay-400 { animation-delay: 0.4s; }
+    html, body { width: 100%; min-height: 100dvh; }
+    .tabular { font-variant-numeric: tabular-nums; }
 
-    /* OLED Mode Compatibility */
-    body.oled-mode { background-color: #000000 !important; }
-    body.oled-mode header, body.oled-mode .glass-panel { background-color: rgba(0, 0, 0, 0.95) !important; border-color: rgba(255,255,255,0.05) !important; }
-    body.oled-mode .bg-white, body.oled-mode .dark\:bg-gray-900, body.oled-mode .dark\:bg-gray-800 { background-color: #080808 !important; border-color: rgba(255,255,255,0.1) !important; }
-
-    /* ENTERPRISE: Архитектура PWA-вьюпорта */
-    html, body {
-      width: 100%;
-      min-height: 100dvh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior-y: contain;
-      -webkit-overflow-scrolling: touch;
+    /* Окна: на телефоне выезжают снизу, на ПК — появляются по центру (как в магазине) */
+    .modal { opacity: 0; transition: opacity .2s ease; }
+    .modal.is-open { opacity: 1; }
+    .modal .modal-panel { transform: translateY(12px) scale(.98); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+    .modal.is-open .modal-panel { transform: none; }
+    .modal-panel:focus { outline: none; }
+    @media (max-width: 639px) {
+      .modal .modal-panel { transform: translateY(100%); }
+      .modal-panel { padding-bottom: env(safe-area-inset-bottom); }
     }
+
+    /* Переключатели: период, показатель, средняя оплата */
+    .seg { color: #52525b; }
+    .dark .seg { color: #a1a1aa; }
+    .seg[aria-pressed="true"] { background: #fff; color: #18181b; box-shadow: 0 1px 2px 0 rgb(0 0 0 / .06), 0 0 0 1px #e4e4e7; }
+    .dark .seg[aria-pressed="true"] { background: #18181b; color: #fafafa; box-shadow: 0 0 0 1px #3f3f46; }
+    .metric[aria-pressed="true"] { border-color: #2563eb; box-shadow: inset 0 0 0 1px #2563eb; }
+    .dark .metric[aria-pressed="true"] { border-color: #3b82f6; box-shadow: inset 0 0 0 1px #3b82f6; }
+
+    /* Кнопки, которые пока недоступны: по нажатию объясняем, чего не хватает */
+    .btn-primary[aria-disabled="true"], .btn-primary[aria-disabled="true"]:hover { background: #f4f4f5; color: #71717a; }
+    .dark .btn-primary[aria-disabled="true"], .dark .btn-primary[aria-disabled="true"]:hover { background: #27272a; color: #a1a1aa; }
+    .btn-outline[aria-disabled="true"], .btn-outline[aria-disabled="true"]:hover { color: #a1a1aa; background: transparent; }
+    .dark .btn-outline[aria-disabled="true"], .dark .btn-outline[aria-disabled="true"]:hover { color: #71717a; background: transparent; }
+
+    /* График: один ряд, акцентный синий (проверен на контраст в обеих темах) */
+    .chart-bar { fill: #2563eb; transition: opacity .15s ease; }
+    .dark .chart-bar { fill: #3b82f6; }
+    .chart-dim .chart-bar { opacity: .35; }
+    .chart-dim .chart-bar.is-active { opacity: 1; }
+    .chart-grid { stroke: #f4f4f5; }
+    .dark .chart-grid { stroke: #27272a; }
+    .chart-base { stroke: #d4d4d8; }
+    .dark .chart-base { stroke: #3f3f46; }
+    .chart-label { fill: #71717a; font-size: 11px; font-variant-numeric: tabular-nums; }
+    .dark .chart-label { fill: #a1a1aa; }
+    .chart-swatch { background: #2563eb; }
+    .dark .chart-swatch { background: #3b82f6; }
+
+    /* Раскрывающиеся блоки */
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] > summary .chev { transform: rotate(180deg); }
+
+    input[type="range"] { accent-color: #2563eb; }
+    .dark input[type="range"] { accent-color: #3b82f6; }
+
+    /* Только что подключили кабинет — коротко подсвечиваем ссылку */
+    @keyframes flash { 0%, 100% { box-shadow: 0 0 0 0 rgb(37 99 235 / 0); } 30% { box-shadow: 0 0 0 4px rgb(37 99 235 / .25); } }
+    .flash { animation: flash 1.6s ease 2; }
   </style>
-  </head>
-<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 min-h-screen w-full flex flex-col transition-colors duration-300">
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col">
 
-<!-- Loader -->
-<div id="globalLoader" class="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white dark:bg-gray-950 transition-all duration-700">
-  <div class="flex flex-col items-center scale-110">
-    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-3xl text-white shadow-2xl shadow-emerald-500/40 mb-6">
-      <i data-lucide="bar-chart-2" class="w-12 h-12"></i>
-    </div>
-    <h2 class="text-3xl font-black tracking-tighter mb-10">CPA <span class="text-emerald-500">NETWORK</span></h2>
-    <div class="flex gap-2 h-1.5 w-48 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 relative">
-       <div class="loader-block absolute top-0 left-0 h-full w-12 bg-emerald-500 rounded-full"></div>
-       <div class="loader-block delay-200 absolute top-0 left-12 h-full w-12 bg-teal-500 rounded-full"></div>
-       <div class="loader-block delay-400 absolute top-0 left-24 h-full w-12 bg-emerald-400 rounded-full"></div>
-    </div>
+<div id="globalLoader" class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-50 dark:bg-gray-950 transition-opacity duration-500">
+  <div class="flex flex-col items-center gap-4 text-gray-400">
+    <span class="bg-blue-600 p-3 rounded-2xl text-white"><i data-lucide="handshake" class="w-7 h-7"></i></span>
+    <span class="text-sm">Открываем кабинет партнёра…</span>
   </div>
 </div>
 
-<header class="px-8 py-5 border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl sticky top-0 z-50 flex justify-between items-center">
-  <div class="flex items-center gap-4">
-    <a href="index.html" class="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-gray-500 active:scale-95"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
-    <div>
-      <h1 class="text-xl font-bold tracking-tight">CPA Network</h1>
-      <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-[0.2em]">Monetization Hub</p>
-    </div>
+<!-- Шапка — как в магазине -->
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-40">
+  <a href="index.html" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors flex-shrink-0" title="На главную" aria-label="На главную"><i data-lucide="arrow-left" class="w-5 h-5"></i></a>
+  <div class="min-w-0">
+    <h1 class="text-base sm:text-lg font-semibold tracking-tight leading-tight truncate"><span class="sm:hidden">Партнёрам</span><span class="hidden sm:inline">Партнёрская программа</span></h1>
+    <p class="hidden sm:block text-xs text-gray-500 dark:text-gray-400 leading-tight">До 50% с каждой оплаты приглашённых</p>
   </div>
-
-  <div class="flex gap-4 items-center">
-    <div class="hidden sm:flex flex-col items-end px-4 border-r border-gray-200 dark:border-gray-800">
-      <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Доступно к выводу</span>
-      <div class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-black text-sm">
-        $<span id="headerBalance">0.00</span>
-      </div>
-    </div>
-    <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 overflow-hidden shadow-sm" id="userAvatarWrap"></div>
+  <div class="ml-auto flex items-center gap-1.5">
+    <a id="hdrBalance" href="#balance" class="hidden h-9 pl-2 pr-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 items-center gap-2 text-sm font-semibold transition-colors" title="Баланс партнёра">
+      <span class="w-5 h-5 rounded-full bg-green-100 dark:bg-green-500/15 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="wallet" class="w-3.5 h-3.5"></i></span>
+      <span id="hdrBalanceVal" class="tabular">$0.00</span>
+    </a>
+    <button type="button" onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
   </div>
 </header>
 
-<main class="p-4 sm:p-8 max-w-7xl mx-auto w-full flex-1 flex flex-col relative overflow-y-auto hide-scroll">
-  
-  <!-- СЦЕНА 1: ЛЕНДИНГ (ONBOARDING) -->
-  <div id="cpaLanding" class="hidden flex-col items-center justify-center m-auto max-w-4xl text-center py-10 animate-fade-in-up">
-     <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-     <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+<main class="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-16 flex-1">
 
-     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-8 shadow-sm">
-       <i data-lucide="zap" class="w-3.5 h-3.5"></i> RevShare 30% Навсегда
-     </div>
-
-     <h2 class="text-4xl sm:text-6xl font-black text-gray-900 dark:text-white tracking-tight mb-6 leading-tight">
-       Монетизируйте свой трафик с <br> <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">Blocko Pro Partners</span>
-     </h2>
-     <p class="text-base sm:text-lg text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto mb-12 leading-relaxed">
-       Превратите свою аудиторию в стабильный источник дохода. Привлекайте команды и бизнес в самую инновационную платформу управления проектами.
-     </p>
-
-     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full mb-12 relative z-10">
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left">
-           <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-2xl flex items-center justify-center mb-5 border border-emerald-100 dark:border-emerald-800/50 shadow-inner"><i data-lucide="percent" class="w-6 h-6"></i></div>
-           <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2">Высокий LTV</h3>
-           <p class="text-xs text-gray-500 leading-relaxed">Получайте 30% от каждой оплаты вашего реферала. Пока клиент платит за подписку — вы зарабатываете.</p>
+  <!-- ============ О ПРОГРАММЕ (гость или кабинет ещё не подключён) ============ -->
+  <div id="viewLanding" class="hidden">
+    <section class="pt-8 sm:pt-12 grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-8 lg:gap-x-12 items-center">
+      <div class="order-1">
+        <span class="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-medium"><i data-lucide="handshake" class="w-3.5 h-3.5"></i>Партнёрская программа</span>
+        <h2 class="mt-4 text-[28px] sm:text-4xl font-semibold tracking-tight leading-[1.15]">Рекомендуйте Blocko&nbsp;Pro и&nbsp;получайте до&nbsp;50% с&nbsp;каждой оплаты</h2>
+        <p class="mt-4 text-base text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl">Делитесь своей ссылкой с коллегами, подписчиками и клиентами. Когда приглашённый человек пополняет счёт в Blocko Pro, вы получаете процент — с каждой его оплаты, а не только с первой.</p>
+        <div class="mt-6 flex flex-col sm:flex-row gap-2.5">
+          <button type="button" data-cta class="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-70"><span data-cta-label>Подключить кабинет</span><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+          <a href="#how" class="h-11 px-5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors inline-flex items-center justify-center">Как это работает</a>
         </div>
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left">
-           <div class="w-14 h-14 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mb-5 border border-blue-100 dark:border-blue-800/50 shadow-inner"><i data-lucide="bar-chart-2" class="w-6 h-6"></i></div>
-           <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2">Прозрачная стата</h3>
-           <p class="text-xs text-gray-500 leading-relaxed">Real-time дашборд с отслеживанием переходов (Хосты), регистраций, конверсий (CR%) и метками SubID.</p>
-        </div>
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-left">
-           <div class="w-14 h-14 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-2xl flex items-center justify-center mb-5 border border-amber-100 dark:border-amber-800/50 shadow-inner"><i data-lucide="wallet" class="w-6 h-6"></i></div>
-           <h3 class="text-lg font-black text-gray-900 dark:text-white mb-2">Быстрые выплаты</h3>
-           <p class="text-xs text-gray-500 leading-relaxed">Минималка на вывод от $50. Выводите средства на банковские карты (Worldwide) или крипто-кошельки USDT.</p>
-        </div>
-     </div>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed"><span data-cta-note>Бесплатно.</span> Нажимая кнопку, вы соглашаетесь с <a href="#faq" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">правилами программы</a> и <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условиями сервиса</a>.</p>
+      </div>
 
-     <button id="activateCpaBtn" onclick="activateCPA()" class="px-10 py-5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/25 active:scale-95 transition-all text-lg flex items-center gap-3 relative z-10">
-        Активировать CPA Кабинет <i data-lucide="arrow-right" class="w-5 h-5"></i>
-     </button>
+      <!-- Как выглядят начисления в кабинете -->
+      <div class="order-3 lg:order-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 shadow-sm" aria-hidden="true">
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm text-gray-500 dark:text-gray-400">Баланс партнёра</span>
+          <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">Пример</span>
+        </div>
+        <p class="mt-2 text-3xl font-semibold tracking-tight tabular">$84.50</p>
+        <ul class="mt-4 divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+          <li class="py-3 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></span>
+            <span class="min-w-0 flex-1"><span class="block font-medium truncate">Комиссия 40% с оплаты</span><span class="block text-xs text-gray-500 dark:text-gray-400">telegram · сегодня</span></span>
+            <span class="font-semibold tabular">+$18.00</span>
+          </li>
+          <li class="py-3 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></span>
+            <span class="min-w-0 flex-1"><span class="block font-medium truncate">Комиссия 40% с оплаты</span><span class="block text-xs text-gray-500 dark:text-gray-400">youtube · вчера</span></span>
+            <span class="font-semibold tabular">+$4.00</span>
+          </li>
+          <li class="py-3 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0"><i data-lucide="arrow-down-left" class="w-4 h-4"></i></span>
+            <span class="min-w-0 flex-1"><span class="block font-medium truncate">Комиссия 30% с оплаты</span><span class="block text-xs text-gray-500 dark:text-gray-400">telegram · неделю назад</span></span>
+            <span class="font-semibold tabular">+$13.50</span>
+          </li>
+          <li class="py-3 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0"><i data-lucide="arrow-up-right" class="w-4 h-4"></i></span>
+            <span class="min-w-0 flex-1"><span class="block font-medium truncate">Вывод денег</span><span class="block text-xs text-gray-500 dark:text-gray-400">на карту</span></span>
+            <span class="text-right"><span class="block font-semibold tabular">−$50.00</span><span class="inline-block mt-0.5 text-[11px] font-medium px-1.5 py-px rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400">Выплачено</span></span>
+          </li>
+        </ul>
+      </div>
+
+      <ul class="order-2 lg:order-3 lg:col-span-2 -mt-2 lg:mt-0 lg:pt-6 lg:border-t border-gray-200/80 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-sm">
+        <li class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"><i data-lucide="percent" class="w-4 h-4"></i></span>
+          <span><b class="font-semibold text-gray-900 dark:text-white">30–50%</b><span class="block text-gray-500 dark:text-gray-400">с каждой оплаты</span></span>
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"><i data-lucide="banknote" class="w-4 h-4"></i></span>
+          <span><b class="font-semibold text-gray-900 dark:text-white">Вывод от $50</b><span class="block text-gray-500 dark:text-gray-400">на карту или в USDT</span></span>
+        </li>
+        <li class="flex items-center gap-3">
+          <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"><i data-lucide="chart-column" class="w-4 h-4"></i></span>
+          <span><b class="font-semibold text-gray-900 dark:text-white">Статистика</b><span class="block text-gray-500 dark:text-gray-400">по каждому источнику</span></span>
+        </li>
+      </ul>
+    </section>
+
+    <section id="how" class="mt-14 sm:mt-20 scroll-mt-24">
+      <h2 class="text-lg font-semibold tracking-tight">Как это работает</h2>
+      <ol class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex sm:block gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">1</span>
+          <div>
+            <h3 class="sm:mt-4 text-base font-semibold">Подключите кабинет</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Бесплатно, в один клик. Ваша ссылка появится сразу.</p>
+          </div>
+        </li>
+        <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex sm:block gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">2</span>
+          <div>
+            <h3 class="sm:mt-4 text-base font-semibold">Поделитесь ссылкой</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">В блоге, Telegram-канале, рассылке или лично. Добавьте метку — и увидите, какой канал приводит людей.</p>
+          </div>
+        </li>
+        <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex sm:block gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">3</span>
+          <div>
+            <h3 class="sm:mt-4 text-base font-semibold">Получайте процент</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Деньги начисляются сразу после каждой оплаты приглашённого. Вывод — от $50.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="rates" class="mt-12 scroll-mt-24">
+      <h2 class="text-lg font-semibold tracking-tight">Ставка растёт вместе с вами</h2>
+      <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Считаются все оплаты ваших приглашённых за всё время. Новая ставка действует для следующих оплат.</p>
+      <div id="landingTiers" class="mt-4 grid grid-cols-3 gap-2 sm:gap-4"></div>
+    </section>
+
+    <section class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+      <article id="calc" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <h2 class="text-lg font-semibold tracking-tight">Сколько можно заработать</h2>
+        <div class="mt-5 flex items-baseline justify-between gap-4 text-sm">
+          <label for="calcCount" class="text-gray-600 dark:text-gray-300">Оплат от ваших приглашённых</label>
+          <output id="calcCountVal" for="calcCount" class="font-semibold tabular">20</output>
+        </div>
+        <input id="calcCount" type="range" min="1" max="100" step="1" value="20" class="mt-3 w-full">
+        <p id="calcAvgLabel" class="mt-5 text-sm text-gray-600 dark:text-gray-300">Средняя сумма оплаты</p>
+        <div class="mt-2 grid grid-cols-3 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800" role="group" aria-labelledby="calcAvgLabel">
+          <button type="button" data-avg="10" aria-pressed="false" class="seg h-9 rounded-lg text-sm font-medium transition-colors">$10</button>
+          <button type="button" data-avg="45" aria-pressed="true" class="seg h-9 rounded-lg text-sm font-medium transition-colors">$45</button>
+          <button type="button" data-avg="100" aria-pressed="false" class="seg h-9 rounded-lg text-sm font-medium transition-colors">$100</button>
+        </div>
+        <div class="mt-5 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-4" aria-live="polite">
+          <p class="text-sm text-gray-500 dark:text-gray-400">Вы получите</p>
+          <p id="calcResult" class="mt-1 text-3xl font-semibold tracking-tight tabular">$0</p>
+          <p id="calcBreakdown" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
+        </div>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">Примерный расчёт. Монеты продаются наборами за $10, $45 и $100 — вы получаете процент от суммы каждой оплаты.</p>
+      </article>
+
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col">
+        <h2 class="text-lg font-semibold tracking-tight">Как получить деньги</h2>
+        <ul class="mt-4 space-y-3">
+          <li class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-3">
+            <span class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center flex-shrink-0"><i data-lucide="banknote" class="w-5 h-5"></i></span>
+            <div>
+              <p class="font-semibold">Вывод денег <span class="font-normal text-gray-500 dark:text-gray-400">· от $50</span></p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Отправьте заявку в кабинете. Мы проверим её и напишем на почту, чтобы согласовать выплату — на банковскую карту или в USDT.</p>
+            </div>
+          </li>
+          <li class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-3">
+            <span class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i data-lucide="coins" class="w-5 h-5"></i></span>
+            <div>
+              <p class="font-semibold">Монеты Blocko Pro <span class="font-normal text-gray-500 dark:text-gray-400">· от $10</span></p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Переведите баланс в монеты — 100 монет за $1 — и оплачивайте тарифы, AI и подарки. Сразу, без проверки.</p>
+            </div>
+          </li>
+        </ul>
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400 flex items-start gap-2"><i data-lucide="gift" class="w-4 h-4 mt-0.5 flex-shrink-0"></i><span>И ещё 10 бонусов за каждую регистрацию по вашей ссылке — их тратят в <a href="store.html" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">магазине</a>.</span></p>
+      </article>
+    </section>
   </div>
 
-  <!-- СЦЕНА 2: ДАШБОРД ПАРТНЕРА -->
-  <div id="cpaDashboard" class="hidden flex-col animate-fade-in-up space-y-8">
-     
-     <!-- Главные метрики -->
-     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
-           <div class="absolute -right-4 -top-4 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-           <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="dollar-sign" class="w-3.5 h-3.5 text-emerald-500"></i> Баланс</div>
-           <div class="text-3xl font-black text-gray-900 dark:text-white" id="statBalance">$0.00</div>
-        </div>
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
-           <div class="absolute -right-4 -top-4 w-16 h-16 bg-blue-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-           <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5 text-blue-500"></i> Уники (Хосты)</div>
-           <div class="text-3xl font-black text-gray-900 dark:text-white" id="statClicks">0</div>
-        </div>
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
-           <div class="absolute -right-4 -top-4 w-16 h-16 bg-purple-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-           <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="user-plus" class="w-3.5 h-3.5 text-purple-500"></i> Регистрации</div>
-           <div class="text-3xl font-black text-gray-900 dark:text-white" id="statSignups">0</div>
-        </div>
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 rounded-[2rem] shadow-sm relative overflow-hidden group">
-           <div class="absolute -right-4 -top-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform"></div>
-           <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5"><i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-amber-500"></i> Оплаты (Sales)</div>
-           <div class="text-3xl font-black text-gray-900 dark:text-white" id="statSales">0</div>
-        </div>
-     </div>
+  <!-- ============ КАБИНЕТ ОТКЛЮЧЁН ============ -->
+  <section id="viewSuspended" class="hidden mt-8 max-w-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+    <span class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center"><i data-lucide="shield-alert" class="w-6 h-6"></i></span>
+    <h2 class="mt-4 text-lg font-semibold tracking-tight">Кабинет партнёра отключён</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Сейчас за оплаты приглашённых деньги не начисляются. Чтобы узнать причину или вернуть доступ, напишите в поддержку.</p>
+    <p id="suspBalance" class="hidden mt-4 text-sm rounded-xl px-3.5 py-3 bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300"></p>
+    <a href="index.html?open=support" class="mt-5 h-10 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors inline-flex items-center gap-2"><i data-lucide="life-buoy" class="w-4 h-4"></i>Написать в поддержку</a>
+  </section>
 
-     <!-- Аналитика (Chart.js) - STRICTLY DARK PREMIUM WITH LIGHT GRID -->
-     <div class="bg-[#0B0F19] border border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-2xl mb-6 relative overflow-hidden group">
-         <!-- Premium Light Grid Overlay -->
-         <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
-         <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F19] via-transparent to-[#0B0F19] pointer-events-none"></div>
-         <div class="absolute inset-0 bg-gradient-to-l from-[#0B0F19] via-transparent to-[#0B0F19] pointer-events-none"></div>
+  <!-- ============ ОШИБКА ЗАГРУЗКИ ============ -->
+  <section id="viewError" class="hidden mt-8 max-w-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6">
+    <span class="w-12 h-12 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center"><i data-lucide="circle-alert" class="w-6 h-6"></i></span>
+    <h2 class="mt-4 text-lg font-semibold tracking-tight">Не удалось открыть кабинет</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Проверьте интернет и обновите страницу.</p>
+    <button type="button" onclick="location.reload()" class="mt-5 h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4"></i>Обновить</button>
+  </section>
 
-         <div class="flex items-center justify-between mb-6 relative z-10">
-             <h3 class="text-xl font-black text-white flex items-center gap-2"><i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i> Динамика трафика</h3>
-             <span class="px-3 py-1 bg-white/10 text-gray-300 text-[10px] font-bold uppercase tracking-widest rounded-lg border border-white/10 backdrop-blur-md">За 7 дней</span>
-         </div>
-         <div class="relative h-64 w-full z-10">
-             <canvas id="analyticsChart"></canvas>
-         </div>
-     </div>
+  <!-- ============ КАБИНЕТ ПАРТНЁРА ============ -->
+  <div id="viewDashboard" class="hidden">
+    <div class="mt-6 sm:mt-8 grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
 
-     <!-- Генератор ссылок, Сохраненные ссылки и Финансы -->
-     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Мульти-Генератор Лендингов -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm lg:col-span-2 flex flex-col transition-colors">
-           <div class="flex items-center gap-3 mb-6">
-             <div class="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100 dark:border-indigo-800/50"><i data-lucide="link" class="w-5 h-5"></i></div>
-             <h3 class="text-xl font-black text-gray-900 dark:text-white">Мульти-Трекинг (SubID)</h3>
-           </div>
-           
-           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+      <!-- Баланс -->
+      <section id="balance" class="order-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col scroll-mt-24" aria-labelledby="balTitle">
+        <h2 id="balTitle" class="flex items-center gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+          <span class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-500/15 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="wallet" class="w-3.5 h-3.5"></i></span>Баланс партнёра
+        </h2>
+        <p id="balAmount" class="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight tabular">$0.00</p>
+        <div class="mt-4">
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <span id="balProgressText" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-300"></span>
+            <span class="text-gray-400 dark:text-gray-500 whitespace-nowrap">вывод от $50</span>
+          </div>
+          <div id="balProgress" class="mt-2 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden" role="progressbar" aria-label="Накоплено до минимальной суммы вывода" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div id="balProgressBar" class="h-full rounded-full bg-blue-600 dark:bg-blue-500 transition-[width] duration-500" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="mt-5 grid grid-cols-2 sm:flex gap-2">
+          <button type="button" id="btnWithdraw" onclick="onWithdrawClick()" class="btn-primary h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="arrow-up-right" class="w-4 h-4"></i>Вывести</button>
+          <button type="button" id="btnCoins" onclick="onCoinsClick()" class="btn-outline h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="coins" class="w-4 h-4"></i>В монеты</button>
+        </div>
+        <p id="balHint" class="mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed"></p>
+        <div class="flex-1 min-h-[1rem]"></div>
+        <dl id="balSummary" class="pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-3 gap-3"></dl>
+      </section>
+
+      <!-- Ставка -->
+      <section id="rank" class="order-3 lg:order-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 flex flex-col" aria-labelledby="rankTitle">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="rankTitle" class="flex items-center gap-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+            <span class="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i></span>Ваша ставка
+          </h2>
+          <span id="rankName" class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">Silver</span>
+        </div>
+        <p class="mt-3 flex items-baseline gap-2"><span id="rankRate" class="text-3xl sm:text-4xl font-semibold tracking-tight tabular">30%</span><span class="text-sm text-gray-500 dark:text-gray-400">с каждой оплаты</span></p>
+        <p id="rankProgressText" class="mt-4 text-sm text-gray-600 dark:text-gray-300"></p>
+        <div id="rankScale" class="mt-3 grid grid-cols-3 gap-1.5"></div>
+        <div class="flex-1 min-h-[1rem]"></div>
+        <dl id="rankExamples" class="pt-4 border-t border-gray-100 dark:border-gray-800 grid grid-cols-3 gap-3"></dl>
+      </section>
+
+      <!-- Ссылка -->
+      <section id="link" class="order-2 lg:order-3 lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5 scroll-mt-24" aria-labelledby="linkTitle">
+        <h2 id="linkTitle" class="text-base font-semibold">Ваша ссылка</h2>
+        <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Кто зарегистрируется по ней, закрепится за вами — и вы будете получать процент с его оплат.</p>
+        <div class="mt-4 flex flex-col sm:flex-row gap-2">
+          <input type="text" id="refLinkInput" readonly aria-label="Ваша партнёрская ссылка" onclick="this.select()" class="w-full sm:flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-200 font-mono outline-none focus:border-blue-500">
+          <div class="flex gap-2">
+            <button type="button" id="btnCopyLink" onclick="copyText(mainLink(), 'Отправьте её тем, кому может пригодиться Blocko Pro.')" class="flex-1 sm:flex-none h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i>Копировать</button>
+            <button type="button" onclick="openQrModal(mainLink(), 'Человек отсканирует код и зарегистрируется по вашей ссылке.')" class="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 inline-flex items-center justify-center transition-colors flex-shrink-0" title="QR-код" aria-label="QR-код ссылки"><i data-lucide="qr-code" class="w-4 h-4"></i></button>
+            <button type="button" onclick="shareLink(mainLink(), 'Попробуй Blocko Pro — удобные канбан-доски для задач и команды')" class="w-10 h-10 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 inline-flex items-center justify-center transition-colors flex-shrink-0" title="Отправить" aria-label="Отправить ссылку"><i data-lucide="share-2" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+
+        <details id="builder" class="mt-4 rounded-xl border border-gray-200 dark:border-gray-800">
+          <summary class="px-4 min-h-[44px] py-2.5 flex items-center justify-between gap-3 cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-200">
+            <span class="flex items-center gap-2"><i data-lucide="tag" class="w-4 h-4 text-gray-400"></i>Ссылка с меткой источника или на другую страницу</span>
+            <i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i>
+          </summary>
+          <div class="px-4 pb-4 pt-1">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Premium Лендинги (Ниши & Языки)</label>
-                 <select id="landingSelect" onchange="updatePromoLink()" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-indigo-500 transition-colors appearance-none cursor-pointer">
-                    <option value="index.html">Главная страница</option>
-                    <option value="ru.html">Лендинг на русском</option>
-                    <option value="products.html">Возможности продукта</option>
-                    <option value="store.html">Магазин</option>
-                 </select>
+                <label for="bSub" class="block text-sm text-gray-600 dark:text-gray-300">Метка источника</label>
+                <input type="text" id="bSub" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="например, telegram" class="mt-1.5 w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm outline-none focus:border-blue-500 dark:text-white transition-colors">
               </div>
               <div>
-                 <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block flex items-center gap-1">SubID / Источник</label>
-                 <input type="text" id="subIdInput" oninput="updatePromoLink()" placeholder="Например: fb_ads_campaign1" class="w-full px-4 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none text-sm font-bold dark:text-white focus:border-indigo-500 transition-colors placeholder-gray-500">
+                <label for="bPage" class="block text-sm text-gray-600 dark:text-gray-300">Страница</label>
+                <select id="bPage" class="mt-1.5 w-full h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 text-sm outline-none focus:border-blue-500 dark:text-white transition-colors"></select>
               </div>
-           </div>
+            </div>
+            <div id="bChips" class="mt-2.5 flex flex-wrap gap-1.5" aria-label="Популярные метки"></div>
+            <p id="bHint" class="mt-2 text-xs text-gray-500 dark:text-gray-400">Латиница, цифры, «-» и «_». По метке в статистике видно, откуда пришли люди.</p>
+            <div class="mt-3 flex flex-col sm:flex-row gap-2">
+              <input type="text" id="bResult" readonly aria-label="Ссылка с меткой" onclick="this.select()" class="w-full sm:flex-1 min-w-0 h-10 px-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-sm text-gray-700 dark:text-gray-200 font-mono outline-none">
+              <div class="grid grid-cols-2 sm:flex gap-2">
+                <button type="button" onclick="copyText(builderLink(), 'Ссылка с меткой скопирована.')" class="h-10 px-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="copy" class="w-4 h-4"></i>Копировать</button>
+                <button type="button" id="bSave" onclick="saveBuilderLink()" class="h-10 px-4 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-100 text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="plus" class="w-4 h-4"></i>Сохранить</button>
+              </div>
+            </div>
+          </div>
+        </details>
 
-           <div class="flex flex-col sm:flex-row gap-3 mb-6">
-              <input type="text" id="generatedCpaLink" readonly class="flex-1 px-5 py-4 bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl outline-none text-sm font-mono dark:text-gray-300 transition-colors shadow-inner truncate select-all">
-              <button onclick="saveAndCopyCpaLink()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
-                <i data-lucide="save" class="w-5 h-5"></i> Сохранить & Копировать
-              </button>
-           </div>
-           
-           <!-- Сохраненные ссылки (Detailed Stats) -->
-           <div class="flex-1 border-t border-gray-200 dark:border-gray-800 pt-5">
-               <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3">Ваши рекламные кампании</h4>
-               <div id="savedLinksList" class="space-y-3 max-h-[300px] overflow-y-auto hide-scroll">
-                   <div class="text-xs text-gray-500 italic p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>
-               </div>
-           </div>
+        <div id="savedWrap" class="hidden mt-4">
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">Сохранённые ссылки</h3>
+          <ul id="savedLinks" class="mt-2 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800"></ul>
         </div>
+      </section>
+    </div>
 
-        <!-- Финансы и Магазин -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm flex flex-col justify-between relative overflow-hidden transition-colors">
-           <div class="absolute -right-20 -top-20 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-           <div class="relative z-10">
-              <div class="flex items-center gap-3 mb-6">
-                 <div class="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl shadow-inner border border-emerald-100 dark:border-emerald-800/50"><i data-lucide="wallet" class="w-5 h-5"></i></div>
-                 <h3 class="text-xl font-black text-gray-900 dark:text-white">Капитал</h3>
-              </div>
-              
-              <!-- Прогресс бар до минималки -->
-              <div class="mb-2 flex justify-between text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-500">
-                 <span>Доступно ($50 Min)</span>
-                 <span id="withdrawProgressText">0%</span>
-              </div>
-              <div class="w-full h-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full overflow-hidden mb-8">
-                 <div id="withdrawProgressBar" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
-              </div>
-           </div>
-           
-           <div class="space-y-3 relative z-10">
-               <button id="btnWithdraw" onclick="requestWithdraw()" disabled class="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-white font-black rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <i data-lucide="arrow-up-right" class="w-5 h-5"></i> Вывести средства
-               </button>
-               <button onclick="transferToStore()" class="w-full py-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-black rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-2 border border-gray-200 dark:border-gray-700">
-                  <i data-lucide="shopping-bag" class="w-5 h-5 text-indigo-500"></i> Потратить в Магазине
-               </button>
-               <button onclick="downloadInvoices()" class="w-full py-3 text-[10px] text-gray-400 hover:text-gray-900 dark:hover:text-white font-black uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
-                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Скачать PDF Инвойсы
-               </button>
-           </div>
+    <!-- Статистика -->
+    <section id="stats" class="mt-3 sm:mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5" aria-labelledby="statsTitle">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 id="statsTitle" class="text-base font-semibold">Статистика</h2>
+        <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800 sm:w-72" role="group" aria-label="Период">
+          <button type="button" data-period="7" aria-pressed="false" class="seg h-8 rounded-lg text-sm font-medium transition-colors">7 дней</button>
+          <button type="button" data-period="30" aria-pressed="false" class="seg h-8 rounded-lg text-sm font-medium transition-colors">30 дней</button>
+          <button type="button" data-period="90" aria-pressed="false" class="seg h-8 rounded-lg text-sm font-medium transition-colors">90 дней</button>
         </div>
-     </div>
+      </div>
+      <div class="mt-4 grid grid-cols-3 gap-2 sm:gap-3" role="group" aria-label="Что показать на графике">
+        <button type="button" data-metric="earned" aria-pressed="false" class="metric text-left rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <span class="block text-xs sm:text-sm text-gray-500 dark:text-gray-400">Доход</span>
+          <span id="kpiEarned" class="mt-1 block text-lg sm:text-2xl font-semibold tracking-tight tabular truncate">$0.00</span>
+        </button>
+        <button type="button" data-metric="signups" aria-pressed="false" class="metric text-left rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <span class="block text-xs sm:text-sm text-gray-500 dark:text-gray-400">Регистрации</span>
+          <span id="kpiSignups" class="mt-1 block text-lg sm:text-2xl font-semibold tracking-tight tabular">0</span>
+        </button>
+        <button type="button" data-metric="sales" aria-pressed="false" class="metric text-left rounded-xl border border-gray-200 dark:border-gray-800 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+          <span class="block text-xs sm:text-sm text-gray-500 dark:text-gray-400">Оплаты</span>
+          <span id="kpiSales" class="mt-1 block text-lg sm:text-2xl font-semibold tracking-tight tabular">0</span>
+        </button>
+      </div>
+      <p id="chartTitle" class="mt-5 text-sm text-gray-500 dark:text-gray-400"></p>
+      <div id="chart" class="relative mt-2 h-[180px] sm:h-[220px] rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-blue-500" tabindex="0"></div>
+      <p id="statsNote" class="hidden mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed"></p>
+      <div class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <p id="statsTotals" class="text-sm text-gray-500 dark:text-gray-400"></p>
+        <button type="button" id="tableToggle" onclick="toggleStatsTable()" aria-expanded="false" aria-controls="statsTableBox" class="self-start sm:self-auto text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white inline-flex items-center gap-1.5 transition-colors"><i data-lucide="table-2" class="w-4 h-4"></i><span>Показать таблицей</span></button>
+      </div>
+      <div id="statsTableBox" class="hidden mt-3 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden"></div>
+    </section>
 
-     <!-- Сводка и Гайды -->
-     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-10">
-        <!-- Таблица транзакций -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm">
-           <h3 class="text-base font-black dark:text-white mb-6 flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-gray-400"></i> Последние начисления</h3>
-           <div id="transactionsList" class="space-y-3">
-              <!-- JS Injects -->
-           </div>
+    <div class="mt-3 sm:mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 items-start">
+      <!-- Источники -->
+      <section id="sources" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden" aria-labelledby="srcTitle">
+        <div class="px-4 sm:px-5 pt-4 sm:pt-5">
+          <h2 id="srcTitle" class="text-base font-semibold">Источники</h2>
+          <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">По меткам в ссылках, за всё время</p>
         </div>
+        <div id="sourcesTableWrap" class="mt-3">
+          <table class="w-full text-sm">
+            <thead class="text-gray-500 dark:text-gray-400 border-y border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/30">
+              <tr>
+                <th scope="col" class="text-left font-medium px-4 sm:px-5 py-2">Метка</th>
+                <th scope="col" class="text-right font-medium px-2 py-2"><span class="sm:hidden">Рег.</span><span class="hidden sm:inline">Регистрации</span></th>
+                <th scope="col" class="text-right font-medium px-2 py-2"><span class="sm:hidden">Опл.</span><span class="hidden sm:inline">Оплаты</span></th>
+                <th scope="col" class="text-right font-medium pl-2 pr-4 sm:pr-5 py-2">Доход</th>
+              </tr>
+            </thead>
+            <tbody id="sourcesBody" class="divide-y divide-gray-100 dark:divide-gray-800"></tbody>
+            <tfoot id="sourcesFoot" class="border-t border-gray-200 dark:border-gray-800"></tfoot>
+          </table>
+        </div>
+        <p id="sourcesEmpty" class="hidden px-4 sm:px-5 pb-5 pt-3 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Добавьте к ссылке метку — например, telegram или youtube, — и здесь будет видно, какой канал приводит людей и оплаты.</p>
+      </section>
 
-        <!-- Гайды -->
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 sm:p-8 rounded-[2.5rem] shadow-sm">
-           <h3 class="text-base font-black dark:text-white mb-6 flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4 text-gray-400"></i> Обучение & Гайды</h3>
-           <div class="space-y-4">
-              <a href="#" class="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-colors group">
-                 <div class="p-2.5 bg-white dark:bg-gray-900 rounded-xl shadow-sm text-blue-500 group-hover:scale-110 transition-transform border border-gray-100 dark:border-gray-800"><i data-lucide="facebook" class="w-5 h-5"></i></div>
-                 <div>
-                    <h4 class="font-bold text-sm text-gray-900 dark:text-white">Связки для Facebook Ads</h4>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Кейсы с ROI > 150%</p>
-                 </div>
-              </a>
-              <a href="#" class="flex items-center gap-4 p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-colors group">
-                 <div class="p-2.5 bg-white dark:bg-gray-900 rounded-xl shadow-sm text-purple-500 group-hover:scale-110 transition-transform border border-gray-100 dark:border-gray-800"><i data-lucide="instagram" class="w-5 h-5"></i></div>
-                 <div>
-                    <h4 class="font-bold text-sm text-gray-900 dark:text-white">Продвижение через Reels/TikTok</h4>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">Органический трафик</p>
-                 </div>
-              </a>
-              <div class="p-4 rounded-2xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 flex items-start gap-3 mt-4">
-                 <i data-lucide="shield-alert" class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"></i>
-                 <div class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed"><b>Строго запрещено:</b> Мотивированный трафик, фрод, спам в чужих комментариях от лица бренда. Нарушение правил ведет к вечному бану без выплаты средств.</div>
-              </div>
-           </div>
+      <!-- Операции -->
+      <section id="history" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl" aria-labelledby="histTitle">
+        <div class="px-4 sm:px-5 pt-4 sm:pt-5 flex items-baseline justify-between gap-3">
+          <h2 id="histTitle" class="text-base font-semibold">Операции</h2>
+          <span id="histCount" class="text-sm text-gray-400 dark:text-gray-500 tabular"></span>
         </div>
-     </div>
+        <ul id="historyList" class="mt-2 divide-y divide-gray-100 dark:divide-gray-800"></ul>
+        <div id="historyMoreWrap" class="hidden px-4 sm:px-5 pb-4 pt-1">
+          <button type="button" id="historyMore" onclick="showMoreHistory()" class="w-full h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"></button>
+        </div>
+      </section>
+    </div>
   </div>
 
+  <!-- ============ ВОПРОСЫ И ПРАВИЛА (для всех) ============ -->
+  <section id="faq" class="hidden mt-12 scroll-mt-24" aria-labelledby="faqTitle">
+    <h2 id="faqTitle" class="text-lg font-semibold tracking-tight">Вопросы и правила</h2>
+    <div class="mt-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl divide-y divide-gray-100 dark:divide-gray-800">
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Кто считается моим приглашённым?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Человек, который впервые зарегистрировался в Blocko Pro после перехода по вашей ссылке. Если он переходил по ссылкам нескольких партнёров, засчитывается последняя ссылка перед регистрацией. Тех, у кого аккаунт уже был, привязать нельзя.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">С каких оплат я получаю процент?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">С каждой покупки монет через PayPal, которую приглашённый делает после того, как вы подключили кабинет. Оплаты, сделанные до подключения, не учитываются. Процент начисляется сразу — он появится в разделе «Операции».</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Сколько действует привязка?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Без срока: пока работает ваш кабинет партнёра, вы получаете процент со всех будущих оплат этого человека.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Как растёт ставка?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Считаются все оплаты ваших приглашённых за всё время: первые 10 приносят вам 30%, с 11-й по 50-ю — 40%, начиная с 51-й — 50%. Ставка не снижается.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Как вывести деньги?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Когда на балансе $50 или больше, нажмите «Вывести» — выводится весь доступный баланс. Заявка уйдёт на проверку, а мы напишем на почту вашего аккаунта, чтобы согласовать выплату: на банковскую карту или в USDT. Если заявку отклоним, деньги вернутся на баланс.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Можно ли потратить деньги внутри Blocko Pro?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Да. От $10 переведите баланс в монеты — 100 монет за $1 — и оплачивайте тарифы, AI и подарки в <a href="store.html" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">магазине</a>. Обратно в деньги монеты не переводятся.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Что такое метка источника?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Короткое слово в конце ссылки, например telegram или youtube. По меткам в кабинете видно, откуда пришли регистрации и оплаты. Ставить метку необязательно.</div>
+      </details>
+      <details class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Чем это отличается от бонусов за друзей?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Ссылка одна и та же. За каждую регистрацию по ней вы получаете 10 бонусов для магазина, а кабинет партнёра добавляет к ним деньги — процент с оплат приглашённых.</div>
+      </details>
+      <details id="faqRules" class="px-4 sm:px-5">
+        <summary class="py-4 flex items-center justify-between gap-4 cursor-pointer text-sm sm:text-base font-medium">Что запрещено?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 flex-shrink-0 transition-transform"></i></summary>
+        <div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+          <ul class="list-disc pl-5 space-y-1">
+            <li>спам и рассылки людям, которые на них не подписывались;</li>
+            <li>платить людям за регистрацию по вашей ссылке;</li>
+            <li>выдавать себя за Blocko Pro или нашу поддержку;</li>
+            <li>регистрировать свои же аккаунты и любым образом обманывать.</li>
+          </ul>
+          <p class="mt-2">За такой трафик мы не платим и можем отключить кабинет. Если оплату приглашённого вернули, комиссию с неё списываем. Полные условия — в <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">разделе 5 Условий сервиса</a>.</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- Призыв в конце страницы о программе -->
+  <section id="finalCta" class="hidden mt-12 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-lg font-semibold tracking-tight">Начните зарабатывать на рекомендациях</h2>
+      <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Подключение бесплатное — ссылка появится сразу.</p>
+    </div>
+    <button type="button" data-cta class="h-11 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-70"><span data-cta-label>Подключить кабинет</span><i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+  </section>
+
+  <p id="footNote" class="hidden mt-12 text-sm text-gray-500 dark:text-gray-400 flex items-start gap-2">
+    <i data-lucide="shield-check" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+    <span>Проценты начисляет сервер — автоматически, сразу после каждой оплаты приглашённого. Вопросы по программе — в <a href="index.html?open=support" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">поддержку</a>. <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условия</a></span>
+  </p>
 </main>
 
-<!-- Link Stats Modal -->
-<div id="linkStatsModal" class="hidden fixed inset-0 z-[600] flex items-start justify-center bg-gray-900/80 dark:bg-black/90 backdrop-blur-xl opacity-0 transition-opacity duration-300 px-4 overflow-y-auto py-10">
-  <div class="bg-white dark:bg-[#0B0F19] p-8 rounded-[2.5rem] w-full max-w-3xl shadow-2xl relative border border-gray-200 dark:border-gray-800 transform scale-95 transition-transform flex flex-col m-auto" id="linkStatsContent">
-    <button onclick="closeLinkStatsModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-full transition-colors z-20 hover:bg-gray-100 dark:hover:bg-gray-800"><i data-lucide="x" class="w-6 h-6"></i></button>
-    
-    <div class="flex items-center gap-3 mb-6">
-       <div class="p-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-200 dark:border-indigo-800/50 shadow-sm"><i data-lucide="bar-chart-2" class="w-6 h-6"></i></div>
-       <div>
-          <h2 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none" id="lsModalTitle">Tracker</h2>
-          <p class="text-[10px] text-gray-500 font-mono mt-1" id="lsModalUrl">https://...</p>
-       </div>
-    </div>
+<!-- ============ ОКНА ============ -->
 
-    <!-- Быстрая статистика -->
-    <div class="grid grid-cols-3 gap-4 mb-6">
-       <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl text-center shadow-inner">
-          <div class="text-2xl font-black text-blue-500" id="lsModalClicks">0</div>
-          <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Клики</div>
-       </div>
-       <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl text-center shadow-inner">
-          <div class="text-2xl font-black text-purple-500" id="lsModalSignups">0</div>
-          <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Регистрации</div>
-       </div>
-       <div class="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-800 p-4 rounded-2xl text-center shadow-inner">
-          <div class="text-2xl font-black text-amber-500" id="lsModalSales">0</div>
-          <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mt-1">Оплаты</div>
-       </div>
-    </div>
-
-    <!-- График конкретной ссылки -->
-    <div class="relative h-64 w-full bg-gray-50 dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-inner">
-       <canvas id="linkSpecificChart"></canvas>
+<!-- Подтверждение вывода и перевода в монеты -->
+<div id="confirmModal" class="modal hidden fixed inset-0 z-[320] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="modal-panel w-full sm:max-w-sm bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6">
+    <h2 id="confirmTitle" class="text-lg font-semibold tracking-tight"></h2>
+    <p id="confirmDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed"></p>
+    <dl id="confirmRows" class="mt-5 rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 text-sm"></dl>
+    <p id="confirmNote" class="hidden mt-4 text-sm rounded-xl px-3.5 py-3 bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300"></p>
+    <div class="mt-6 flex gap-2">
+      <button type="button" onclick="closeModal('confirmModal')" class="flex-1 h-11 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Отмена</button>
+      <button type="button" id="confirmBtn" onclick="executeConfirm()" class="flex-1 h-11 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 disabled:opacity-60"></button>
     </div>
   </div>
 </div>
 
-<div id="globalToast" class="fixed bottom-6 right-6 z-[800] transform translate-y-24 opacity-0 transition-all duration-500 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-4 rounded-2xl shadow-2xl flex items-start gap-4 max-w-sm pointer-events-none">
-  <div id="toastIconBg" class="p-2.5 rounded-full flex-shrink-0 bg-blue-50 dark:bg-blue-900/30"><i id="toastIcon" data-lucide="info" class="w-5 h-5 text-blue-500"></i></div>
-  <div><h4 id="toastTitle" class="text-sm font-bold text-gray-900 dark:text-white mb-1">Уведомление</h4><p id="toastDesc" class="text-xs text-gray-500 leading-relaxed"></p></div>
+<!-- QR-код -->
+<div id="qrCodeModal" class="modal hidden fixed inset-0 z-[400] items-end sm:items-center justify-center bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm sm:px-4" role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="modal-panel w-full sm:max-w-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 text-center">
+    <div class="flex items-center justify-between">
+      <h2 id="qrTitle" class="text-lg font-semibold tracking-tight">QR-код</h2>
+      <button type="button" onclick="closeModal('qrCodeModal')" aria-label="Закрыть" class="w-9 h-9 -mr-1 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <p id="qrCodeDesc" class="mt-1 text-sm text-gray-500 dark:text-gray-400 text-left">Отсканируйте код камерой телефона.</p>
+    <div class="mt-5 mx-auto w-fit bg-white p-3 rounded-2xl border border-gray-200 dark:border-gray-700">
+      <canvas id="qrCanvas" class="w-48 h-48"></canvas>
+    </div>
+    <div class="mt-5 grid grid-cols-2 gap-2">
+      <button type="button" onclick="downloadQrCode()" class="h-10 rounded-xl border border-gray-200 dark:border-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="download" class="w-4 h-4"></i>Сохранить</button>
+      <button type="button" onclick="shareQrCode()" class="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors inline-flex items-center justify-center gap-2"><i data-lucide="share-2" class="w-4 h-4"></i>Отправить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Уведомление -->
+<div id="globalToast" class="fixed z-[500] left-4 right-4 bottom-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[380px] pointer-events-none opacity-0 translate-y-4 invisible transition-all duration-300" role="status" aria-live="polite">
+  <div class="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+    <span id="toastIconBg" class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-gray-100 dark:bg-gray-800"><i data-lucide="info" class="w-5 h-5"></i></span>
+    <div class="min-w-0 pt-0.5">
+      <p id="toastTitle" class="text-sm font-semibold text-gray-900 dark:text-white"></p>
+      <p id="toastDesc" class="text-sm text-gray-500 dark:text-gray-400 mt-0.5 leading-snug"></p>
+      <a id="toastAction" href="#" class="hidden mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline underline-offset-2"></a>
+    </div>
+  </div>
 </div>
 
 <script>
-  if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark');
-  if (localStorage.getItem('blocko_oled') === 'true') document.body.classList.add('oled-mode');
+  try { if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark'); } catch (e) {}
   lucide.createIcons();
 
+  // ==========================================================
+  // Условия программы — как на сервере (functions/lib/catalog.js: cpaRate, CPA_MIN_*).
+  // Начисляет и списывает только сервер, здесь — для показа.
+  // ==========================================================
+  const MIN_WITHDRAW = 50;
+  const MIN_COINS = 10;
+  const COINS_PER_USD = 100;
+  const TIERS = [
+    { name: 'Silver', rate: 30, from: 0, when: 'с первой оплаты', short: 'сразу' },
+    { name: 'Gold', rate: 40, from: 10, when: 'после 10 оплат', short: 'после 10' },
+    { name: 'Platinum', rate: 50, from: 50, when: 'после 50 оплат', short: 'после 50' },
+  ];
+  // Страницы, на которые можно вести людей (все они запоминают ?ref и ?sub до регистрации)
+  const PAGES = [
+    { file: 'index.html', label: 'Главная' },
+    { file: 'ru.html', label: 'Лендинг на русском' },
+    { file: 'products.html', label: 'Возможности' },
+    { file: 'store.html', label: 'Магазин' },
+  ];
+  const SUB_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/; // как на сервере
+  const SUB_SUGGEST = ['telegram', 'youtube', 'instagram', 'tiktok', 'blog', 'email'];
+  const MAX_SAVED = 20;
+  const HISTORY_PAGE = 6;
+
+  // ==========================================================
+  // Состояние
+  // ==========================================================
   let currentUser = null;
-  let cpaProfile = null; // { isActive: false, balanceUSD: 0, clicks: 0, signups: 0, sales: 0, history: [] }
+  let cpa = null;            // документ affiliates_cpa/{uid}
+  let viewState = 'loading'; // loading | guest | none | active | suspended | error
+  let derived = null;        // суммы, посчитанные из истории операций
+  let chartData = [];
+  let activeBar = -1;
+  let historyLimit = HISTORY_PAGE;
+  let calcAvg = 45;
+  let activating = false;
+  let lastRenderKey = '';
+  const joinIntent = new URLSearchParams(location.search).get('join') === '1';
+  let period = 30, metric = 'earned';
+  try {
+    const p = +localStorage.getItem('blocko_cpa_period'); if ([7, 30, 90].includes(p)) period = p;
+    const m = localStorage.getItem('blocko_cpa_metric'); if (['earned', 'signups', 'sales'].includes(m)) metric = m;
+  } catch (e) {}
 
-  auth.onAuthStateChanged(async (user) => {
-    const loader = document.getElementById('globalLoader');
-    if (user) {
-      currentUser = user;
-      
-      // Выводим аватарку в хедер
-      const avatarUrl = safeUrl(user.photoURL) || BlockoSec.initialsAvatar(user.displayName || 'P');
-      document.getElementById('userAvatarWrap').innerHTML = `<img src="${esc(avatarUrl)}" alt="" data-avatar title="${esc(user.displayName || '')}" referrerpolicy="no-referrer" class="w-full h-full object-cover" />`;
+  // ==========================================================
+  // Помощники
+  // ==========================================================
+  const $ = (id) => document.getElementById(id);
+  const nf = new Intl.NumberFormat('ru-RU');
+  const fmt = (n) => nf.format(Math.round(Number(n) || 0));
+  const usd2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const usd0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+  const cents = (v) => Math.round((Number(v) || 0) * 100) / 100;
+  const money = (v) => { const n = cents(v); return (n < 0 ? '−$' : '$') + usd2.format(Math.abs(n)); };
+  const moneyRound = (v) => { const n = cents(v); return Number.isInteger(n) ? '$' + usd0.format(n) : money(n); };
+  const signed = (v) => { const n = cents(v); return (n > 0 ? '+' : n < 0 ? '−' : '') + '$' + usd2.format(Math.abs(n)); };
+  const num = (v) => { const n = typeof v === 'number' ? v : parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  const count = (v) => Math.max(0, Math.round(num(v)));
+  function plural(n, forms) {
+    const a = Math.abs(Math.round(n)) % 100, b = a % 10;
+    if (a > 10 && a < 20) return forms[2];
+    if (b > 1 && b < 5) return forms[1];
+    if (b === 1) return forms[0];
+    return forms[2];
+  }
+  const payW = (n) => plural(n, ['оплата', 'оплаты', 'оплат']);
+  const signupW = (n) => plural(n, ['регистрация', 'регистрации', 'регистраций']);
+  const coinW = (n) => plural(n, ['монета', 'монеты', 'монет']);
+  const icon = (name, cls = 'w-4 h-4') => `<i data-lucide="${name}" class="${cls}"></i>`;
+  const refreshIcons = (root) => { try { lucide.createIcons(root ? { root } : undefined); } catch (e) {} };
+  const cleanSub = (v) => (typeof v === 'string' && SUB_RE.test(v) ? v : '');
+  const cpaRef = () => db.collection('affiliates_cpa').doc(currentUser.uid);
 
-      await initCPAProfile();
+  function apiErrorText(e, fallback) {
+    if (BlockoAPI.errorCode(e) === 'backend-unavailable') return BlockoAPI.errorMessage(e);
+    const msg = BlockoAPI.errorMessage(e);
+    return /[а-яё]/i.test(msg) ? msg : fallback;
+  }
 
-      loader.style.opacity = '0';
-      setTimeout(() => loader.classList.add('hidden'), 700);
-    } else {
-      window.location.href = 'index.html';
+  function celebrate() {
+    try { if (typeof confetti === 'function') confetti({ particleCount: 120, spread: 70, origin: { y: 0.7 }, zIndex: 9999, disableForReducedMotion: true }); } catch (e) {}
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+  }
+
+  // ---- дни по Киеву, как ключи дневной статистики на сервере (ГГГГ-ММ-ДД) ----
+  const KYIV = (() => {
+    for (const tz of ['Europe/Kyiv', 'Europe/Kiev']) {
+      try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }); } catch (e) {}
     }
+    return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  })();
+  function dayKey(ts) {
+    const parts = KYIV.formatToParts(new Date(ts));
+    const get = (t) => (parts.find((x) => x.type === t) || {}).value;
+    return `${get('year')}-${get('month')}-${get('day')}`;
+  }
+  function shiftDay(key, n) {
+    const [y, m, d] = key.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+  }
+  const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  function dayLabel(key) { const [, m, d] = key.split('-').map(Number); return `${d} ${MONTHS[m - 1]}`; }
+  function rangeLabel(a, b) {
+    if (a === b) return dayLabel(a);
+    const [, ma, da] = a.split('-').map(Number), [, mb, db] = b.split('-').map(Number);
+    return ma === mb ? `${da}–${db} ${MONTHS[mb - 1]}` : `${dayLabel(a)} – ${dayLabel(b)}`;
+  }
+  function whenLabel(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const sameYear = d.getFullYear() === new Date().getFullYear();
+    return d.toLocaleString('ru-RU', { day: 'numeric', month: 'short', year: sameYear ? undefined : 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ---- ссылки ----
+  function buildLink(page, sub) {
+    const u = new URL(page === 'index.html' ? './' : page, location.href);
+    u.search = '';
+    u.hash = '';
+    u.searchParams.set('ref', currentUser ? currentUser.uid : '');
+    if (sub) u.searchParams.set('sub', sub);
+    return u.href;
+  }
+  const mainLink = () => (currentUser ? buildLink('index.html', '') : '');
+
+  async function copyText(text, okMessage) {
+    if (!text) return false;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); ta.remove();
+      } catch (e2) { ok = false; }
+    }
+    if (ok) toast('success', 'Ссылка скопирована', okMessage || '');
+    else toast('warning', 'Не удалось скопировать', 'Выделите ссылку и скопируйте её вручную.');
+    return ok;
+  }
+
+  async function shareLink(url, text) {
+    if (!url) return;
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Blocko Pro', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text || '')}`, '_blank', 'noopener,width=600,height=500');
+  }
+
+  // ==========================================================
+  // Уведомления
+  // ==========================================================
+  const TOAST_KINDS = {
+    success: { icon: 'circle-check', cls: 'bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400' },
+    error: { icon: 'circle-x', cls: 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' },
+    warning: { icon: 'circle-alert', cls: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+    info: { icon: 'info', cls: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300' },
+  };
+  let toastTimer = null;
+  function toast(kind, title, desc, action) {
+    const k = TOAST_KINDS[kind] || TOAST_KINDS.info;
+    const t = $('globalToast');
+    $('toastTitle').textContent = title || '';
+    $('toastDesc').textContent = desc || '';
+    $('toastDesc').classList.toggle('hidden', !desc);
+    const a = $('toastAction');
+    if (action) { a.textContent = action.label; a.href = action.href; a.classList.remove('hidden'); a.classList.add('inline-flex'); }
+    else { a.classList.add('hidden'); a.classList.remove('inline-flex'); }
+    const bg = $('toastIconBg');
+    bg.className = 'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ' + k.cls;
+    bg.innerHTML = icon(k.icon, 'w-5 h-5');
+    refreshIcons(bg);
+    // Скрытое уведомление не должно перехватывать нажатия внизу экрана — после исчезновения оно invisible
+    t.classList.remove('translate-y-4', 'opacity-0', 'invisible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      t.classList.add('translate-y-4', 'opacity-0');
+      toastTimer = setTimeout(() => t.classList.add('invisible'), 300);
+    }, kind === 'error' || action ? 7000 : 4500);
+  }
+
+  // ==========================================================
+  // Окна
+  // ==========================================================
+  const openStack = [];
+  function openModal(id) {
+    const m = $(id);
+    if (!m) return;
+    if (!openStack.includes(id)) openStack.push(id);
+    m._returnFocus = document.activeElement;
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    document.documentElement.style.overflow = 'hidden';
+    requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('is-open')));
+    setTimeout(() => {
+      const panel = m.querySelector('.modal-panel');
+      if (!panel) return;
+      panel.setAttribute('tabindex', '-1');
+      try { panel.focus({ preventScroll: true }); } catch (e) {}
+    }, 60);
+  }
+  function closeModal(id) {
+    const m = $(id);
+    if (!m || m.classList.contains('hidden')) return;
+    const i = openStack.indexOf(id);
+    if (i >= 0) openStack.splice(i, 1);
+    m.classList.remove('is-open');
+    if (!openStack.length) document.documentElement.style.overflow = '';
+    setTimeout(() => {
+      if (m.classList.contains('is-open')) return;
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }, 220);
+    const back = m._returnFocus;
+    if (back && typeof back.focus === 'function' && document.contains(back)) { try { back.focus({ preventScroll: true }); } catch (e) {} }
+    if (id === 'confirmModal') confirmRun = null;
+  }
+  document.querySelectorAll('.modal').forEach((m) => {
+    m.addEventListener('mousedown', (e) => { m._downOnBackdrop = e.target === m; });
+    m.addEventListener('click', (e) => { if (e.target === m && m._downOnBackdrop) closeModal(m.id); });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openStack.length) { e.preventDefault(); closeModal(openStack[openStack.length - 1]); }
   });
 
-  async function initCPAProfile() {
-      try {
-          const docRef = db.collection('affiliates_cpa').doc(currentUser.uid);
-          const doc = await docRef.get();
-
-          if (doc.exists && doc.data().isActive) {
-              cpaProfile = doc.data();
-              renderDashboard();
-          } else {
-              // Если профиля нет или не активен - показываем лендинг
-              document.getElementById('cpaLanding').classList.remove('hidden');
-              document.getElementById('cpaLanding').classList.add('flex');
-              document.getElementById('cpaDashboard').classList.add('hidden');
-              document.getElementById('cpaDashboard').classList.remove('flex');
-          }
-      } catch (e) {
-          showSystemToast('Ошибка', 'Не удалось загрузить данные CPA.', 'x-circle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-      }
+  // Подтверждение действия с деньгами
+  let confirmRun = null;
+  function openConfirm({ title, desc, rows, note, action, run }) {
+    $('confirmTitle').textContent = title;
+    $('confirmDesc').textContent = desc || '';
+    $('confirmRows').innerHTML = rows.map(([k, v]) => `<div class="flex items-start justify-between gap-4 px-3.5 py-2.5"><dt class="text-gray-500 dark:text-gray-400 flex-shrink-0">${esc(k)}</dt><dd class="font-medium text-right break-all tabular">${esc(v)}</dd></div>`).join('');
+    const n = $('confirmNote');
+    n.textContent = note || '';
+    n.classList.toggle('hidden', !note);
+    const btn = $('confirmBtn');
+    btn.disabled = false;
+    btn.textContent = action;
+    confirmRun = run;
+    openModal('confirmModal');
+  }
+  async function executeConfirm() {
+    if (!confirmRun) return;
+    const run = confirmRun;
+    const btn = $('confirmBtn');
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = icon('loader-circle', 'w-4 h-4 animate-spin') + '<span>Отправляем…</span>';
+    refreshIcons(btn);
+    try {
+      await run();
+      closeModal('confirmModal');
+    } catch (e) {
+      console.error(e);
+      closeModal('confirmModal');
+      toast('error', 'Не получилось', apiErrorText(e, 'Попробуйте ещё раз чуть позже.'));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
   }
 
-  async function activateCPA() {
-      const btn = document.getElementById('activateCpaBtn');
-      const ogBtn = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Создаем кабинет...';
-      lucide.createIcons({ root: btn });
-
-      try {
-          const newData = {
-              isActive: true,
-              balanceUSD: 0,
-              clicks: 0,
-              signups: 0,
-              sales: 0,
-              history: [],
-              createdAt: new Date().toISOString()
-          };
-          
-          await db.collection('affiliates_cpa').doc(currentUser.uid).set(newData, { merge: true });
-          cpaProfile = newData;
-
-          confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, zIndex: 9999 });
-          showSystemToast('Поздравляем!', 'Вы стали официальным партнером Blocko CPA.', 'award', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-          
-          document.getElementById('cpaLanding').classList.add('hidden');
-          document.getElementById('cpaLanding').classList.remove('flex');
-          renderDashboard();
-
-      } catch (e) {
-          btn.disabled = false;
-          btn.innerHTML = ogBtn;
-          lucide.createIcons({ root: btn });
-          showSystemToast('Ошибка', 'Не удалось активировать аккаунт.', 'alert-triangle', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-      }
+  // QR-код
+  let currentQrUrl = '';
+  function openQrModal(url, descText) {
+    if (!url) return;
+    if (typeof QRCode === 'undefined' || !QRCode.toCanvas) return toast('warning', 'QR-код недоступен', 'Не загрузился модуль QR. Скопируйте ссылку вместо этого.');
+    currentQrUrl = url;
+    $('qrCodeDesc').textContent = descText || 'Отсканируйте код камерой телефона.';
+    QRCode.toCanvas($('qrCanvas'), currentQrUrl, { width: 192, margin: 1, color: { dark: '#18181b', light: '#ffffff' } }, (error) => { if (error) console.error('QR', error); });
+    openModal('qrCodeModal');
   }
+  function downloadQrCode() {
+    const a = document.createElement('a');
+    a.href = $('qrCanvas').toDataURL('image/png');
+    a.download = 'BlockoPro_partner_QR.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  async function shareQrCode() {
+    try {
+      const blob = await new Promise((resolve) => $('qrCanvas').toBlob(resolve, 'image/png'));
+      const file = new File([blob], 'BlockoPro_partner_QR.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: 'Blocko Pro', text: currentQrUrl, files: [file] });
+        return;
+      }
+      throw new Error('no file share');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      copyText(currentQrUrl, 'Отправка картинки недоступна на этом устройстве — скопировали ссылку.');
+    }
+  }
+
+  // ==========================================================
+  // Загрузка и состояние кабинета
+  // ==========================================================
+  function hideLoader() {
+    const loader = $('globalLoader');
+    if (!loader || loader.classList.contains('hidden')) return;
+    loader.style.opacity = '0';
+    setTimeout(() => loader.classList.add('hidden'), 500);
+  }
+  setTimeout(hideLoader, 6000); // на случай медленной сети
+
+  auth.onAuthStateChanged((user) => {
+    currentUser = user || null;
+    if (!user) { setState('guest'); hideLoader(); return; }
+    listenCabinet();
+  });
+
+  // Без кэша первым может прийти «документа нет» из памяти браузера — ждём ответа сервера,
+  // чтобы не мигать страницей «о программе» перед кабинетом
+  let cacheTimer = null;
+  function listenCabinet() {
+    cpaRef().onSnapshot({ includeMetadataChanges: true }, (snap) => {
+      if (!snap.exists && snap.metadata && snap.metadata.fromCache && viewState === 'loading') {
+        clearTimeout(cacheTimer);
+        cacheTimer = setTimeout(() => applySnapshot(snap), 2500);
+        return;
+      }
+      clearTimeout(cacheTimer);
+      applySnapshot(snap);
+    }, (err) => {
+      console.error('affiliates_cpa', err);
+      setState('error');
+      hideLoader();
+    });
+  }
+
+  function applySnapshot(snap) {
+    const prev = viewState;
+    cpa = snap.exists ? (snap.data() || {}) : null;
+    const next = !cpa ? 'none' : cpa.isActive ? 'active' : 'suspended';
+    setState(next);
+    hideLoader();
+    if (prev === 'none' && next === 'active') welcome();
+    // Пришли после входа со страницы программы: подключаем кабинет сразу
+    if (next === 'none' && joinIntent && !applySnapshot.joined) { applySnapshot.joined = true; activate(); }
+    if (joinIntent && next !== 'loading') { try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) {} }
+  }
+
+  function setState(s) {
+    const landing = s === 'guest' || s === 'none';
+    if (s !== viewState) lastRenderKey = '';
+    viewState = s;
+    $('viewLanding').classList.toggle('hidden', !landing);
+    $('finalCta').classList.toggle('hidden', !landing);
+    $('viewDashboard').classList.toggle('hidden', s !== 'active');
+    $('viewSuspended').classList.toggle('hidden', s !== 'suspended');
+    $('viewError').classList.toggle('hidden', s !== 'error');
+    $('faq').classList.toggle('hidden', !(landing || s === 'active' || s === 'suspended'));
+    $('footNote').classList.toggle('hidden', s !== 'active');
+    $('hdrBalance').classList.toggle('hidden', s !== 'active');
+    $('hdrBalance').classList.toggle('flex', s === 'active');
+    $('faqTitle').textContent = s === 'active' ? 'Правила и вопросы' : 'Вопросы и правила';
+    document.querySelectorAll('[data-cta-label]').forEach((el) => { el.textContent = s === 'guest' ? 'Войти и подключить' : 'Подключить кабинет'; });
+    document.querySelectorAll('[data-cta-note]').forEach((el) => { el.textContent = s === 'guest' ? 'Вход через Google, подключение бесплатное.' : 'Бесплатно.'; });
+    if (landing) renderLanding();
+    if (s === 'active') renderDashboard();
+    if (s === 'suspended') renderSuspended();
+  }
+
+  // ==========================================================
+  // Подключение кабинета
+  // ==========================================================
+  async function activate() {
+    if (!currentUser) { location.href = 'index.html?redirect=partners'; return; }
+    if (activating || viewState !== 'none') return;
+    activating = true;
+    setCtaLoading(true);
+    try {
+      await cpaRef().set({ isActive: true, balanceUSD: 0, signups: 0, sales: 0, history: [], savedLinks: [], createdAt: new Date().toISOString() });
+    } catch (e) {
+      console.error(e);
+      toast('error', 'Не получилось подключить кабинет', 'Проверьте интернет и попробуйте ещё раз.');
+    } finally {
+      activating = false;
+      setCtaLoading(false);
+    }
+  }
+  function setCtaLoading(on) {
+    document.querySelectorAll('[data-cta]').forEach((b) => {
+      b.disabled = on;
+      const label = b.querySelector('[data-cta-label]');
+      if (label) label.textContent = on ? 'Подключаем…' : (viewState === 'guest' ? 'Войти и подключить' : 'Подключить кабинет');
+    });
+  }
+  document.querySelectorAll('[data-cta]').forEach((b) => b.addEventListener('click', activate));
+
+  function welcome() {
+    celebrate();
+    toast('success', 'Кабинет подключён', 'Скопируйте ссылку и поделитесь ею — деньги придут после оплат приглашённых.');
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+    const card = $('link');
+    card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+  }
+
+  // ==========================================================
+  // О программе: ставки и калькулятор
+  // ==========================================================
+  function renderLanding() {
+    $('landingTiers').innerHTML = TIERS.map((t) => `
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5">
+        <p class="text-sm text-gray-500 dark:text-gray-400">${t.name}</p>
+        <p class="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight tabular">${t.rate}%</p>
+        <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">${t.when}</p>
+      </div>`).join('');
+    renderCalc();
+  }
+
+  // Ставка зависит от числа оплат до текущей: 1–10-я — 30%, 11–50-я — 40%, дальше — 50%
+  function calcEarnings(total, avg) {
+    let left = total, sum = 0;
+    const parts = [];
+    for (let i = 0; i < TIERS.length && left > 0; i++) {
+      const size = TIERS[i + 1] ? TIERS[i + 1].from - TIERS[i].from : Infinity;
+      const k = Math.min(left, size);
+      sum += k * avg * TIERS[i].rate / 100;
+      parts.push({ k, rate: TIERS[i].rate });
+      left -= k;
+    }
+    return { sum: cents(sum), parts };
+  }
+  function renderCalc() {
+    const n = Math.max(1, Math.min(100, Math.round(+$('calcCount').value || 1)));
+    $('calcCountVal').textContent = n;
+    document.querySelectorAll('[data-avg]').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.avg === calcAvg ? 'true' : 'false'));
+    const r = calcEarnings(n, calcAvg);
+    $('calcResult').textContent = moneyRound(r.sum);
+    $('calcBreakdown').textContent = r.parts.map((p, i) => (i === 0 ? `${p.k} ${payW(p.k)} по ${p.rate}%` : `ещё ${p.k} — по ${p.rate}%`)).join(r.parts.length > 2 ? ', ' : ' и ');
+  }
+  $('calcCount').addEventListener('input', renderCalc);
+  document.querySelectorAll('[data-avg]').forEach((b) => b.addEventListener('click', () => { calcAvg = +b.dataset.avg; renderCalc(); }));
+
+  function renderSuspended() {
+    const bal = cents(num(cpa && cpa.balanceUSD));
+    const el = $('suspBalance');
+    el.textContent = bal > 0 ? `На балансе ${money(bal)}. Напишите в поддержку — подскажем, как с ними быть.` : '';
+    el.classList.toggle('hidden', !(bal > 0));
+  }
+
+  // ==========================================================
+  // Кабинет: данные
+  // ==========================================================
+  function tsOf(t) {
+    const d = t.date;
+    let ms = NaN;
+    if (typeof d === 'string') ms = Date.parse(d);
+    else if (typeof d === 'number') ms = d;
+    else if (d && typeof d.toMillis === 'function') ms = d.toMillis();
+    return Number.isFinite(ms) ? ms : 0;
+  }
+  // Тип операции: по номеру (его ставит сервер), для старых записей — по описанию
+  function kindOf(t, amount) {
+    const id = String(t.id || ''), d = String(t.description || '');
+    if (id.startsWith('tx_sale_') || /комисси/i.test(d)) return 'sale';
+    if (id.startsWith('tx_wd_') || (amount < 0 && /вывод/i.test(d))) return 'withdraw';
+    if (id.startsWith('tx_refund_') || /возврат/i.test(d)) return 'refund';
+    if (id.startsWith('tx_coins_') || /b-coins|marketplace|монет/i.test(d)) return 'coins';
+    return amount >= 0 ? 'bonus' : 'charge';
+  }
+  function derive() {
+    const list = (Array.isArray(cpa.history) ? cpa.history : [])
+      .filter((t) => t && typeof t === 'object')
+      .map((t) => {
+        const amount = cents(num(t.amount));
+        const ts = tsOf(t);
+        const rate = /(\d{1,2})\s*%/.exec(String(t.description || ''));
+        return { amount, ts, day: ts ? dayKey(ts) : '', kind: kindOf(t, amount), status: String(t.status || ''), sub: cleanSub(t.sub), rate: rate ? +rate[1] : null };
+      })
+      .sort((a, b) => b.ts - a.ts);
+    const d = { list, earned: 0, salesEarned: 0, salesCount: 0, paidOut: 0, pending: 0, pendingCount: 0 };
+    for (const t of list) {
+      if (t.kind === 'sale') { d.salesEarned += t.amount; d.salesCount += 1; }
+      if (t.kind === 'sale' || t.kind === 'bonus' || t.kind === 'charge') d.earned += t.amount;
+      if (t.kind === 'withdraw' && t.status === 'approved') d.paidOut += -t.amount;
+      if (t.kind === 'withdraw' && t.status !== 'approved' && t.status !== 'rejected') { d.pending += -t.amount; d.pendingCount += 1; }
+    }
+    return d;
+  }
+  const balance = () => cents(num(cpa && cpa.balanceUSD));
+  const totalSales = () => count(cpa && cpa.sales);
+  function tierFor(sales) { let t = TIERS[0]; for (const x of TIERS) if (sales >= x.from) t = x; return t; }
 
   function renderDashboard() {
-      document.getElementById('cpaDashboard').classList.remove('hidden');
-      document.getElementById('cpaDashboard').classList.add('flex');
+    const key = JSON.stringify(cpa) + '|' + dayKey(Date.now());
+    if (key === lastRenderKey) return;
+    lastRenderKey = key;
+    derived = derive();
+    renderBalance();
+    renderRank();
+    renderLink();
+    renderSaved();
+    renderStats();
+    renderSources();
+    renderHistory();
+    refreshIcons($('viewDashboard'));
+  }
 
-      // Ранговая система (Геймификация и Удержание) - Black&White Premium Style
-      const totalSales = cpaProfile.sales || 0;
-      let rankName = 'Silver';
-      let revShare = 30;
-      let rankColor = 'text-gray-500 dark:text-gray-400';
-      let rankBg = 'bg-white dark:bg-black border-gray-200 dark:border-gray-800';
-      let nextGoal = 10;
-      
-      if (totalSales >= 50) {
-          rankName = 'Platinum';
-          revShare = 50;
-          rankColor = 'text-gray-900 dark:text-white';
-          rankBg = 'bg-gray-50 dark:bg-gray-900 border-gray-300 dark:border-gray-700';
-          nextGoal = 'MAX';
-      } else if (totalSales >= 10) {
-          rankName = 'Gold';
-          revShare = 40;
-          rankColor = 'text-gray-700 dark:text-gray-200';
-          rankBg = 'bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800';
-          nextGoal = 50;
+  // ---- баланс ----
+  function setAvailable(btn, ok) { btn.setAttribute('aria-disabled', ok ? 'false' : 'true'); }
+  function renderBalance() {
+    const bal = balance();
+    $('balAmount').textContent = money(bal);
+    $('hdrBalanceVal').textContent = money(bal);
+    const pct = Math.max(0, Math.min(100, (bal / MIN_WITHDRAW) * 100));
+    $('balProgressBar').style.width = pct + '%';
+    $('balProgress').setAttribute('aria-valuenow', String(Math.round(pct)));
+    $('balProgressText').innerHTML = bal >= MIN_WITHDRAW
+      ? `${icon('circle-check', 'w-4 h-4 text-green-600 dark:text-green-400')}Можно вывести`
+      : `До вывода — ещё <b class="font-semibold text-gray-900 dark:text-white tabular">${money(MIN_WITHDRAW - bal)}</b>`;
+    setAvailable($('btnWithdraw'), bal >= MIN_WITHDRAW);
+    setAvailable($('btnCoins'), bal >= MIN_COINS);
+    const coins = Math.round(bal * COINS_PER_USD);
+    $('balHint').textContent = bal >= MIN_WITHDRAW
+      ? `Выводится весь баланс. Или переведите его в монеты: ${fmt(coins)} ${coinW(coins)}.`
+      : bal >= MIN_COINS
+        ? `Уже можно перевести в монеты: ${fmt(coins)} ${coinW(coins)}. Вывод денег — от $${MIN_WITHDRAW}.`
+        : `Вывод денег — от $${MIN_WITHDRAW}, перевод в монеты — от $${MIN_COINS}.`;
+    const items = [['Заработано', money(derived.earned)], ['Выплачено', money(derived.paidOut)], ['На проверке', money(derived.pending)]];
+    $('balSummary').innerHTML = items.map(([k, v]) => `<div class="min-w-0"><dt class="text-xs text-gray-500 dark:text-gray-400 truncate">${k}</dt><dd class="mt-0.5 text-sm font-semibold tabular truncate">${v}</dd></div>`).join('');
+  }
+
+  function onWithdrawClick() {
+    const bal = balance();
+    if (bal < MIN_WITHDRAW) return toast('info', `Вывод — от $${MIN_WITHDRAW}`, `Осталось накопить ${money(MIN_WITHDRAW - bal)}.${bal >= MIN_COINS ? ' Или переведите баланс в монеты уже сейчас.' : ''}`);
+    const email = (currentUser && currentUser.email) || 'почту вашего аккаунта';
+    openConfirm({
+      title: `Вывести ${money(bal)}`,
+      desc: 'Заявка уйдёт на проверку. Мы напишем вам на почту, чтобы согласовать выплату — на банковскую карту или в USDT.',
+      rows: [['Сумма', money(bal)], ['Почта для связи', email], ['Останется на балансе', '$0.00']],
+      note: 'Выводится весь доступный баланс. Если заявку отклоним, деньги вернутся на баланс.',
+      action: 'Отправить заявку',
+      run: async () => {
+        const res = await BlockoAPI.call('cpaWithdraw');
+        celebrate();
+        toast('success', 'Заявка отправлена', `Вывод ${money(res && res.amount != null ? res.amount : bal)} на проверке. Напишем на ${email}.`);
+      },
+    });
+  }
+
+  function onCoinsClick() {
+    const bal = balance();
+    if (bal < MIN_COINS) return toast('info', `Перевод в монеты — от $${MIN_COINS}`, `Сейчас на балансе ${money(bal)}.`);
+    const coins = Math.round(bal * COINS_PER_USD);
+    openConfirm({
+      title: 'Перевести в монеты',
+      desc: 'Монетами оплачивают тарифы, AI и подарки в магазине. Обратно в деньги их не перевести.',
+      rows: [['Спишется с баланса', money(bal)], ['Вы получите', `${fmt(coins)} ${coinW(coins)}`], ['Курс', '100 монет за $1']],
+      note: 'Переводится весь доступный баланс.',
+      action: `Получить ${fmt(coins)} ${coinW(coins)}`,
+      run: async () => {
+        const res = await BlockoAPI.call('cpaTransferToCoins');
+        const got = res && res.coins != null ? res.coins : coins;
+        celebrate();
+        toast('success', `+${fmt(got)} ${coinW(got)}`, 'Монеты уже на вашем счёте.', { label: 'Открыть магазин', href: 'store.html' });
+      },
+    });
+  }
+
+  // ---- ставка ----
+  function renderRank() {
+    const sales = totalSales();
+    const t = tierFor(sales);
+    const next = TIERS.find((x) => x.from > sales);
+    $('rankRate').textContent = t.rate + '%';
+    $('rankName').textContent = t.name;
+    $('rankProgressText').textContent = next
+      ? `${fmt(sales)} ${payW(sales)} от приглашённых. Ещё ${next.from - sales} — и ставка ${next.rate}%.`
+      : `${fmt(sales)} ${payW(sales)} от приглашённых — у вас максимальная ставка.`;
+    $('rankExamples').innerHTML = [10, 45, 100].map((usd) => `<div class="min-w-0"><dt class="text-xs text-gray-500 dark:text-gray-400 truncate">С оплаты $${usd}</dt><dd class="mt-0.5 text-sm font-semibold tabular truncate">${money(usd * t.rate / 100)}</dd></div>`).join('');
+    $('rankScale').innerHTML = TIERS.map((x, i) => {
+      const end = TIERS[i + 1] ? TIERS[i + 1].from : null;
+      const fill = end === null ? (sales >= x.from ? 100 : 0) : Math.max(0, Math.min(100, ((sales - x.from) / (end - x.from)) * 100));
+      const cur = x === t;
+      return `<div>
+        <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden"><div class="h-full rounded-full bg-blue-600 dark:bg-blue-500" style="width:${fill}%"></div></div>
+        <p class="mt-2 text-xs ${cur ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}">${x.rate}% <span class="font-normal text-gray-400 dark:text-gray-500">· ${x.short}</span></p>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- ссылка и метки ----
+  function renderLink() {
+    $('refLinkInput').value = mainLink();
+    const sel = $('bPage');
+    if (!sel.options.length) {
+      sel.innerHTML = PAGES.map((p) => `<option value="${p.file}">${esc(p.label)}</option>`).join('');
+      $('bChips').innerHTML = SUB_SUGGEST.map((s) => `<button type="button" data-sub-chip="${s}" aria-pressed="false" class="h-7 px-2.5 rounded-lg border border-gray-200 dark:border-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 aria-pressed:bg-gray-900 aria-pressed:text-white aria-pressed:border-gray-900 dark:aria-pressed:bg-white dark:aria-pressed:text-gray-900 dark:aria-pressed:border-white transition-colors">${s}</button>`).join('');
+    }
+    updateBuilder();
+  }
+
+  let subValid = true;
+  function currentSub() { const v = $('bSub').value.trim(); return subValid ? v : ''; }
+  const builderLink = () => buildLink($('bPage').value || 'index.html', currentSub());
+  function updateBuilder() {
+    const input = $('bSub');
+    const raw = input.value;
+    let v = raw.toLowerCase().replace(/[^a-z0-9_-]/g, '').replace(/^[-_]+/, '').slice(0, 40);
+    const hint = $('bHint');
+    let warn = '';
+    if (v !== raw) {
+      if (raw.toLowerCase().replace(/^[-_]+/, '') !== v) warn = 'Убрали лишние символы: в метке можно только латиницу, цифры, «-» и «_».';
+      const pos = input.selectionStart;
+      input.value = v;
+      try { input.setSelectionRange(Math.min(pos, v.length), Math.min(pos, v.length)); } catch (e) {}
+    }
+    subValid = !v || (SUB_RE.test(v) && v !== 'direct');
+    if (v === 'direct') warn = 'Слово «direct» занято — выберите другую метку.';
+    hint.textContent = warn || 'Латиница, цифры, «-» и «_». По метке в статистике видно, откуда пришли люди.';
+    hint.classList.toggle('text-amber-700', !!warn);
+    hint.classList.toggle('dark:text-amber-300', !!warn);
+    hint.classList.toggle('text-gray-500', !warn);
+    hint.classList.toggle('dark:text-gray-400', !warn);
+    $('bResult').value = currentUser ? builderLink() : '';
+    document.querySelectorAll('[data-sub-chip]').forEach((c) => c.setAttribute('aria-pressed', c.dataset.subChip === v ? 'true' : 'false'));
+  }
+  $('bSub').addEventListener('input', updateBuilder);
+  $('bPage').addEventListener('change', updateBuilder);
+  $('bChips').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-sub-chip]');
+    if (!c) return;
+    $('bSub').value = $('bSub').value === c.dataset.subChip ? '' : c.dataset.subChip;
+    updateBuilder();
+  });
+
+  // Сохранённые ссылки: { subId, page, url, createdAt }. Старые записи — по их адресу.
+  function savedList() {
+    const raw = Array.isArray(cpa && cpa.savedLinks) ? cpa.savedLinks : [];
+    return raw.map((l, i) => {
+      l = l && typeof l === 'object' ? l : {};
+      let page = typeof l.page === 'string' ? l.page : '';
+      let sub = typeof l.subId === 'string' && l.subId !== 'default' ? cleanSub(l.subId) : '';
+      if ((!page || !sub) && typeof l.url === 'string') {
+        try {
+          const u = new URL(l.url, location.href);
+          if (!page) page = u.pathname.split('/').pop() || 'index.html';
+          if (!sub) sub = cleanSub(u.searchParams.get('sub') || '');
+        } catch (e) {}
       }
-      
-      const rankHtml = `
-         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 sm:p-6 mb-6 rounded-[2.5rem] border ${rankBg} shadow-sm animate-fade-in-up gap-4 w-full relative overflow-hidden">
-            <div class="flex items-center gap-4 relative z-10">
-               <div class="p-3.5 rounded-2xl bg-gray-100 dark:bg-gray-800 shadow-inner border border-gray-200 dark:border-gray-700"><i data-lucide="crown" class="w-6 h-6 ${rankColor}"></i></div>
-               <div>
-                  <div class="text-sm font-black text-gray-900 dark:text-white mb-0.5">Партнерский ранг: <span class="${rankColor} uppercase tracking-widest ml-1">${rankName}</span></div>
-                  <div class="text-[11px] text-gray-600 dark:text-gray-400 font-medium">Текущая ставка (RevShare): <b class="${rankColor} text-xs ml-1">${revShare}%</b></div>
-               </div>
-            </div>
-            <div class="w-full sm:w-auto text-left sm:text-right relative z-10 bg-white/80 dark:bg-black/80 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800">
-               <div class="text-[9px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5 flex items-center justify-start sm:justify-end gap-1.5"><i data-lucide="target" class="w-3 h-3"></i> Прогресс ранга</div>
-               <div class="text-sm font-bold text-gray-900 dark:text-gray-200"><span class="${rankColor} font-black">${totalSales}</span> / ${nextGoal} продаж</div>
-            </div>
-         </div>
-      `;
-      
-      const dashboardEl = document.getElementById('cpaDashboard');
-      if(!document.getElementById('cpaRankBadgeWrapper')) {
-          const wrapper = document.createElement('div');
-          wrapper.id = 'cpaRankBadgeWrapper';
-          wrapper.className = 'w-full';
-          wrapper.innerHTML = rankHtml;
-          dashboardEl.insertBefore(wrapper, dashboardEl.firstChild);
-      } else {
-          document.getElementById('cpaRankBadgeWrapper').innerHTML = rankHtml;
-      }
+      if (!PAGES.some((p) => p.file === page)) page = 'index.html';
+      return { i, page, sub };
+    });
+  }
+  function renderSaved() {
+    const list = savedList();
+    $('savedWrap').classList.toggle('hidden', !list.length);
+    if (!list.length) { $('savedLinks').innerHTML = ''; return; }
+    const src = sourcesMap();
+    $('savedLinks').innerHTML = list.slice().reverse().map((l) => {
+      const page = (PAGES.find((p) => p.file === l.page) || PAGES[0]).label;
+      const s = l.sub ? src.get(l.sub) : null;
+      const stats = !l.sub ? 'статистика — в строке «Без метки»'
+        : s && (s.signups || s.sales) ? `${fmt(s.signups)} ${signupW(s.signups)} · ${fmt(s.sales)} ${payW(s.sales)} · ${money(s.earned)}`
+          : 'пока нет регистраций';
+      const name = l.sub || 'без метки';
+      return `<li class="px-3 sm:px-4 py-2.5 flex items-center gap-2 sm:gap-3">
+        <div class="min-w-0 flex-1">
+          <p class="text-sm truncate"><span class="font-medium ${l.sub ? 'font-mono' : 'text-gray-500 dark:text-gray-400'}">${esc(name)}</span><span class="text-gray-400 dark:text-gray-500"> · ${esc(page)}</span></p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 tabular truncate">${esc(stats)}</p>
+        </div>
+        <button type="button" data-saved-copy="${l.i}" class="w-9 h-9 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center justify-center transition-colors flex-shrink-0" title="Скопировать" aria-label="Скопировать ссылку ${esc(name)}">${icon('copy')}</button>
+        <button type="button" data-saved-qr="${l.i}" class="w-9 h-9 rounded-lg text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 inline-flex items-center justify-center transition-colors flex-shrink-0" title="QR-код" aria-label="QR-код ссылки ${esc(name)}">${icon('qr-code')}</button>
+        <button type="button" data-saved-del="${l.i}" class="w-9 h-9 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 inline-flex items-center justify-center transition-colors flex-shrink-0" title="Удалить" aria-label="Удалить ссылку ${esc(name)}">${icon('trash-2')}</button>
+      </li>`;
+    }).join('');
+  }
+  $('savedLinks').addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const list = savedList();
+    const idx = +(b.dataset.savedCopy ?? b.dataset.savedQr ?? b.dataset.savedDel);
+    const item = list.find((l) => l.i === idx);
+    if (!item) return;
+    const url = buildLink(item.page, item.sub);
+    if (b.dataset.savedCopy !== undefined) copyText(url, item.sub ? `Ссылка с меткой «${item.sub}».` : '');
+    else if (b.dataset.savedQr !== undefined) openQrModal(url, 'Человек отсканирует код и зарегистрируется по вашей ссылке.');
+    else deleteSaved(idx);
+  });
 
-      // Метрики
-      const bal = (cpaProfile.balanceUSD || 0).toFixed(2);
-      document.getElementById('headerBalance').innerText = bal;
-      document.getElementById('statBalance').innerText = '$' + bal;
-      document.getElementById('statClicks').innerText = cpaProfile.clicks || 0;
-      document.getElementById('statSignups').innerText = cpaProfile.signups || 0;
-      document.getElementById('statSales').innerText = cpaProfile.sales || 0;
-
-      // Прогресс вывода ($50 Min)
-      const minWithdraw = 50.00;
-      const currentBal = cpaProfile.balanceUSD || 0;
-      let percent = Math.floor((currentBal / minWithdraw) * 100);
-      if (percent > 100) percent = 100;
-
-      document.getElementById('withdrawProgressBar').style.width = `${percent}%`;
-      document.getElementById('withdrawProgressText').innerText = `${percent}%`;
-      
-      const btnWithdraw = document.getElementById('btnWithdraw');
-      if (currentBal >= minWithdraw) {
-          btnWithdraw.disabled = false;
-          btnWithdraw.innerHTML = `<i data-lucide="arrow-up-right" class="w-5 h-5"></i> Вывести средства`;
-      } else {
-          btnWithdraw.disabled = true;
-          btnWithdraw.innerHTML = `<i data-lucide="lock" class="w-5 h-5"></i> Нужно еще $${(minWithdraw - currentBal).toFixed(2)}`;
-      }
-
-      // Генератор ссылок
-      updatePromoLink();
-      renderSavedLinks();
-      renderAnalyticsChart();
-
-      // Таблица истории
-      const list = document.getElementById('transactionsList');
-      const history = cpaProfile.history || [];
-      
-      if (history.length === 0) {
-          list.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs font-bold uppercase tracking-widest bg-gray-50/50 dark:bg-gray-800/30 rounded-2xl border border-dashed border-gray-200 dark:border-gray-700">Транзакций пока нет</div>`;
-      } else {
-          const sortedHistory = history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          list.innerHTML = sortedHistory.map(tx => {
-              const isPositive = tx.amount > 0;
-              const sign = isPositive ? '+' : '';
-              const colorClass = isPositive ? 'text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700' : 'text-gray-500 bg-gray-50 dark:bg-gray-950 border-gray-200 dark:border-gray-800';
-              const icon = isPositive ? 'arrow-down-left' : 'arrow-up-right';
-              const dateObj = new Date(tx.date);
-              const dateStr = dateObj.toLocaleDateString('ru-RU') + ' ' + dateObj.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'});
-
-              return `
-                <div class="flex items-center justify-between p-4 rounded-2xl border ${colorClass} transition-all hover:shadow-md group cursor-default">
-                   <div class="flex items-center gap-4 min-w-0">
-                      <div class="p-2.5 rounded-xl bg-white dark:bg-black shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform border border-transparent dark:border-gray-800">
-                         <i data-lucide="${icon}" class="w-4 h-4"></i>
-                      </div>
-                      <div class="flex flex-col min-w-0">
-                         <span class="text-xs font-bold text-gray-900 dark:text-white line-clamp-1">${esc(tx.description)}</span>
-                         <span class="text-[10px] text-gray-500 font-mono mt-0.5">${dateStr}</span>
-                      </div>
-                   </div>
-                   <div class="text-sm font-black whitespace-nowrap ml-3 bg-white/50 dark:bg-black/50 px-2 py-1 rounded-lg border border-transparent dark:border-gray-800">
-                      ${sign}$${Math.abs(tx.amount).toFixed(2)}
-                   </div>
-                </div>
-              `;
-          }).join('');
-      }
-
-      lucide.createIcons();
+  async function writeSaved(next) {
+    await cpaRef().update({ savedLinks: next });
+  }
+  async function saveBuilderLink() {
+    if (!subValid) return toast('warning', 'Проверьте метку', 'Латиница, цифры, «-» и «_», не «direct».');
+    const page = $('bPage').value || 'index.html';
+    const sub = currentSub();
+    const list = savedList();
+    if (list.some((l) => l.page === page && l.sub === sub)) return toast('info', 'Такая ссылка уже сохранена', 'Она в списке ниже.');
+    if (list.length >= MAX_SAVED) return toast('warning', 'Список заполнен', `Можно сохранить до ${MAX_SAVED} ссылок — удалите ненужные.`);
+    const raw = Array.isArray(cpa.savedLinks) ? cpa.savedLinks : [];
+    const btn = $('bSave');
+    btn.disabled = true;
+    try {
+      await writeSaved([...raw, { subId: sub, page, url: buildLink(page, sub), createdAt: new Date().toISOString() }]);
+      toast('success', 'Ссылка сохранена', sub ? `Регистрации и оплаты по метке «${sub}» появятся в «Источниках».` : 'Она появилась в списке ниже.');
+      $('bSub').value = '';
+      updateBuilder();
+    } catch (e) {
+      console.error(e);
+      toast('error', 'Не удалось сохранить', 'Проверьте интернет и попробуйте ещё раз.');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+  async function deleteSaved(idx) {
+    const raw = Array.isArray(cpa.savedLinks) ? cpa.savedLinks : [];
+    try {
+      await writeSaved(raw.filter((_, i) => i !== idx));
+      toast('info', 'Ссылка удалена из списка', 'Сама ссылка продолжит работать, если вы уже ею поделились.');
+    } catch (e) {
+      console.error(e);
+      toast('error', 'Не удалось удалить', 'Проверьте интернет и попробуйте ещё раз.');
+    }
   }
 
-  let analyticsChartInstance = null;
-  function renderAnalyticsChart() {
-      const ctx = document.getElementById('analyticsChart').getContext('2d');
-      if (analyticsChartInstance) analyticsChartInstance.destroy();
-      
-      // Моковые данные для графика
-      const labels = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-      const clicksData = [12, 19, 15, 25, 22, 30, 28];
-      const signupsData = [1, 2, 1, 4, 3, 5, 4];
-
-      // Строго темная тема для выделенного графика с неоновыми цветами
-      const gridColor = 'rgba(255, 255, 255, 0.05)';
-      const textColor = '#9ca3af'; // gray-400
-      const clicksColor = '#6366f1'; // indigo-500 (Неоновый синий)
-      const signupsColor = '#10b981'; // emerald-500 (Неоновый зеленый)
-
-      analyticsChartInstance = new Chart(ctx, {
-          type: 'line',
-          data: {
-              labels: labels,
-              datasets: [
-                  {
-                      label: 'Переходы (Хосты)',
-                      data: clicksData,
-                      borderColor: clicksColor,
-                      backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                      borderWidth: 3,
-                      tension: 0.4,
-                      pointRadius: 4,
-                      pointBackgroundColor: '#0B0F19',
-                      pointBorderColor: clicksColor,
-                      pointBorderWidth: 2,
-                      pointHoverRadius: 6,
-                      fill: true
-                  },
-                  {
-                      label: 'Регистрации',
-                      data: signupsData,
-                      borderColor: signupsColor,
-                      backgroundColor: 'transparent',
-                      borderWidth: 2,
-                      borderDash: [5, 5],
-                      tension: 0.4,
-                      pointRadius: 4,
-                      pointBackgroundColor: '#0B0F19',
-                      pointBorderColor: signupsColor,
-                      pointBorderWidth: 2,
-                      pointHoverRadius: 6
-                  }
-              ]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                      mode: 'index',
-                      intersect: false,
-                      backgroundColor: 'rgba(15, 23, 42, 0.9)', // gray-900
-                      titleColor: '#ffffff',
-                      bodyColor: '#e2e8f0', // gray-200
-                      borderColor: 'rgba(255,255,255,0.1)',
-                      borderWidth: 1,
-                      padding: 12,
-                      displayColors: true,
-                      boxPadding: 4,
-                      usePointStyle: true
-                  }
-              },
-              scales: {
-                  x: { grid: { display: false }, ticks: { color: textColor, font: { family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", weight: 'bold', size: 10 } } },
-                  y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif", weight: 'bold', size: 10 } }, beginAtZero: true }
-              },
-              interaction: { mode: 'nearest', axis: 'x', intersect: false }
-          }
-      });
+  // ---- источники: регистрации из subStats, оплаты и доход — из истории ----
+  function sourcesMap() {
+    const m = new Map();
+    const get = (k) => { if (!m.has(k)) m.set(k, { signups: 0, sales: 0, earned: 0 }); return m.get(k); };
+    const ss = cpa.subStats && typeof cpa.subStats === 'object' ? cpa.subStats : {};
+    let counted = 0;
+    for (const [k, v] of Object.entries(ss)) {
+      const n = count(v && v.signups);
+      counted += n;
+      get(k === 'direct' ? '' : cleanSub(k)).signups += n;
+    }
+    // Регистрации до появления меток — тоже «без метки»
+    const legacy = count(cpa.signups) - counted;
+    if (legacy > 0) get('').signups += legacy;
+    for (const t of derived.list) if (t.kind === 'sale') { const s = get(t.sub); s.sales += 1; s.earned += t.amount; }
+    for (const l of savedList()) if (l.sub) get(l.sub);
+    return m;
+  }
+  function renderSources() {
+    const m = sourcesMap();
+    const rows = [...m.entries()]
+      .filter(([k, v]) => k || v.signups || v.sales)
+      .sort((a, b) => (!a[0]) - (!b[0]) || b[1].earned - a[1].earned || b[1].signups - a[1].signups || a[0].localeCompare(b[0]));
+    const hasData = rows.some(([, v]) => v.signups || v.sales);
+    const hasLabels = rows.some(([k]) => k);
+    $('sourcesEmpty').classList.toggle('hidden', hasLabels);
+    $('sourcesTableWrap').classList.toggle('hidden', !rows.length);
+    const cell = 'px-2 py-2.5 text-right tabular';
+    $('sourcesBody').innerHTML = rows.map(([k, v]) => `<tr>
+      <td class="px-4 sm:px-5 py-2.5 max-w-0 w-1/2"><span class="block truncate ${k ? 'font-mono text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}">${k ? esc(k) : 'Без метки'}</span></td>
+      <td class="${cell}">${fmt(v.signups)}</td>
+      <td class="${cell}">${fmt(v.sales)}</td>
+      <td class="pl-2 pr-4 sm:pr-5 py-2.5 text-right tabular font-medium">${money(v.earned)}</td>
+    </tr>`).join('');
+    $('sourcesFoot').innerHTML = rows.length > 1 && hasData ? `<tr class="font-semibold">
+      <td class="px-4 sm:px-5 py-2.5">Всего</td>
+      <td class="${cell}">${fmt(count(cpa.signups))}</td>
+      <td class="${cell}">${fmt(derived.salesCount)}</td>
+      <td class="pl-2 pr-4 sm:pr-5 py-2.5 text-right tabular">${money(derived.salesEarned)}</td>
+    </tr>` : '';
   }
 
-  // Партнёрская ссылка: выбранная страница + ref (id партнёра) + sub (источник трафика)
-  function updatePromoLink() {
-      const input = document.getElementById('generatedCpaLink');
-      if (!input || !currentUser) return;
-      const page = document.getElementById('landingSelect').value || 'index.html';
-      const sub = (document.getElementById('subIdInput').value || '').trim().replace(/[^\w-]/g, '').slice(0, 40);
-      const base = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
-      const url = new URL(page, base);
-      url.searchParams.set('ref', currentUser.uid);
-      if (sub) url.searchParams.set('sub', sub);
-      input.value = url.href;
+  // ---- история ----
+  const KINDS = {
+    sale: { icon: 'arrow-down-left', title: (t) => `Комиссия${t.rate ? ' ' + t.rate + '%' : ''} с оплаты`, sub: (t) => (t.sub ? 'метка ' + t.sub : 'без метки') },
+    withdraw: { icon: 'arrow-up-right', title: () => 'Вывод денег', sub: (t) => (t.status === 'rejected' ? 'деньги вернулись на баланс' : t.status === 'approved' ? '' : 'напишем вам на почту') },
+    refund: { icon: 'undo-2', title: () => 'Возврат на баланс', sub: () => 'заявка на вывод отклонена' },
+    coins: { icon: 'coins', title: () => 'Перевод в монеты', sub: (t) => { const c = Math.round(-t.amount * COINS_PER_USD); return `${fmt(c)} ${coinW(c)}`; } },
+    bonus: { icon: 'plus', title: () => 'Начисление', sub: () => 'корректировка' },
+    charge: { icon: 'minus', title: () => 'Списание', sub: () => 'корректировка' },
+  };
+  function statusChip(t) {
+    if (t.kind !== 'withdraw') return '';
+    const [label, cls] = t.status === 'approved' ? ['Выплачено', 'bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400']
+      : t.status === 'rejected' ? ['Отклонён', 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300']
+        : ['На проверке', 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300'];
+    return `<span class="inline-block mt-0.5 text-[11px] font-medium px-1.5 py-px rounded-full ${cls}">${label}</span>`;
+  }
+  function renderHistory() {
+    const list = derived.list;
+    $('histCount').textContent = list.length ? String(list.length) : '';
+    if (!list.length) {
+      $('historyList').innerHTML = `<li class="px-4 sm:px-5 py-8 text-center text-sm text-gray-500 dark:text-gray-400">Здесь появятся начисления за оплаты приглашённых и ваши выводы.</li>`;
+      $('historyMoreWrap').classList.add('hidden');
+      return;
+    }
+    $('historyList').innerHTML = list.slice(0, historyLimit).map((t) => {
+      const k = KINDS[t.kind];
+      const meta = [whenLabel(t.ts), k.sub(t)].filter(Boolean).join(' · ');
+      const struck = t.kind === 'withdraw' && t.status === 'rejected';
+      return `<li class="px-4 sm:px-5 py-3 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center flex-shrink-0">${icon(k.icon)}</span>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium truncate">${esc(k.title(t))}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">${esc(meta)}</p>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <p class="text-sm font-semibold tabular ${struck ? 'line-through text-gray-400 dark:text-gray-500' : ''}">${signed(t.amount)}</p>
+          ${statusChip(t)}
+        </div>
+      </li>`;
+    }).join('');
+    const rest = list.length - historyLimit;
+    $('historyMoreWrap').classList.toggle('hidden', rest <= 0);
+    $('historyMore').textContent = `Показать ещё ${Math.min(HISTORY_PAGE, rest)}`;
+  }
+  function showMoreHistory() {
+    historyLimit += HISTORY_PAGE;
+    renderHistory();
+    refreshIcons($('historyList'));
   }
 
-  async function saveAndCopyCpaLink() {
-      if (!currentUser) return;
+  // ==========================================================
+  // Статистика и график
+  // ==========================================================
+  const METRICS = {
+    earned: { name: 'Доход', format: (v) => money(v), tick: (v) => (v >= 1000 ? '$' + +(v / 1000).toFixed(1) + 'k' : '$' + (Number.isInteger(v) ? v : v.toFixed(2))) },
+    signups: { name: 'Регистрации', format: (v) => fmt(v), tick: (v) => (v >= 1000 ? +(v / 1000).toFixed(1) + 'k' : String(v)) },
+    sales: { name: 'Оплаты', format: (v) => fmt(v), tick: (v) => (v >= 1000 ? +(v / 1000).toFixed(1) + 'k' : String(v)) },
+  };
 
-      const input = document.getElementById('generatedCpaLink');
-      const subId = document.getElementById('subIdInput').value.trim() || 'default';
-      const url = input.value;
-      
-      if (!cpaProfile.savedLinks) cpaProfile.savedLinks = [];
-      
-      const existing = cpaProfile.savedLinks.find(l => l.subId === subId);
-      if (!existing) {
-          cpaProfile.savedLinks.push({ 
-             subId, 
-             url, 
-             clicks: 0, 
-             signups: 0, 
-             sales: 0, 
-             createdAt: new Date().toISOString() 
-          });
-          
-          try {
-             await db.collection('affiliates_cpa').doc(currentUser.uid).update({
-                 savedLinks: cpaProfile.savedLinks
-             });
-          } catch(e) {
-             console.error("Ошибка сохранения ссылки:", e);
-          }
-      }
-      
-      input.select();
-      navigator.clipboard.writeText(url);
-      if (navigator.vibrate) navigator.vibrate(50);
-      
-      showSystemToast('Трекер сохранен!', `Ссылка для источника [${subId}] скопирована.`, 'check-circle', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30');
-      renderSavedLinks();
+  // Ряд за период: по дням, а за 90 дней — по неделям (последняя неделя заканчивается сегодня)
+  function buildSeries() {
+    const today = dayKey(Date.now());
+    const days = [];
+    for (let i = period - 1; i >= 0; i--) days.push(shiftDay(today, -i));
+    const by = Object.create(null);
+    for (const d of days) by[d] = { earned: 0, signups: 0, sales: 0 };
+    for (const t of derived.list) if (t.kind === 'sale' && by[t.day]) { by[t.day].earned += t.amount; by[t.day].sales += 1; }
+    const daily = cpa.daily && typeof cpa.daily === 'object' ? cpa.daily : {};
+    for (const d of days) { const v = daily[d]; if (v && typeof v === 'object') by[d].signups += count(v.signups); }
+    const pts = days.map((d) => ({ from: d, to: d, earned: cents(by[d].earned), signups: by[d].signups, sales: by[d].sales }));
+    if (period <= 31) return pts;
+    const out = [];
+    for (let end = pts.length; end > 0; end -= 7) {
+      const chunk = pts.slice(Math.max(0, end - 7), end);
+      out.unshift(chunk.reduce((a, p) => ({ from: a.from, to: p.to, earned: cents(a.earned + p.earned), signups: a.signups + p.signups, sales: a.sales + p.sales }), { from: chunk[0].from, to: chunk[0].from, earned: 0, signups: 0, sales: 0 }));
+    }
+    return out;
   }
 
-  function renderSavedLinks() {
-      const list = document.getElementById('savedLinksList');
-      const links = cpaProfile.savedLinks || [];
-      
-      if (links.length === 0) {
-          list.innerHTML = '<div class="text-xs text-gray-500 italic p-4 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl">Сгенерируйте и сохраните ссылку, чтобы она появилась здесь.</div>';
-          return;
-      }
-      
-      const sortedLinks = [...links].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  function renderStats() {
+    chartData = buildSeries();
+    const sum = chartData.reduce((a, p) => ({ earned: a.earned + p.earned, signups: a.signups + p.signups, sales: a.sales + p.sales }), { earned: 0, signups: 0, sales: 0 });
+    $('kpiEarned').textContent = money(sum.earned);
+    $('kpiSignups').textContent = fmt(sum.signups);
+    $('kpiSales').textContent = fmt(sum.sales);
+    document.querySelectorAll('[data-period]').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.period === period ? 'true' : 'false'));
+    document.querySelectorAll('[data-metric]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.metric === metric ? 'true' : 'false'));
+    $('chartTitle').textContent = `${METRICS[metric].name} по ${period > 31 ? 'неделям' : 'дням'}${metric === 'earned' ? ', $' : ''}`;
 
-      list.innerHTML = sortedLinks.map(link => `
-          <div onclick="openLinkStatsModal(${jsArg(link.subId)})" class="p-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl flex flex-col gap-3 group hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors shadow-sm relative overflow-hidden cursor-pointer">
-              <div class="absolute right-0 top-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-indigo-500/10 transition-colors"></div>
-              
-              <div class="flex justify-between items-start relative z-10">
-                 <div class="flex flex-col min-w-0 pr-4 pointer-events-none">
-                    <span class="font-black text-sm text-gray-900 dark:text-white truncate flex items-center gap-2 group-hover:text-indigo-500 transition-colors"><i data-lucide="folder-git-2" class="w-4 h-4 text-indigo-400"></i> ${esc(link.subId)}</span>
-                    <span class="text-[10px] text-gray-500 font-mono truncate mt-1">${esc(link.url)}</span>
-                 </div>
-                 <button onclick="event.stopPropagation(); navigator.clipboard.writeText(${jsArg(link.url)}); showSystemToast('Скопировано', 'Ссылка скопирована в буфер', 'copy', 'text-indigo-500', 'bg-indigo-50 dark:bg-indigo-900/30')" class="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors border border-gray-200 dark:border-gray-700 active:scale-95 flex-shrink-0 shadow-sm" title="Скопировать ссылку">
-                    <i data-lucide="copy" class="w-4 h-4"></i>
-                 </button>
-              </div>
+    // Регистрации по дням сервер считает с этого обновления; более ранние есть только в общем итоге
+    const daily = cpa.daily && typeof cpa.daily === 'object' ? cpa.daily : {};
+    const dailySignups = Object.values(daily).reduce((s, v) => s + count(v && v.signups), 0);
+    const legacy = count(cpa.signups) - dailySignups;
+    const note = $('statsNote');
+    note.textContent = legacy > 0 ? `Регистрации по дням видны для новых приглашённых. Ещё ${fmt(legacy)} ${signupW(legacy)} — из прошлых периодов, они учтены в общем итоге.` : '';
+    note.classList.toggle('hidden', !(legacy > 0));
 
-              <div class="grid grid-cols-3 gap-2 mt-1 border-t border-gray-100 dark:border-gray-800 pt-3 relative z-10 pointer-events-none">
-                 <div class="flex flex-col">
-                    <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Переходы</span>
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.clicks || 0}</span>
-                 </div>
-                 <div class="flex flex-col border-l border-gray-100 dark:border-gray-800 pl-3">
-                    <span class="text-[9px] font-black text-purple-400 uppercase tracking-widest">Реги</span>
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.signups || 0}</span>
-                 </div>
-                 <div class="flex flex-col border-l border-gray-100 dark:border-gray-800 pl-3">
-                    <span class="text-[9px] font-black text-amber-500 uppercase tracking-widest">Sales</span>
-                    <span class="text-sm font-bold text-gray-900 dark:text-white">${link.sales || 0}</span>
-                 </div>
-              </div>
-          </div>
-      `).join('');
-      lucide.createIcons();
+    const s = count(cpa.signups), p = totalSales();
+    $('statsTotals').textContent = `За всё время: ${fmt(s)} ${signupW(s)} · ${fmt(p)} ${payW(p)} · ${money(derived.salesEarned)}`;
+    activeBar = -1;
+    renderChart();
+    if (!$('statsTableBox').classList.contains('hidden')) renderStatsTable();
   }
 
-  let specificChartInstance = null;
-
-  function openLinkStatsModal(subId) {
-      const link = cpaProfile.savedLinks.find(l => l.subId === subId);
-      if(!link) return;
-
-      document.getElementById('lsModalTitle').innerText = link.subId;
-      document.getElementById('lsModalUrl').innerText = link.url;
-      document.getElementById('lsModalClicks').innerText = link.clicks || 0;
-      document.getElementById('lsModalSignups').innerText = link.signups || 0;
-      document.getElementById('lsModalSales').innerText = link.sales || 0;
-
-      // Рендер изолированного графика для конкретной ссылки
-      const ctx = document.getElementById('linkSpecificChart').getContext('2d');
-      if (specificChartInstance) specificChartInstance.destroy();
-
-      const isDark = document.documentElement.classList.contains('dark');
-      const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-      const textColor = isDark ? '#9ca3af' : '#6b7280';
-      const mainColor = '#8b5cf6'; // purple-500
-
-      // Моковая генерация динамики для красивого демо (в реальном проекте тут будет массив из БД)
-      const mockData = Array.from({length: 7}, () => Math.floor(Math.random() * ((link.clicks||10) / 2)));
-
-      specificChartInstance = new Chart(ctx, {
-          type: 'bar',
-          data: {
-              labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
-              datasets: [{
-                  label: 'Переходы',
-                  data: mockData,
-                  backgroundColor: mainColor,
-                  borderRadius: 4
-              }]
-          },
-          options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                  x: { grid: { display: false }, ticks: { color: textColor } },
-                  y: { grid: { color: gridColor }, ticks: { color: textColor }, beginAtZero: true }
-              }
-          }
-      });
-
-      const modal = document.getElementById('linkStatsModal');
-      const content = document.getElementById('linkStatsContent');
-      modal.classList.remove('hidden');
-      setTimeout(() => {
-          modal.classList.remove('opacity-0');
-          content.classList.remove('scale-95');
-      }, 10);
+  function niceTicks(max, isMoney) {
+    if (!(max > 0)) return [0, 1];
+    const raw = max / 3;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    let step = (isMoney ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10]).map((k) => k * mag).find((v) => v >= raw - 1e-9) || 10 * mag;
+    if (!isMoney) step = Math.max(1, Math.round(step));
+    const top = Math.ceil(max / step - 1e-9) * step;
+    const out = [];
+    for (let v = 0; v <= top + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+    return out;
+  }
+  const r2 = (v) => Math.round(v * 100) / 100;
+  // Столбик: верхние углы скруглены на 4px, низ стоит ровно на оси
+  function barPath(x, y, w, h) {
+    const r = Math.min(4, w / 2, h);
+    const b = y + h;
+    return `M${r2(x)},${r2(b)}V${r2(y + r)}A${r2(r)},${r2(r)} 0 0 1 ${r2(x + r)},${r2(y)}H${r2(x + w - r)}A${r2(r)},${r2(r)} 0 0 1 ${r2(x + w)},${r2(y + r)}V${r2(b)}Z`;
   }
 
-  function closeLinkStatsModal() {
-      const modal = document.getElementById('linkStatsModal');
-      const content = document.getElementById('linkStatsContent');
-      modal.classList.add('opacity-0');
-      content.classList.add('scale-95');
-      setTimeout(() => modal.classList.add('hidden'), 300);
+  function renderChart() {
+    const box = $('chart');
+    const W = Math.round(box.clientWidth), H = Math.round(box.clientHeight);
+    if (!W || !H || !chartData.length) return;
+    const M = METRICS[metric];
+    const n = chartData.length;
+    const vals = chartData.map((p) => p[metric]);
+    const max = Math.max(0, ...vals);
+    const ticks = niceTicks(max, metric === 'earned');
+    const top = ticks[ticks.length - 1] || 1;
+    const tickText = ticks.map(M.tick);
+    const padL = Math.ceil(Math.max(...tickText.map((t) => t.length)) * 6.6) + 10;
+    const padR = 2, padT = 10, padB = 24;
+    const pw = W - padL - padR, ph = H - padT - padB;
+    const slot = pw / n;
+    const bw = Math.max(2, Math.min(24, slot - 2));
+    const yOf = (v) => padT + ph - (v / top) * ph;
+    const total = vals.reduce((a, b) => a + b, 0);
+    const aria = `${$('chartTitle').textContent} за ${period} дней: всего ${M.format(total)}. Подробности — в таблице.`;
+    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" class="block select-none" role="img" aria-label="${esc(aria)}">`;
+    ticks.forEach((t, i) => {
+      const y = Math.round(yOf(t)) + 0.5;
+      s += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" class="${i === 0 ? 'chart-base' : 'chart-grid'}" stroke-width="1"/>`;
+      s += `<text x="${padL - 8}" y="${y}" dy="0.35em" text-anchor="end" class="chart-label">${esc(tickText[i])}</text>`;
+    });
+    chartData.forEach((p, i) => {
+      const v = p[metric];
+      if (!(v > 0)) return;
+      const h = Math.max(2, (v / top) * ph);
+      const x = padL + i * slot + (slot - bw) / 2;
+      s += `<path class="chart-bar" data-bar="${i}" d="${barPath(x, padT + ph - h, bw, h)}"/>`;
+    });
+    // Подписи дат: от сегодняшнего дня назад, без наложений
+    const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / 62))));
+    for (let i = n - 1; i >= 0; i -= every) {
+      const p = chartData[i];
+      const text = dayLabel(period > 31 ? p.to : p.from);
+      const cx = padL + i * slot + slot / 2;
+      const half = text.length * 3.3;
+      let x = cx, anchor = 'middle';
+      if (cx + half > W) { x = W - 1; anchor = 'end'; }
+      else if (cx - half < 0) { x = 0; anchor = 'start'; }
+      s += `<text x="${r2(x)}" y="${H - 6}" text-anchor="${anchor}" class="chart-label">${esc(text)}</text>`;
+    }
+    s += '</svg>';
+    if (max === 0) s += `<div class="absolute inset-0 flex items-center justify-center pointer-events-none" style="padding-left:${padL}px;padding-bottom:${padB}px"><span class="text-sm text-gray-400 dark:text-gray-500">За этот период пока пусто</span></div>`;
+    s += '<div id="chartTip" class="hidden absolute z-10 pointer-events-none min-w-[168px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg px-3 py-2 text-sm"></div>';
+    box.innerHTML = s;
+    box._geo = { padL, padT, ph, slot, yOf, W, n };
+    if (activeBar >= n) activeBar = -1;
+    if (activeBar >= 0) setActive(activeBar);
   }
 
-  async function transferToStore() {
-      const currentBal = cpaProfile.balanceUSD || 0;
-      if (currentBal < 10) {
-          return showSystemToast('Минимальная сумма', 'Перевод в магазин возможен от $10.', 'lock', 'text-gray-500', 'bg-gray-100 dark:bg-gray-800');
-      }
-      
-      // Конвертация: $1 = 100 B-Coins
-      const coinsToGet = Math.floor(currentBal * 100);
-      
-      if (confirm(`Конвертировать $${currentBal.toFixed(2)} в ${coinsToGet} B-Coins для покупок внутри платформы?`)) {
-          showSystemToast('Транзакция', 'Перевод средств...', 'loader-2', 'text-gray-500 animate-spin', 'bg-gray-100 dark:bg-gray-800');
-          
-          try {
-              const res = await BlockoAPI.call('cpaTransferToCoins');
-              cpaProfile.balanceUSD = 0;
-              if(!cpaProfile.history) cpaProfile.history = [];
-              cpaProfile.history.push({ amount: -res.amount, description: 'Перевод в Marketplace (B-Coins)', date: new Date().toISOString(), status: 'completed' });
-              renderDashboard();
-              if (typeof confetti === 'function') confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, zIndex: 9999, colors: ['#ffffff', '#000000', '#9ca3af'] });
-              showSystemToast('Успех!', `Баланс магазина пополнен на ${res.coins} B-Coins.`, 'shopping-bag', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
-          } catch (e) {
-              showSystemToast('Отклонено', BlockoAPI.errorMessage(e) || 'Не удалось выполнить перевод.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-          }
-      }
+  function setActive(i) {
+    const box = $('chart');
+    const g = box._geo;
+    const svg = box.querySelector('svg');
+    const tip = $('chartTip');
+    if (!g || !svg || !tip) return;
+    activeBar = i;
+    svg.classList.toggle('chart-dim', i >= 0);
+    box.querySelectorAll('.chart-bar').forEach((el) => el.classList.toggle('is-active', +el.dataset.bar === i));
+    if (i < 0) { tip.classList.add('hidden'); return; }
+    const p = chartData[i];
+    const rows = [['earned', 'Доход', money(p.earned)], ['signups', 'Регистрации', fmt(p.signups)], ['sales', 'Оплаты', fmt(p.sales)]];
+    tip.innerHTML = `<p class="font-medium text-gray-900 dark:text-white">${esc(rangeLabel(p.from, p.to))}</p>` + rows.map(([k, label, val]) => `
+      <p class="mt-1 flex items-center justify-between gap-4">
+        <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400"><span class="${k === metric ? 'chart-swatch' : ''} w-2 h-2 rounded-sm"></span>${label}</span>
+        <span class="tabular ${k === metric ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}">${val}</span>
+      </p>`).join('');
+    tip.classList.remove('hidden');
+    const cx = g.padL + i * g.slot + g.slot / 2;
+    const v = p[metric];
+    const yTop = v > 0 ? g.yOf(v) : g.padT + g.ph;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = cx - tw / 2, topY = yTop - th - 10;
+    if (topY < 0) { // высокий столбик — подсказка сбоку
+      topY = 0;
+      left = cx + g.slot / 2 + 8;
+      if (left + tw > g.W) left = cx - g.slot / 2 - 8 - tw;
+    }
+    tip.style.left = Math.max(0, Math.min(g.W - tw, left)) + 'px';
+    tip.style.top = topY + 'px';
   }
 
-  function downloadInvoices() {
-      showSystemToast('Генерация PDF...', 'Формируем акты выполненных работ для налоговой.', 'loader-2', 'text-gray-500 animate-spin', 'bg-gray-100 dark:bg-gray-800');
-      setTimeout(() => {
-          showSystemToast('Готово', 'PDF инвойс скачан на ваше устройство.', 'file-check', 'text-gray-900 dark:text-white', 'bg-gray-100 dark:bg-gray-800');
-      }, 2000);
+  (function initChart() {
+    const box = $('chart');
+    const idxAt = (e) => {
+      const g = box._geo;
+      if (!g) return -1;
+      const x = e.clientX - box.getBoundingClientRect().left;
+      const i = Math.floor((x - g.padL) / g.slot);
+      return i >= 0 && i < g.n ? i : -1;
+    };
+    box.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; const i = idxAt(e); if (i !== activeBar) setActive(i); });
+    box.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') setActive(-1); });
+    box.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'touch') return; const i = idxAt(e); setActive(i === activeBar ? -1 : i); });
+    document.addEventListener('pointerdown', (e) => { if (activeBar >= 0 && !box.contains(e.target)) setActive(-1); });
+    box.addEventListener('keydown', (e) => {
+      const n = chartData.length;
+      if (!n) return;
+      let i = activeBar;
+      if (e.key === 'ArrowRight') i = i < 0 ? n - 1 : Math.min(n - 1, i + 1);
+      else if (e.key === 'ArrowLeft') i = i < 0 ? n - 1 : Math.max(0, i - 1);
+      else if (e.key === 'Home') i = 0;
+      else if (e.key === 'End') i = n - 1;
+      else if (e.key === 'Escape') i = -1;
+      else return;
+      e.preventDefault();
+      setActive(i);
+    });
+    box.addEventListener('blur', () => setActive(-1));
+    if ('ResizeObserver' in window) {
+      let lastW = 0;
+      new ResizeObserver(() => { const w = box.clientWidth; if (w !== lastW) { lastW = w; renderChart(); } }).observe(box);
+    } else window.addEventListener('resize', renderChart);
+  })();
+
+  document.querySelectorAll('[data-period]').forEach((b) => b.addEventListener('click', () => {
+    period = +b.dataset.period;
+    try { localStorage.setItem('blocko_cpa_period', String(period)); } catch (e) {}
+    renderStats();
+  }));
+  document.querySelectorAll('[data-metric]').forEach((b) => b.addEventListener('click', () => {
+    metric = b.dataset.metric;
+    try { localStorage.setItem('blocko_cpa_metric', metric); } catch (e) {}
+    renderStats();
+  }));
+
+  // Те же данные таблицей — для тех, кому так удобнее (и для экранных дикторов)
+  function toggleStatsTable() {
+    const box = $('statsTableBox');
+    const open = box.classList.contains('hidden');
+    box.classList.toggle('hidden', !open);
+    $('tableToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    $('tableToggle').querySelector('span').textContent = open ? 'Скрыть таблицу' : 'Показать таблицей';
+    if (open) renderStatsTable();
+  }
+  function renderStatsTable() {
+    const rows = chartData.filter((p) => p.earned || p.signups || p.sales).slice().reverse();
+    const head = period > 31 ? 'Неделя' : 'День';
+    $('statsTableBox').innerHTML = rows.length ? `<table class="w-full text-sm">
+      <thead class="text-gray-500 dark:text-gray-400 bg-gray-50/60 dark:bg-gray-800/30"><tr>
+        <th scope="col" class="text-left font-medium px-3.5 py-2">${head}</th>
+        <th scope="col" class="text-right font-medium px-2 py-2">Доход</th>
+        <th scope="col" class="text-right font-medium px-2 py-2"><span class="sm:hidden">Рег.</span><span class="hidden sm:inline">Регистрации</span></th>
+        <th scope="col" class="text-right font-medium pl-2 pr-3.5 py-2"><span class="sm:hidden">Опл.</span><span class="hidden sm:inline">Оплаты</span></th>
+      </tr></thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">${rows.map((p) => `<tr>
+        <td class="px-3.5 py-2">${esc(rangeLabel(p.from, p.to))}</td>
+        <td class="px-2 py-2 text-right tabular">${money(p.earned)}</td>
+        <td class="px-2 py-2 text-right tabular">${fmt(p.signups)}</td>
+        <td class="pl-2 pr-3.5 py-2 text-right tabular">${fmt(p.sales)}</td>
+      </tr>`).join('')}</tbody></table>` : '<p class="px-3.5 py-4 text-sm text-gray-500 dark:text-gray-400">За этот период данных нет.</p>';
   }
 
-  async function requestWithdraw() {
-      const btn = document.getElementById('btnWithdraw');
-      const ogBtn = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Проверка защиты...';
-      lucide.createIcons({ root: btn });
-
-      try {
-          // Сервер проверяет баланс, списывает его и создаёт заявку — админ подтверждает выплату
-          const res = await BlockoAPI.call('cpaWithdraw');
-          cpaProfile.balanceUSD = 0;
-          if(!cpaProfile.history) cpaProfile.history = [];
-          cpaProfile.history.push({ id: res.txId, amount: -res.amount, description: 'Заявка на вывод средств', date: new Date().toISOString(), status: 'pending' });
-          renderDashboard();
-          showSystemToast('Заявка принята', `Вывод $${res.amount.toFixed(2)} ожидает подтверждения. Мы свяжемся с вами по email.`, 'check-circle', 'text-emerald-500', 'bg-emerald-50 dark:bg-emerald-900/30');
-          
-      } catch (err) {
-          showSystemToast('Отклонено', BlockoAPI.errorMessage(err) || 'Не удалось создать заявку.', 'shield-alert', 'text-red-500', 'bg-red-50 dark:bg-red-900/30');
-      } finally {
-          btn.disabled = false;
-          btn.innerHTML = ogBtn;
-          lucide.createIcons({ root: btn });
-      }
-  }
-
-  function showSystemToast(title, desc, icon, color, bg) {
-    const t = document.getElementById('globalToast');
-    document.getElementById('toastTitle').innerText = title;
-    document.getElementById('toastDesc').innerText = desc;
-    document.getElementById('toastIcon').setAttribute('data-lucide', icon);
-    document.getElementById('toastIconBg').className = `p-2.5 rounded-full flex-shrink-0 ${bg}`;
-    lucide.createIcons();
-    t.classList.remove('translate-y-24', 'opacity-0');
-    setTimeout(() => t.classList.add('translate-y-24', 'opacity-0'), 4000);
-  }
+  // Ставка и калькулятор на странице о программе видны сразу, даже пока идёт загрузка
+  renderLanding();
 </script>
 </body>
 </html>

@@ -1046,6 +1046,10 @@ const urlParams = new URLSearchParams(window.location.search);
 const incomingRefId = urlParams.get('ref');
 if (incomingRefId && /^[A-Za-z0-9_-]{1,128}$/.test(incomingRefId)) {
   localStorage.setItem('blocko_ref_id', incomingRefId);
+  // Метка источника партнёра (?sub=youtube) — чтобы партнёр видел, откуда пришёл человек
+  const incomingSub = urlParams.get('sub');
+  if (incomingSub && /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/.test(incomingSub)) localStorage.setItem('blocko_ref_sub', incomingSub);
+  else localStorage.removeItem('blocko_ref_sub');
 }
 
 // Функция задержки для поиска
@@ -1128,7 +1132,14 @@ auth.onAuthStateChanged(async (user) => {
         const redirectAction = urlParams.get('redirect');
         const promoCode = urlParams.get('code');
         if (redirectAction === 'gift' && promoCode) {
-            window.location.href = `gift.html?code=${promoCode}`;
+            await waitForSignup();
+            window.location.href = `gift.html?code=${encodeURIComponent(promoCode)}`;
+            return;
+        }
+        // Вход со страницы партнёров — возвращаем туда и сразу подключаем кабинет
+        if (redirectAction === 'partners') {
+            await waitForSignup();
+            window.location.replace('affiliates-money.html?join=1');
             return;
         }
 
@@ -1191,7 +1202,18 @@ async function uploadProfileAvatarFile(input) {
   input.value = '';
 }
   
-async function loginWithGoogle() { 
+// Создание профиля после первого входа. Переходы на другие страницы (подарок, кабинет партнёра)
+// ждут его — иначе профиль и начисление пригласившему могут не успеть сохраниться.
+let signupTask = null;
+function loginWithGoogle() {
+  signupTask = doLoginWithGoogle();
+  return signupTask;
+}
+function waitForSignup() {
+  return Promise.race([signupTask || Promise.resolve(), new Promise((r) => setTimeout(r, 8000))]);
+}
+
+async function doLoginWithGoogle() {
   try {
     const result = await auth.signInWithPopup(googleProvider);
     const user = result.user;
@@ -1214,7 +1236,7 @@ async function loginWithGoogle() {
       });
       
       // Бонус пригласившему начисляет сервер (один раз, проверяет сам)
-      if (savedRefId) BlockoAPI.call('registerReferral').catch((e) => console.warn('registerReferral', e));
+      if (savedRefId) await BlockoAPI.call('registerReferral', { sub: localStorage.getItem('blocko_ref_sub') || '' }).catch((e) => console.warn('registerReferral', e));
     }
   } catch (error) {
     console.error("Ошибка авторизации:", error);
