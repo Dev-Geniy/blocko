@@ -21,6 +21,8 @@
   <script src="config.js"></script>
   <script src="api.js"></script>
   <script src="security.js"></script>
+  <!-- Аналитика — только если посетитель разрешил (баннер показывается на главной и странице для партнёров) -->
+  <script src="consent.js"></script>
   <style>
     body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
     html, body { width: 100%; min-height: 100dvh; }
@@ -488,7 +490,7 @@
 
   <p id="footNote" class="hidden mt-12 text-sm text-gray-500 dark:text-gray-400 flex items-start gap-2">
     <i data-lucide="shield-check" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-    <span>Проценты начисляет сервер — автоматически, сразу после каждой оплаты приглашённого. Вопросы по программе — в <a href="index.html?open=support" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">поддержку</a>. <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условия</a></span>
+    <span>Проценты начисляет сервер — автоматически, сразу после каждой оплаты приглашённого. Вопросы по программе — в <a href="index.html?open=support" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">поддержку</a>. <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условия</a> · <a href="partners.html" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Для арбитражников и вебмастеров</a></span>
   </p>
 </main>
 
@@ -909,13 +911,29 @@
   // ==========================================================
   // Подключение кабинета
   // ==========================================================
+  // utm-метки, с которыми человек пришёл на partners.html (хранятся 30 дней)
+  function partnerSource() {
+    try {
+      const v = JSON.parse(localStorage.getItem('blocko_partner_src') || 'null');
+      if (!v || typeof v !== 'object' || !(Date.now() - Number(v.at) < 30 * 864e5)) return null;
+      const out = {};
+      ['source', 'medium', 'campaign', 'content', 'term'].forEach((k) => {
+        if (typeof v[k] === 'string' && v[k]) out[k] = v[k].slice(0, 64).replace(/[^\w.\-+ ]/g, '');
+      });
+      return Object.keys(out).length ? out : null;
+    } catch (e) { return null; }
+  }
   async function activate() {
     if (!currentUser) { location.href = 'index.html?redirect=partners'; return; }
     if (activating || viewState !== 'none') return;
     activating = true;
     setCtaLoading(true);
     try {
-      await cpaRef().set({ isActive: true, balanceUSD: 0, signups: 0, sales: 0, history: [], savedLinks: [], createdAt: new Date().toISOString() });
+      const data = { isActive: true, balanceUSD: 0, signups: 0, sales: 0, history: [], savedLinks: [], createdAt: new Date().toISOString() };
+      const acquisition = partnerSource();
+      if (acquisition) data.acquisition = acquisition; // какая реклама привела партнёра (utm со страницы partners.html)
+      await cpaRef().set(data);
+      try { if (window.gtag) window.gtag('event', 'partner_signup', acquisition ? { campaign: acquisition.campaign || '', source: acquisition.source || '' } : {}); } catch (e) {}
     } catch (e) {
       console.error(e);
       toast('error', 'Не получилось подключить кабинет', 'Проверьте интернет и попробуйте ещё раз.');

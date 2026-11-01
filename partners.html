@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Партнёрская программа Blocko Pro — RevShare до 50% пожизненно</title>
+  <meta name="description" content="Партнёрская программа SaaS-сервиса Blocko Pro для арбитражников, вебмастеров и блогеров: RevShare 30–50% с каждой оплаты, пожизненная привязка, sub-метки, вывод от $50 на карту или в USDT.">
+  <link rel="canonical" href="https://blocko.cloud/partners.html">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://blocko.cloud/partners.html">
+  <meta property="og:title" content="Blocko Pro Partners — до 50% с каждой оплаты, пожизненно">
+  <meta property="og:description" content="RevShare 30–50% без потолка, пожизненная привязка пользователя, sub-метки и статистика по дням. Вывод от $50.">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polygon points='12 2 2 7 12 12 22 7 12 2'/><polyline points='2 17 12 22 22 17'/><polyline points='2 12 12 17 22 12'/></svg>" />
+  <script>
+    /* Источник перехода (utm-метки вашей рекламы) — запоминаем на 30 дней,
+       при подключении кабинета он сохранится у партнёра: видно, какая реклама приводит партнёров */
+    try {
+      var q = new URLSearchParams(location.search), src = {}, any = false;
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(function (k) {
+        var v = (q.get(k) || '').trim().slice(0, 64).replace(/[^\w.\-+ ]/g, '');
+        if (v) { src[k.replace('utm_', '')] = v; any = true; }
+      });
+      if (any) { src.at = Date.now(); localStorage.setItem('blocko_partner_src', JSON.stringify(src)); }
+    } catch (e) {}
+    try { if (localStorage.getItem('theme') === 'light') document.documentElement.classList.remove('dark'); } catch (e) {}
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="ui.css">
+  <script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+  <!-- Google Analytics — только после согласия посетителя -->
+  <script src="consent.js" data-banner="true"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    html { scroll-behavior: smooth; }
+    html, body { width: 100%; min-height: 100dvh; }
+    .tabular { font-variant-numeric: tabular-nums; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] .chev { transform: rotate(180deg); }
+    input[type=range] { accent-color: #2563eb; }
+    .dark input[type=range] { accent-color: #3b82f6; }
+    .num-input::-webkit-outer-spin-button, .num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .num-input { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 flex flex-col">
+
+<header class="px-4 sm:px-6 lg:px-8 h-16 border-b border-gray-200/80 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-40">
+  <a href="index.html" class="flex items-center gap-2.5 min-w-0" aria-label="Blocko Pro — на главную">
+    <span class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0"><i data-lucide="layers" class="w-5 h-5"></i></span>
+    <span class="font-semibold tracking-tight truncate">Blocko Pro <span class="font-normal text-gray-500 dark:text-gray-400">Partners</span></span>
+  </a>
+  <nav class="hidden md:flex items-center gap-6 ml-8 text-sm text-gray-600 dark:text-gray-400">
+    <a href="#offer" class="hover:text-gray-900 dark:hover:text-white">Условия</a>
+    <a href="#calc" class="hover:text-gray-900 dark:hover:text-white">Калькулятор</a>
+    <a href="#traffic" class="hover:text-gray-900 dark:hover:text-white">Трафик</a>
+    <a href="#promo" class="hover:text-gray-900 dark:hover:text-white">Промо</a>
+    <a href="#faq" class="hover:text-gray-900 dark:hover:text-white">Вопросы</a>
+  </nav>
+  <div class="ml-auto flex items-center gap-1.5">
+    <button type="button" onclick="toggleTheme()" aria-label="Сменить тему" class="w-10 h-10 flex items-center justify-center rounded-xl text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+      <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i><i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+    </button>
+    <a href="index.html?redirect=partners" data-join class="h-9 px-3.5 rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors inline-flex items-center whitespace-nowrap flex-shrink-0"><span class="sm:hidden">Вступить</span><span class="hidden sm:inline">Стать партнёром</span></a>
+  </div>
+</header>
+
+<main class="w-full max-w-5xl mx-auto px-4 sm:px-6 pb-16 flex-1">
+
+  <!-- Первый экран -->
+  <section class="pt-10 sm:pt-16 grid lg:grid-cols-[1.2fr_1fr] gap-10 lg:gap-12 items-start">
+    <div>
+      <span class="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300 text-xs font-medium"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i>Для арбитражников, вебмастеров и блогеров</span>
+      <h1 class="mt-4 text-[28px] sm:text-[40px] font-semibold tracking-tight leading-[1.12]">Лейте трафик на SaaS и&nbsp;получайте до&nbsp;50% с&nbsp;каждой оплаты — пожизненно</h1>
+      <p class="mt-4 text-base sm:text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-xl">Blocko Pro — канбан-доски для задач и команд на телефоне и компьютере. Пользователь, который зарегистрировался по вашей ссылке, закрепляется за вами навсегда: вы получаете процент с каждого его пополнения, а не только с первого.</p>
+      <div class="mt-7 flex flex-col sm:flex-row gap-2.5">
+        <a href="index.html?redirect=partners" data-join class="h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors">Стать партнёром<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+        <a href="#offer" class="h-12 px-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 inline-flex items-center justify-center transition-colors">Смотреть условия</a>
+      </div>
+      <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Регистрация через Google за минуту, без модерации и без вложений.</p>
+    </div>
+
+    <!-- Оффер коротко -->
+    <aside id="offer" class="scroll-mt-24 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm">
+      <div class="px-5 pt-5 pb-3 flex items-center justify-between">
+        <h2 class="text-base font-semibold">Оффер</h2>
+        <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400">Открыт</span>
+      </div>
+      <dl class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Модель</dt><dd class="font-medium text-right">RevShare 30–50%</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Привязка пользователя</dt><dd class="font-medium text-right">пожизненная</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Целевое действие</dt><dd class="font-medium text-right">оплата через PayPal</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Суммы оплат</dt><dd class="font-medium text-right tabular">$10 · $45 · $100</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Начисление</dt><dd class="font-medium text-right">сразу после оплаты</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Атрибуция</dt><dd class="font-medium text-right">последний клик до регистрации</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Выплата</dt><dd class="font-medium text-right">от $50, карта или USDT</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Трекинг</dt><dd class="font-medium text-right">sub-метки, статистика по дням</dd></div>
+        <div class="px-5 py-3 flex justify-between gap-4"><dt class="text-gray-500 dark:text-gray-400">Аудитория</dt><dd class="font-medium text-right">русскоязычная, весь мир</dd></div>
+      </dl>
+    </aside>
+  </section>
+
+  <!-- Ставки -->
+  <section class="mt-16">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Ставка растёт с объёмом</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Считаются все оплаты ваших пользователей за всё время. Новая ставка действует для следующих оплат и уже не снижается.</p>
+    <div class="mt-5 grid grid-cols-3 gap-2 sm:gap-4">
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Silver</p>
+        <p class="mt-1 text-2xl sm:text-4xl font-semibold tracking-tight tabular">30%</p>
+        <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">оплаты 1–10</p>
+      </div>
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-4 sm:p-5">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Gold</p>
+        <p class="mt-1 text-2xl sm:text-4xl font-semibold tracking-tight tabular">40%</p>
+        <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">оплаты 11–50</p>
+      </div>
+      <div class="bg-white dark:bg-gray-900 border-2 border-blue-600 dark:border-blue-500 rounded-2xl p-4 sm:p-5">
+        <p class="text-sm text-blue-700 dark:text-blue-300">Platinum</p>
+        <p class="mt-1 text-2xl sm:text-4xl font-semibold tracking-tight tabular">50%</p>
+        <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400">с 51-й оплаты</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Почему конвертит -->
+  <section class="mt-16">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Почему продукт легко продавать</h2>
+    <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="mouse-pointer-click" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">Вход в один клик</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Регистрация через Google, без карты и подтверждений. Нет длинной анкеты — нет потерь на форме.</p>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="gift" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">Бесплатный старт</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Человек сразу пробует доски бесплатно. Платит, когда упирается в лимиты: проекты, участники, AI.</p>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="repeat" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">Повторные оплаты</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Тарифы Freelancer ($6) и Company ($19) действуют 30 дней. Каждое продление — новая оплата и новая комиссия вам.</p>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="smartphone" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">Телефон и компьютер</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Работает в браузере и ставится как приложение. Мобильный трафик конвертится так же, как десктоп.</p>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="sparkles" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">AI-ассистент</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Разбивает задачу на шаги и составляет планы. Хороший крючок для креативов и понятная причина купить пакет запросов.</p>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5"></i></span>
+        <h3 class="mt-4 font-semibold">Широкая аудитория</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Фрилансеры, малые команды, студии, менеджеры проектов, студенты — всем, у кого есть задачи и коллеги.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Калькулятор -->
+  <section id="calc" class="mt-16 scroll-mt-24">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Посчитайте на своих цифрах</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Подставьте объём и конверсию из своих тестов — увидите доход и сколько можно платить за регистрацию, чтобы остаться в плюсе.</p>
+    <div class="mt-5 grid lg:grid-cols-[1.1fr_1fr] gap-3 sm:gap-4">
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 space-y-6">
+        <div>
+          <label for="cRegs" class="flex items-baseline justify-between text-sm"><span class="text-gray-600 dark:text-gray-300">Регистраций в месяц</span><span id="cRegsVal" class="font-semibold tabular"></span></label>
+          <input id="cRegs" type="range" min="10" max="2000" step="10" value="300" class="mt-3 w-full">
+        </div>
+        <div>
+          <label for="cConv" class="flex items-baseline justify-between text-sm"><span class="text-gray-600 dark:text-gray-300">Сколько из них платят</span><span id="cConvVal" class="font-semibold tabular"></span></label>
+          <input id="cConv" type="range" min="1" max="30" step="1" value="5" class="mt-3 w-full">
+        </div>
+        <div>
+          <label for="cRepeat" class="flex items-baseline justify-between text-sm"><span class="text-gray-600 dark:text-gray-300">Оплат на платящего за месяц</span><span id="cRepeatVal" class="font-semibold tabular"></span></label>
+          <input id="cRepeat" type="range" min="1" max="3" step="0.5" value="1" class="mt-3 w-full">
+        </div>
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-300">Средняя сумма оплаты</p>
+          <div class="mt-2 grid grid-cols-3 gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800" role="group" aria-label="Средняя сумма оплаты">
+            <button type="button" data-avg="10" class="h-9 rounded-lg text-sm font-medium transition-colors">$10</button>
+            <button type="button" data-avg="45" class="h-9 rounded-lg text-sm font-medium transition-colors">$45</button>
+            <button type="button" data-avg="100" class="h-9 rounded-lg text-sm font-medium transition-colors">$100</button>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Доход за первый месяц</p>
+        <p id="cMonth1" class="mt-1 text-4xl font-semibold tracking-tight tabular">$0</p>
+        <p id="cMonth1Note" class="mt-1 text-sm text-gray-500 dark:text-gray-400"></p>
+        <dl class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800 grid grid-cols-2 gap-4 text-sm">
+          <div><dt class="text-gray-500 dark:text-gray-400">В месяц на ставке 50%</dt><dd id="cMonthMax" class="mt-1 text-lg font-semibold tabular">$0</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Доход с регистрации</dt><dd id="cPerReg" class="mt-1 text-lg font-semibold tabular">$0</dd></div>
+        </dl>
+        <p id="cBreakeven" class="mt-5 text-sm rounded-xl px-3.5 py-3 bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-200"></p>
+        <p class="mt-auto pt-5 text-xs text-gray-500 dark:text-gray-400">Это расчёт по вашим вводным, а не обещание дохода. Повторные оплаты в следующих месяцах сюда не входят — они добавляются сверху.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Источники трафика -->
+  <section id="traffic" class="mt-16 scroll-mt-24">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Какой трафик принимаем</h2>
+    <div class="mt-5 grid md:grid-cols-2 gap-3 sm:gap-4">
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <h3 class="font-semibold flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center"><i data-lucide="check" class="w-3.5 h-3.5"></i></span>Можно</h3>
+        <ul class="mt-4 space-y-2.5 text-sm text-gray-600 dark:text-gray-300">
+          <li class="flex gap-2"><span class="text-gray-400">—</span>таргетированная реклама: Meta, TikTok, VK, Telegram Ads</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>посевы в Telegram-каналах и тематических сообществах</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>YouTube, Shorts, Reels, TikTok — обзоры и короткие ролики</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>SEO, статьи, подборки сервисов, свои прелендинги</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>контекстная реклама по общим запросам («канбан-доска», «трекер задач»)</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>email и мессенджеры — только по своей базе с согласием подписчиков</li>
+        </ul>
+      </article>
+      <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <h3 class="font-semibold flex items-center gap-2"><span class="w-6 h-6 rounded-full bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></span>Нельзя</h3>
+        <ul class="mt-4 space-y-2.5 text-sm text-gray-600 dark:text-gray-300">
+          <li class="flex gap-2"><span class="text-gray-400">—</span>мотивированный трафик — платить людям за регистрацию или оплату</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>брендовый контекст: запросы со словами Blocko, Blocko Pro и их опечатками</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>спам: рассылки, комментарии, личные сообщения без согласия</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>боты, фейковые и собственные аккаунты</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>обещания, которых нет в продукте, и выдача себя за команду Blocko Pro</li>
+          <li class="flex gap-2"><span class="text-gray-400">—</span>adult, шок-контент, казино и запрещённые законом тематики рядом с рекламой</li>
+        </ul>
+        <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">За такой трафик не платим, кабинет отключаем. Если покупатель вернул оплату, комиссию с неё списываем.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Трекинг -->
+  <section class="mt-16 grid lg:grid-cols-2 gap-3 sm:gap-4">
+    <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+      <h2 class="text-lg font-semibold tracking-tight">Трекинг и статистика</h2>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Добавляйте метку к ссылке — по ней в кабинете видно регистрации, оплаты и доход с каждого источника или креатива.</p>
+      <div class="mt-4 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 px-3.5 py-3 font-mono text-[13px] break-all">
+        <span class="text-gray-500">https://blocko.cloud/?ref=</span><span class="text-blue-700 dark:text-blue-300">ВАШ_ID</span><span class="text-gray-500">&amp;sub=</span><span class="text-green-700 dark:text-green-400">tiktok_video3</span>
+      </div>
+      <ul class="mt-4 space-y-2 text-sm text-gray-600 dark:text-gray-300">
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0"></i>Метка — до 40 символов: латиница, цифры, «-» и «_»</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0"></i>Ссылку можно вести на главную, русский лендинг, страницу возможностей или магазин</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0"></i>Статистика по дням за 7, 30 и 90 дней и таблица по меткам</li>
+        <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0"></i>Ссылка запоминается в браузере до регистрации — можно вести через свой прелендинг</li>
+      </ul>
+      <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Постбэков в трекер пока нет — статистика в кабинете.</p>
+    </article>
+    <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+      <h2 class="text-lg font-semibold tracking-tight">Выплаты</h2>
+      <ul class="mt-4 space-y-3">
+        <li class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-3">
+          <span class="w-9 h-9 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center flex-shrink-0"><i data-lucide="banknote" class="w-5 h-5"></i></span>
+          <div><p class="text-sm font-semibold">Деньги <span class="font-normal text-gray-500 dark:text-gray-400">· от $50</span></p><p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Заявка в кабинете в один клик. Проверяем вручную и пишем на почту, чтобы согласовать выплату на банковскую карту или в USDT.</p></div>
+        </li>
+        <li class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex gap-3">
+          <span class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0"><i data-lucide="coins" class="w-5 h-5"></i></span>
+          <div><p class="text-sm font-semibold">Монеты Blocko Pro <span class="font-normal text-gray-500 dark:text-gray-400">· от $10</span></p><p class="mt-1 text-sm text-gray-600 dark:text-gray-300">Сразу, без проверки: 100 монет за $1 на тарифы, AI и подарки.</p></div>
+        </li>
+      </ul>
+      <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Комиссия появляется на балансе сразу после оплаты пользователя — без холда на начисление.</p>
+    </article>
+  </section>
+
+  <!-- Промо-материалы -->
+  <section id="promo" class="mt-16 scroll-mt-24">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Готовые тексты для рекламы</h2>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Берите как есть или как основу. Подставьте свою ссылку из кабинета.</p>
+    <div id="promoList" class="mt-5 grid md:grid-cols-2 gap-3 sm:gap-4"></div>
+    <div class="mt-4 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-5 text-sm text-gray-600 dark:text-gray-300">
+      <p class="font-medium text-gray-900 dark:text-white">Идеи для креативов</p>
+      <ul class="mt-2 space-y-1.5">
+        <li>— запись экрана: хаос в заметках → аккуратная доска «Сделать · В работе · Готово» за 15 секунд;</li>
+        <li>— AI в кадре: пишем «запустить лендинг» — получаем план из шагов;</li>
+        <li>— «Один день фрилансера»: задачи клиентов, дедлайны и чат команды в одном месте;</li>
+        <li>— телефон крупно: задачи двигаются пальцем, всё синхронно с компьютером.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Как начать -->
+  <section class="mt-16">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Как начать</h2>
+    <ol class="mt-5 grid sm:grid-cols-3 gap-3 sm:gap-4">
+      <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">1</span>
+        <h3 class="mt-4 font-semibold">Зарегистрируйтесь</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Вход через Google — кабинет партнёра подключится сразу.</p>
+      </li>
+      <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">2</span>
+        <h3 class="mt-4 font-semibold">Возьмите ссылку</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Выберите страницу и метку источника, сохраните ссылки под каждую связку.</p>
+      </li>
+      <li class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5">
+        <span class="w-8 h-8 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-semibold flex items-center justify-center">3</span>
+        <h3 class="mt-4 font-semibold">Запускайте трафик</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Смотрите регистрации и оплаты по меткам, масштабируйте то, что окупается.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- Вопросы -->
+  <section id="faq" class="mt-16 scroll-mt-24">
+    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">Вопросы</h2>
+    <div class="mt-5 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl divide-y divide-gray-100 dark:divide-gray-800">
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Есть ли холд?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Холда на начисление нет: комиссия появляется на балансе сразу после оплаты. Заявку на вывод мы проверяем вручную — смотрим, что трафик соответствует правилам.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Как засчитывается пользователь?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">По последнему клику до регистрации: если человек переходил по ссылкам разных партнёров, засчитывается последняя. Ссылка хранится в браузере, пока он не зарегистрируется. Засчитываются только новые аккаунты.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">С каких оплат идёт процент?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">С каждого пополнения через PayPal, которое ваш пользователь делает после подключения вашего кабинета, — сколько бы раз и сколько бы лет он ни платил.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Можно лить через свой прелендинг?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Да. Главное, чтобы переход на blocko.cloud шёл по вашей ссылке с <code>?ref=</code> и прелендинг не обещал того, чего нет в сервисе.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Есть ли постбэк?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Пока нет. Регистрации, оплаты и доход по каждой метке и по дням видны в кабинете партнёра.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Какие ГЕО лучше всего?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Интерфейс сервиса на русском, поэтому лучше всего работает русскоязычная аудитория в любой стране. Оплата через PayPal — учитывайте, где он доступен.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">Как выводить деньги?<i data-lucide="chevron-down" class="chev w-4 h-4 text-gray-400 transition-transform flex-shrink-0"></i></summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Когда на балансе $50 или больше, нажмите «Вывести» в кабинете. Мы напишем на почту аккаунта и согласуем выплату на карту или в USDT. Выводится весь доступный баланс.</div></details>
+      <details class="px-5"><summary class="py-4 flex items-center justify-between gap-4 cursor-pointer font-medium">У меня большие объёмы</summary><div class="pb-4 -mt-1 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">Напишите нам через <a href="index.html?open=support" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">поддержку</a> — обсудим индивидуальные условия и материалы под ваши источники.</div></details>
+    </div>
+    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Полные правила — в разделе 5 <a href="terms.html#t-partners" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">Условий сервиса</a> и в <a href="affiliates-money.html#faq" class="underline underline-offset-2 hover:text-gray-900 dark:hover:text-white">кабинете партнёра</a>.</p>
+  </section>
+
+  <!-- Финальный призыв -->
+  <section class="mt-16 rounded-2xl bg-gray-900 dark:bg-gray-900 border border-gray-900 dark:border-gray-800 text-white p-6 sm:p-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+    <div>
+      <h2 class="text-xl sm:text-2xl font-semibold tracking-tight">До 50% с каждой оплаты. Пожизненно.</h2>
+      <p class="mt-1 text-sm text-gray-300">Подключение бесплатное — ссылка и статистика будут сразу.</p>
+    </div>
+    <a href="index.html?redirect=partners" data-join class="h-12 px-6 rounded-xl bg-white text-gray-900 hover:bg-gray-100 text-sm font-medium inline-flex items-center justify-center gap-2 transition-colors flex-shrink-0">Стать партнёром<i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+  </section>
+</main>
+
+<footer class="border-t border-gray-200/80 dark:border-gray-800 px-4 sm:px-8 py-6">
+  <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500 dark:text-gray-400">
+    <span>© <span id="year"></span> Blocko Pro</span>
+    <nav class="flex flex-wrap justify-center gap-x-5 gap-y-2">
+      <a href="index.html" class="hover:text-gray-900 dark:hover:text-white">Сервис</a>
+      <a href="affiliates-money.html" class="hover:text-gray-900 dark:hover:text-white">Кабинет партнёра</a>
+      <a href="terms.html" class="hover:text-gray-900 dark:hover:text-white">Условия</a>
+      <a href="privacy.html" class="hover:text-gray-900 dark:hover:text-white">Конфиденциальность</a>
+      <a href="cookies.html" class="hover:text-gray-900 dark:hover:text-white">Cookie</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Уведомление -->
+<div id="toast" class="fixed z-[500] left-4 right-4 bottom-4 sm:left-auto sm:right-6 sm:bottom-6 sm:w-[340px] pointer-events-none opacity-0 translate-y-4 invisible transition-all duration-300" role="status" aria-live="polite">
+  <div class="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg">
+    <span class="w-9 h-9 rounded-xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 flex items-center justify-center flex-shrink-0"><i data-lucide="circle-check" class="w-5 h-5"></i></span>
+    <p id="toastText" class="text-sm font-medium"></p>
+  </div>
+</div>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light'); } catch (e) {}
+  }
+
+  // Ссылка «Стать партнёром»: событие для аналитики (если посетитель разрешил)
+  document.querySelectorAll('[data-join]').forEach((a) => a.addEventListener('click', () => {
+    try { if (window.gtag) window.gtag('event', 'partner_join_click'); } catch (e) {}
+  }));
+
+  // ---------- калькулятор (ставки как на сервере: оплаты 1–10 по 30%, 11–50 по 40%, дальше 50%) ----------
+  const $ = (id) => document.getElementById(id);
+  const usd = (v) => '$' + new Intl.NumberFormat('en-US', { maximumFractionDigits: v < 100 ? 2 : 0, minimumFractionDigits: v < 100 && v % 1 ? 2 : 0 }).format(Math.round(v * 100) / 100);
+  const nf = new Intl.NumberFormat('ru-RU');
+  let avg = 45;
+
+  function commission(payments, avgSum) {
+    let rest = payments, total = 0;
+    for (const [size, rate] of [[10, 0.3], [40, 0.4], [Infinity, 0.5]]) {
+      if (rest <= 0) break;
+      const k = Math.min(rest, size);
+      total += k * avgSum * rate;
+      rest -= k;
+    }
+    return total;
+  }
+
+  function calc() {
+    const regs = +$('cRegs').value, conv = +$('cConv').value, rep = +$('cRepeat').value;
+    $('cRegsVal').textContent = nf.format(regs);
+    $('cConvVal').textContent = conv + '%';
+    $('cRepeatVal').textContent = String(rep).replace('.', ',');
+    const payments = Math.round(regs * conv / 100 * rep);
+    const m1 = commission(payments, avg);
+    const max = payments * avg * 0.5;
+    const perReg = regs ? m1 / regs : 0;
+    $('cMonth1').textContent = usd(m1);
+    $('cMonth1Note').textContent = `${nf.format(payments)} ${plural(payments, ['оплата', 'оплаты', 'оплат'])} по ${usd(avg)}`;
+    $('cMonthMax').textContent = usd(max);
+    $('cPerReg').textContent = usd(perReg);
+    $('cBreakeven').textContent = perReg > 0
+      ? `Окупаемая цена регистрации — до ${usd(perReg)} в первый месяц и до ${usd(regs ? max / regs : 0)} на ставке 50%.`
+      : 'Увеличьте объём или конверсию, чтобы увидеть окупаемую цену регистрации.';
+    document.querySelectorAll('[data-avg]').forEach((b) => {
+      const on = +b.dataset.avg === avg;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.classList.toggle('bg-white', on); b.classList.toggle('dark:bg-gray-900', on); b.classList.toggle('shadow-sm', on);
+      b.classList.toggle('text-gray-900', on); b.classList.toggle('dark:text-white', on);
+      b.classList.toggle('text-gray-500', !on); b.classList.toggle('dark:text-gray-400', !on);
+    });
+  }
+  function plural(n, f) { const a = Math.abs(n) % 100, b = a % 10; if (a > 10 && a < 20) return f[2]; if (b > 1 && b < 5) return f[1]; if (b === 1) return f[0]; return f[2]; }
+  ['cRegs', 'cConv', 'cRepeat'].forEach((id) => $(id).addEventListener('input', calc));
+  document.querySelectorAll('[data-avg]').forEach((b) => b.addEventListener('click', () => { avg = +b.dataset.avg; calc(); }));
+  calc();
+
+  // ---------- готовые тексты ----------
+  const PROMOS = [
+    { tag: 'Фрилансерам', text: 'Клиенты, правки, дедлайны — и всё в разных чатах? Соберите задачи на одной доске: «Сделать», «В работе», «Готово». Blocko Pro работает на телефоне и компьютере, начать можно бесплатно.' },
+    { tag: 'Командам', text: 'Пригласите команду в проект по ссылке, раздайте задачи и обсуждайте их в чате прямо на доске. Роли доступа: владелец, редактор, наблюдатель для клиента. Попробуйте Blocko Pro бесплатно.' },
+    { tag: 'AI', text: 'Напишите задачу одной строкой — AI-ассистент разобьёт её на шаги и составит чек-лист. Канбан-доски с AI в Blocko Pro: вход через Google за минуту.' },
+    { tag: 'Коротко', text: 'Канбан-доска, которая не тормозит и не путает. Телефон, компьютер, работа без интернета. Blocko Pro — бесплатный старт.' },
+  ];
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  $('promoList').innerHTML = PROMOS.map((p, i) => `
+    <article class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col">
+      <span class="self-start text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">${esc(p.tag)}</span>
+      <p class="mt-3 text-sm text-gray-700 dark:text-gray-200 leading-relaxed">${esc(p.text)}</p>
+      <button type="button" data-copy="${i}" class="mt-4 self-start h-9 px-3 rounded-xl border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 inline-flex items-center gap-2 transition-colors"><i data-lucide="copy" class="w-4 h-4"></i>Скопировать</button>
+    </article>`).join('');
+  let toastTimer = null;
+  function toast(text) {
+    const t = $('toast');
+    $('toastText').textContent = text;
+    t.classList.remove('opacity-0', 'translate-y-4', 'invisible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.classList.add('opacity-0', 'translate-y-4'); toastTimer = setTimeout(() => t.classList.add('invisible'), 300); }, 2500);
+  }
+  $('promoList').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-copy]');
+    if (!b) return;
+    const text = PROMOS[+b.dataset.copy].text;
+    try { await navigator.clipboard.writeText(text); toast('Текст скопирован'); }
+    catch (err) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Текст скопирован'); } catch (e2) {}
+      ta.remove();
+    }
+  });
+
+  try { lucide.createIcons(); } catch (e) {}
+</script>
+</body>
+</html>

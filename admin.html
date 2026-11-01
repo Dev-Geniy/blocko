@@ -445,7 +445,7 @@
                  <tr>
                    <th class="px-6 py-4 rounded-tl-2xl">Партнер</th>
                    <th class="px-6 py-4 text-center">Ранг & RevShare</th>
-                   <th class="px-6 py-4 text-center">Хосты / Рег / Sales</th>
+                   <th class="px-6 py-4 text-center">Рег / Оплаты</th>
                    <th class="px-6 py-4 text-center">Баланс ($)</th>
                    <th class="px-6 py-4 text-right rounded-tr-2xl">Действия</th>
                  </tr>
@@ -1761,7 +1761,7 @@
           }
 
           const balance = (p.balanceUSD || 0).toFixed(2);
-          const metrics = `<span class="text-blue-500">${p.clicks || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-purple-500">${p.signups || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-amber-500">${totalSales}</span>`;
+          const metrics = `<span class="text-purple-500">${p.signups || 0}</span> <span class="text-gray-400 mx-1">/</span> <span class="text-amber-500">${totalSales}</span>`;
 
           return `
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors group">
@@ -1771,6 +1771,7 @@
                      <div>
                         <div class="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">${esc(safeName)}</div>
                         <div class="text-[10px] text-gray-500 font-mono mt-0.5">${esc(safeEmail)}</div>
+                        ${p.acquisition ? `<div class="text-[10px] text-blue-500 mt-0.5" title="utm-метки со страницы partners.html">Реклама: ${esc([p.acquisition.source, p.acquisition.campaign, p.acquisition.content].filter(Boolean).join(' / '))}</div>` : ''}
                      </div>
                   </div>
                </td>
